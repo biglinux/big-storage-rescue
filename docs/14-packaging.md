@@ -51,7 +51,19 @@ the old Big-Mount 2.6 or with the new one:
 The Dolphin submenu of both versions is named *Storage device*, so during that
 transition their actions appear in one submenu.
 
-**Do not update big-mount while one of its jobs runs** (a copy or an image
-started by Big-Mount 2.6): the update replaces the scripts its supervisor is
-reading. Let the job finish or pause it first; it is then brought over to
-Big Storage Rescue and resumed there.
+Checked with real pacman transactions in scratch roots
+(`tests/coexistence-check.sh`, packages built with `makepkg` from both
+branches, 2026-11-02): each package alone, both in one transaction, Big
+Storage Rescue on top of Big-Mount 2.6 and then Big-Mount updated alone, both
+updated together from 2.6, and the removal of either — 18 checks, no file
+conflict, the configuration of Big-Mount kept, neither package touched by the
+other's transactions. File lists: Big Storage Rescue 43 files, Big-Mount 3.0
+7, Big-Mount 2.6 42; no path in common between Big Storage Rescue and either
+version of Big-Mount.
+
+**Better not to update big-mount while one of its jobs runs** (a copy or an
+image started by Big-Mount 2.6). The running supervisor and ddrescue go on,
+but the update removes the window and the helper of 2.6 that would follow,
+pause or resume the job. Let it finish, or pause it first; Big Storage Rescue
+then brings it over (`--migrate-state`) and resumes it. The pacman script of
+big-mount 3.0 warns when such a job is running.

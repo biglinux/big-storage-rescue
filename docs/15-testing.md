@@ -14,6 +14,7 @@
 | `tests/integration.sh` | diagnosis, busy, removal, notifier on real loop devices through UDisks2 | a local session, polkit | by hand |
 | `tests/drive-integration.sh` | real filesystems, dm-error, dm-delay, power cut, LUKS | a session, sudo for device-mapper | by hand |
 | `tests/manual-check.sh` | what a person must see: dialogs, notifications, Dolphin menu | a Plasma session | by hand |
+| `tests/coexistence-check.sh` | real pacman transactions of Big-Mount 2.6, Big-Mount 3.0 and Big Storage Rescue in scratch roots | the three packages, fakeroot | by hand (18 passed on 2026-11-02) |
 | `tests/measure-app.py`, `tests/measure-session.sh` | cost of the window; latency of the session tools | | by hand |
 
 No suite touches a real disk: devices are fixtures, scratch folders or loop
