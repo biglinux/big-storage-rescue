@@ -145,7 +145,7 @@ class DriveCard(Gtk.FlowBoxChild):
 
 class OverviewPage(Adw.NavigationPage):
     def __init__(self, window):
-        super().__init__(title=_("Big-Mount"), tag="home")
+        super().__init__(title=_("Big Storage Rescue"), tag="home")
         self.window = window
         self._signature = None
         self._running_signature = None

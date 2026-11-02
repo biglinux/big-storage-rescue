@@ -1,4 +1,4 @@
-"""The welcome screen: what Big-Mount can do, once, when it opens on its home."""
+"""The welcome screen: what Big Storage Rescue can do, once, when it opens on its home."""
 
 from gi.repository import Adw, Gtk
 
@@ -25,10 +25,8 @@ def features():
          _("Unmounts and powers off a drive without forcing anything.")),
         ("dialog-warning-symbolic", _("Warnings when it matters"),
          _("Optional, in the menu: when a drive with problems is mounted, you are told, once per boot.")),
-        ("edit-clear-all-symbolic", _("Secure Erase"),
-         _("Restores an internal SATA SSD that no longer keeps what is written.")),
         ("utilities-terminal-symbolic", _("Also in the terminal"),
-         _("The same tools without a window: bigmount --drive")),
+         _("The same tools without a window: big-storage-rescue --cli")),
     ]
 
 
@@ -52,7 +50,7 @@ def _feature(icon_name, title, description):
 
 class WelcomeDialog(Adw.Dialog):
     def __init__(self):
-        super().__init__(title=_("Welcome to Big-Mount"), content_width=900, content_height=650)
+        super().__init__(title=_("Welcome to Big Storage Rescue"), content_width=900, content_height=650)
         content = w.box(spacing=12)
         for side in ("start", "end", "top"):
             getattr(content, f"set_margin_{side}")(20)
@@ -60,8 +58,8 @@ class WelcomeDialog(Adw.Dialog):
 
         head = w.box(spacing=12)
         head.set_halign(Gtk.Align.CENTER)
-        head.append(w.icon("big-mount", 64))
-        title = w.label(_("Welcome to Big-Mount"), css=("title-1",), xalign=0.5, role=Gtk.AccessibleRole.HEADING)
+        head.append(w.icon("big-storage-rescue", 64))
+        title = w.label(_("Welcome to Big Storage Rescue"), css=("title-1",), xalign=0.5, role=Gtk.AccessibleRole.HEADING)
         head.append(title)
         head.append(w.label(_("Your drives, how they are doing, and your files safe on another disk."),
                             css=("title-4", "dim-label"), xalign=0.5))

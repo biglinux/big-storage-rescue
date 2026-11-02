@@ -1,9 +1,9 @@
 #!/usr/bin/python3
-"""Big-Mount: the dialogs of the commands that run outside the application
-(bigmount --gui, --gui-remove and the notifier), drawn with GTK 4 and libadwaita
+"""Big Storage Rescue: the dialogs of the commands that run outside the application
+(big-storage-rescue --gui, --gui-remove and the notifier), drawn with GTK 4 and libadwaita
 like the application itself.
 
-The shell builds the content as a small document (bm_doc_* in ui.sh) and sends it
+The shell builds the content as a small document (bsr_doc_* in ui.sh) and sends it
 on standard input as NUL-separated pairs of kind and text: h (heading), p
 (paragraph), kv (key TAB value), li (list item), th and tr (table cells separated
 by TAB, a second line of a cell after \\x1f) and pre (technical text). Labels,
@@ -116,15 +116,15 @@ def main(argv):
     if (Adw.MAJOR_VERSION, Adw.MINOR_VERSION) < MIN_ADW:
         print("dialog.py: libadwaita 1.5 or later is needed", file=sys.stderr)
         return 25
-    # The window belongs to Big-Mount: its name and icon in the task bar
-    GLib.set_prgname("big-mount")
-    GLib.set_application_name("Big-Mount")
+    # The window belongs to Big Storage Rescue: its name and icon in the task bar
+    GLib.set_prgname("big-storage-rescue")
+    GLib.set_application_name("Big Storage Rescue")
     # Gtk.init_check() says yes even when no display could be opened
     if not Gtk.init_check() or Gdk.Display.get_default() is None:
         print("dialog.py: there is no display", file=sys.stderr)
         return 25
     Adw.init()
-    Gtk.Window.set_default_icon_name("big-mount")
+    Gtk.Window.set_default_icon_name("big-storage-rescue")
     from gui.dialogs import run
     return run(args, doc)
 

@@ -636,7 +636,7 @@ class ResultsPage(Adw.NavigationPage):
             w.open_folder(self.window, root)
 
     def _save_report(self):
-        actions.save_report(self.window, self.job_id, _("Save report"), f"big-mount-{self.job_id}.txt", True)
+        actions.save_report(self.window, self.job_id, _("Save report"), f"big-storage-rescue-{self.job_id}.txt", True)
 
     def _other_method(self):
         self.window.open_wizard()

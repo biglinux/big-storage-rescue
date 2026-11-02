@@ -1,5 +1,5 @@
 """What the engine says, as typed objects. Nothing here decides anything about a
-disk: every value comes from `bigmount --drive ... --json`."""
+disk: every value comes from `big-storage-rescue --cli ... --json`."""
 
 import unicodedata
 from dataclasses import dataclass, field

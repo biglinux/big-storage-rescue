@@ -115,19 +115,6 @@ def _close_then(window, device, retry):
     window.engine.close_apps(device, closed)
 
 
-def erase(window, dev):
-    """The way to Erase data permanently: one warning here, then the maintenance
-    page, which checks the drive and asks twice more (the second time, its name)."""
-    def answered(rid):
-        if rid == "continue":
-            window.open_maintenance(dev)
-    w.alert(window, _("Erase everything on %s?") % dev.name,
-            _("This is not recovery: it destroys every file on the whole drive, for good. No program, and no data recovery service, can bring them back.\n\n"
-              "Copy what you want to keep first. The next page checks whether this drive can be erased, and asks for confirmation twice more."),
-            responses=(("cancel", _("Cancel")), ("continue", _("I understand, continue"))),
-            default="cancel", close="cancel", destructive=("continue",), callback=answered)
-
-
 def save_report(window, target, title, name, anonymize):
     """The report of TARGET (a drive or a job) in a file the person chooses."""
     def saved(dialog, res):
@@ -168,9 +155,6 @@ def drive_menu(window, widget, dev):
         (mount, "remove", _("Safely remove"), lambda: unmount(window, dev.device, remove=True),
          dev.external and not dev.has_system and dev.kind != "image"),
     ]
-    danger = Gio.Menu()
-    entries.append((danger, "erase", _("Erase data permanently…"), lambda: erase(window, dev),
-                    dev.kind not in ("image", "optical") and not dev.has_system))
     for section, name, text, handler, shown in entries:
         if not shown:
             continue
@@ -178,7 +162,7 @@ def drive_menu(window, widget, dev):
         action.connect("activate", lambda _a, _p, h=handler: h())
         group.add_action(action)
         section.append(text, f"drive.{name}")
-    for section in (view, mount, danger):
+    for section in (view, mount):
         if section.get_n_items():
             menu.append_section(None, section)
     widget.insert_action_group("drive", group)

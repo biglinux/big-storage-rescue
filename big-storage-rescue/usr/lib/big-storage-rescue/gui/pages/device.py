@@ -188,7 +188,6 @@ class HealthView(Gtk.Box):
         if dev.kind not in ("image", "optical"):
             self.append(self._smart_group(dev))
         self.append(self._details_group(dev))
-        self.append(self._maintenance_group(dev))
 
     def _smart_group(self, dev):
         group = w.Group(_("What the drive itself reports (SMART)"))
@@ -299,14 +298,6 @@ class HealthView(Gtk.Box):
         group.add_row(tech)
         return group
 
-    def _maintenance_group(self, dev):
-        group = w.Group(_("Advanced maintenance"))
-        r = w.row(_("Erase data permanently"), _("Separate from recovery. Warns first, then checks the drive and asks twice more."), activatable=True)
-        r.add_suffix(w.icon("go-next-symbolic"))
-        r.connect("activated", lambda *_a: actions.erase(self.window, dev))
-        group.add_row(r)
-        return group
-
     def _export(self):
         self.page.export_report()
 
@@ -358,7 +349,7 @@ class DevicePage(Adw.NavigationPage):
         group = Gio.SimpleActionGroup()
         for name, handler in (("technical", self.show_technical), ("report", self.export_report), ("remove", self.safe_remove),
                               ("unmount", self.unmount), ("force", self.force_unmount),
-                              ("protect", self.protect), ("maintenance", self.maintenance), ("refresh", self.window.refresh)):
+                              ("protect", self.protect), ("refresh", self.window.refresh)):
             action = Gio.SimpleAction.new(name, None)
             action.connect("activate", lambda _a, _p, h=handler: h())
             group.add_action(action)
@@ -375,9 +366,6 @@ class DevicePage(Adw.NavigationPage):
         second.append(_("Force unmount (close the programs using it)…"), "device.force")
         second.append(_("Safely remove"), "device.remove")
         menu.append_section(None, second)
-        third = Gio.Menu()
-        third.append(_("Erase data permanently…"), "device.maintenance")
-        menu.append_section(None, third)
         self.menu_button.set_menu_model(menu)
 
     # ----- what is shown
@@ -558,7 +546,7 @@ class DevicePage(Adw.NavigationPage):
 
         def answered(rid):
             if rid != "cancel":
-                actions.save_report(self.window, dev.device, _("Export diagnosis"), f"big-mount-{dev.device.rsplit('/', 1)[-1]}.txt", rid == "hide")
+                actions.save_report(self.window, dev.device, _("Export diagnosis"), f"big-storage-rescue-{dev.device.rsplit('/', 1)[-1]}.txt", rid == "hide")
 
         w.alert(self.window, _("Export diagnosis"), _("Hide serial numbers, labels and your user name?"),
                 responses=(("cancel", _("Cancel")), ("keep", _("Keep them")), ("hide", _("Hide them"))),
@@ -595,10 +583,6 @@ class DevicePage(Adw.NavigationPage):
         w.alert(self.window, _("Block writing on the device"),
                 _("Whatever a driver or another program tries, the disk does not change. It lasts until the drive is disconnected. It asks for the administrator password."),
                 responses=(("cancel", _("Cancel")), ("protect", _("Block writing"))), default="cancel", close="cancel", callback=answered)
-
-    def maintenance(self):
-        if self.dev:
-            actions.erase(self.window, self.dev)
 
 
 def job_row(window, job):

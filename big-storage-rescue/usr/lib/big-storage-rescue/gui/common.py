@@ -9,7 +9,7 @@ from gi.repository import GLib
 
 LIB_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 PREFIX = os.path.normpath(os.path.join(LIB_DIR, "..", ".."))
-BIGMOUNT = os.environ.get("BM_GUI_BIN") or os.path.join(PREFIX, "bin", "bigmount")
+BSR_BIN = os.environ.get("BSR_GUI_BIN") or os.path.join(PREFIX, "bin", "big-storage-rescue")
 LOCALE_DIR = os.path.join(PREFIX, "share", "locale")
 
 try:
@@ -17,26 +17,26 @@ try:
 except locale.Error:
     pass
 
-_translation = gettext.translation("big-mount", LOCALE_DIR, fallback=True)
+_translation = gettext.translation("big-storage-rescue", LOCALE_DIR, fallback=True)
 _ = _translation.gettext
 ngettext = _translation.ngettext
 
-WEBSITE = "https://github.com/biglinux/big-mount"
-ISSUES = "https://github.com/biglinux/big-mount/issues"
+WEBSITE = "https://github.com/biglinux/big-storage-rescue"
+ISSUES = "https://github.com/biglinux/big-storage-rescue/issues"
 
 
 def version():
-    """The version of Big-Mount, from the one place the engine keeps it."""
+    """The version of Big Storage Rescue, from the one place the engine keeps it."""
     try:
         with open(os.path.join(LIB_DIR, "doctor.sh"), encoding="utf-8") as f:
-            found = re.search(r"^BM_VERSION=([0-9][0-9A-Za-z.+-]*)$", f.read(), re.M)
+            found = re.search(r"^BSR_VERSION=([0-9][0-9A-Za-z.+-]*)$", f.read(), re.M)
     except OSError:
         return ""
     return found.group(1) if found else ""
 
 
 def _settings_file():
-    return os.path.join(GLib.get_user_config_dir(), "big-mount", "gui.ini")
+    return os.path.join(GLib.get_user_config_dir(), "big-storage-rescue", "gui.ini")
 
 
 def setting(group, key, default=""):

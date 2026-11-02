@@ -1,5 +1,5 @@
-"""One application, one window. A second `bigmount --gui-drive` (or --gui-drive-check)
-goes to the window that is already open, at what it asked for."""
+"""One application, one window. A second `big-storage-rescue --gui` (or --gui-health,
+--gui-rescue) goes to the window that is already open, at what it asked for."""
 
 import argparse
 import os
@@ -8,18 +8,18 @@ import signal
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
 from . import welcome
-from .common import BIGMOUNT, PREFIX, _
+from .common import BSR_BIN, PREFIX, _
 from .window import MainWindow
 
-APP_ID = "org.biglinux.big-mount"
+APP_ID = "org.biglinux.big-storage-rescue"
 
 # The notifier is off unless the person turns it on: its entry in their own
 # autostart folder is the switch, and nothing else records it
-NOTIFIER_TEMPLATE = os.path.join(PREFIX, "share", "big-mount", "big-mount-notifier.desktop")
+NOTIFIER_TEMPLATE = os.path.join(PREFIX, "share", "big-storage-rescue", "big-storage-rescue-notifier.desktop")
 
 
 def notifier_entry():
-    return os.path.join(GLib.get_user_config_dir(), "autostart", "big-mount-notifier.desktop")
+    return os.path.join(GLib.get_user_config_dir(), "autostart", "big-storage-rescue-notifier.desktop")
 
 
 def notifier_on():
@@ -35,7 +35,7 @@ def notifier_on():
 def notifier_pid():
     """The running notifier of this user, from the lock it holds, or None."""
     try:
-        with open(os.path.join(GLib.get_user_runtime_dir(), "big-mount-notifier.lock"), encoding="utf-8") as f:
+        with open(os.path.join(GLib.get_user_runtime_dir(), "big-storage-rescue-notifier.lock"), encoding="utf-8") as f:
             pid = int(f.read().strip() or 0)
         with open(f"/proc/{pid}/cmdline", "rb") as f:
             args = f.read().split(b"\0")
@@ -57,7 +57,7 @@ def set_notifier(on):
             f.write(data)
         os.replace(tmp, entry)
         # Now, not only at the next login. setsid -f: it outlives the window
-        proc = Gio.Subprocess.new(["setsid", "-f", BIGMOUNT, "--notifier"], Gio.SubprocessFlags.NONE)
+        proc = Gio.Subprocess.new(["setsid", "-f", BSR_BIN, "--notifier"], Gio.SubprocessFlags.NONE)
         proc.wait_async(None, None)
     else:
         try:
@@ -81,9 +81,9 @@ def load_style():
 def parse(argv):
     # An error is raised, never an exit: a second invocation is parsed inside the
     # window that is already open
-    parser = argparse.ArgumentParser(prog="bigmount --gui-drive", add_help=False, exit_on_error=False)
+    parser = argparse.ArgumentParser(prog="big-storage-rescue --gui", add_help=False, exit_on_error=False)
     parser.add_argument("--target", default="")
-    parser.add_argument("--section", default="", choices=["", "health"])
+    parser.add_argument("--section", default="", choices=["", "health", "rescue"])
     args, _unknown = parser.parse_known_args(argv[1:])
     return args
 
@@ -99,9 +99,9 @@ class Application(Adw.Application):
         self.window = None
         # The accessible name of the application comes from the program name,
         # which is otherwise the file name of the script
-        GLib.set_prgname("big-mount")
-        GLib.set_application_name("Big-Mount")
-        Gtk.Window.set_default_icon_name("big-mount")
+        GLib.set_prgname("big-storage-rescue")
+        GLib.set_application_name("Big Storage Rescue")
+        Gtk.Window.set_default_icon_name("big-storage-rescue")
 
     def do_startup(self):
         Adw.Application.do_startup(self)
@@ -135,7 +135,7 @@ class Application(Adw.Application):
         try:
             args = parse(command_line.get_arguments())
         except argparse.ArgumentError as exc:
-            command_line.printerr_literal(f"bigmount --gui-drive: {exc}\n")
+            command_line.printerr_literal(f"big-storage-rescue --gui: {exc}\n")
             return 2
         first = self.window is None
         if first:

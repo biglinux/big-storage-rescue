@@ -1,4 +1,4 @@
-"""The one way to the disks: `bigmount --drive ... --json`, without ever blocking
+"""The one way to the disks: `big-storage-rescue --cli ... --json`, without ever blocking
 the window. Commands are lists of arguments, never a line for a shell. Only a
 question is ever given up on, when it does not end or the window closes. An
 operation (mount, unmount, removal, the start of a job) always runs to its end,
@@ -11,7 +11,7 @@ import tempfile
 
 from gi.repository import Gio, GLib
 
-from .common import BIGMOUNT, ngettext
+from .common import BSR_BIN, ngettext
 
 # A question about the system has a limit; an operation does not
 ASK_SECONDS = 60
@@ -42,7 +42,7 @@ class Result:
 
 class Engine:
     def __init__(self, program=None):
-        self.program = program or BIGMOUNT
+        self.program = program or BSR_BIN
         self._questions = set()
         # Changes to a drive in flight: the window stays open until they end
         self.operations = set()
@@ -52,7 +52,7 @@ class Engine:
         changes something, so it is never given up on."""
         argv = [self.program]
         if drive:
-            argv.append("--drive")
+            argv.append("--cli")
         argv += list(args)
         if json_output:
             argv.append("--json")
@@ -250,29 +250,12 @@ class Engine:
     def resume(self, job_id, cb, retry=False):
         self.run(["resume", job_id, "--no-wait", *(["--retry-deferred"] if retry else [])], cb, json_output=False, operation=True)
 
-    # ----- Secure Erase: asks, a ticket, and the erase. See drive-erase.sh
-    def erase_check(self, device, cb):
-        self.run(["erase-check", device], cb)
-
-    def erase_prepare(self, device, cb, diskseq=None):
-        args = ["erase-prepare", device]
-        if diskseq is not None:
-            args += ["--expect-diskseq", str(diskseq)]
-        self.run(args, cb)
-
-    def erase_run(self, token, typed, cb, allow_services=False, unfreeze=False):
-        args = ["__erase-run", token, "--typed", typed]
-        if allow_services:
-            args.append("--allow-services")
-        if unfreeze:
-            args.append("--unfreeze")
-        self.run(args, cb, operation=True)
 
 
 def write_items(items):
     """NUL-separated, private, for `copy --items-from`. Names as raw bytes: a name
     from an old disk may not be valid UTF-8, and it must reach rsync as it is."""
-    folder = os.path.join(GLib.get_user_runtime_dir(), "big-mount")
+    folder = os.path.join(GLib.get_user_runtime_dir(), "big-storage-rescue")
     os.makedirs(folder, mode=0o700, exist_ok=True)
     fd, path = tempfile.mkstemp(prefix="items-", dir=folder)
     try:

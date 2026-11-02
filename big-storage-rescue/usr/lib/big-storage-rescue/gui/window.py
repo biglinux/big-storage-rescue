@@ -11,7 +11,6 @@ from .models import Device, Job, find_device
 from .monitor import DeviceMonitor
 from .pages.device import DevicePage
 from .pages.job import JobPage, JobsPage
-from .pages.maintenance import MaintenancePage
 from .pages.overview import OverviewPage
 from .pages.rescue import RescueWizard
 from .pages.results import ResultsPage
@@ -29,9 +28,9 @@ class Route(Gtk.ListBoxRow):
 
 class MainWindow(Adw.ApplicationWindow):
     def __init__(self, app, engine=None):
-        super().__init__(application=app, title=_("Big-Mount"), default_width=1080, default_height=720)
+        super().__init__(application=app, title=_("Big Storage Rescue"), default_width=1080, default_height=720)
         self.set_size_request(360, 420)
-        self.set_icon_name("big-mount")
+        self.set_icon_name("big-storage-rescue")
         self.engine = engine or Engine()
         self.devices = []
         self.jobs = []
@@ -44,16 +43,14 @@ class MainWindow(Adw.ApplicationWindow):
         self._jobs_timer = 0
         self._jobs_busy = False
         self._side_signature = None
-        self.erase_running = False
         self._closing = False
-        self._inhibit = 0
         self.wizard = None
 
         self.toasts = Adw.ToastOverlay()
         self.nav = Adw.NavigationView()
         self.split = Adw.NavigationSplitView(min_sidebar_width=240, max_sidebar_width=320, sidebar_width_fraction=0.26)
         self.split.set_sidebar(self._build_sidebar())
-        self.split.set_content(Adw.NavigationPage(title=_("Big-Mount"), child=self.nav))
+        self.split.set_content(Adw.NavigationPage(title=_("Big Storage Rescue"), child=self.nav))
         self.toasts.set_child(self.split)
         self.set_content(self.toasts)
 
@@ -86,10 +83,10 @@ class MainWindow(Adw.ApplicationWindow):
         menu_button.update_property([Gtk.AccessibleProperty.LABEL], [_("Main menu")])
         header = Adw.HeaderBar()
         header.pack_end(menu_button)
-        header.set_title_widget(Adw.WindowTitle(title=_("Big-Mount")))
+        header.set_title_widget(Adw.WindowTitle(title=_("Big Storage Rescue")))
         tool = Adw.ToolbarView(content=scroller)
         tool.add_top_bar(header)
-        return Adw.NavigationPage(title=_("Big-Mount"), child=tool)
+        return Adw.NavigationPage(title=_("Big Storage Rescue"), child=tool)
 
     def _menu(self):
         from gi.repository import Gio
@@ -98,7 +95,7 @@ class MainWindow(Adw.ApplicationWindow):
         menu.append(_("Warn when a device cannot be written to"), "app.notifier")
         about = Gio.Menu()
         about.append(_("Welcome screen"), "app.welcome")
-        about.append(_("About Big-Mount"), "app.about")
+        about.append(_("About Big Storage Rescue"), "app.about")
         menu.append_section(None, about)
         return menu
 
@@ -316,12 +313,17 @@ class MainWindow(Adw.ApplicationWindow):
                 self.show_overview()
             else:
                 self.show_overview()
+                if section == "rescue":
+                    self.open_wizard()
             return
 
         def resolved(res):
             data = res.data or {}
             dev = self.device_by_name(data.get("disk", "")) if res.ok else None
-            if dev:
+            if dev and section == "rescue":
+                self.show_device(dev.stable_id)
+                self.open_wizard(dev)
+            elif dev:
                 self.show_device(dev.stable_id, section)
             else:
                 self.notify_text(data.get("error_text") or _("This device was not found."))
@@ -336,40 +338,24 @@ class MainWindow(Adw.ApplicationWindow):
         self.split.set_show_content(True)
         self._mark_sidebar()
 
-    def _erase_holds(self):
-        """Secure Erase keeps its page in front until it ends: its outcome must be seen."""
-        if not self.erase_running:
-            return False
-        self.notify_text(_("A drive is being erased"))
-        self._mark_sidebar()
-        return True
-
     def show_overview(self):
-        if self._erase_holds():
-            return
         self.wizard = None
         self.selected_id = None
         self._go(self.overview)
 
     def show_device(self, stable_id, section=None):
-        if self._erase_holds():
-            return
         self.wizard = None
         self.selected_id = stable_id
         self.device_page.show(stable_id, section)
         self._go(self.device_page)
 
     def show_jobs(self):
-        if self._erase_holds():
-            return
         self.wizard = None
         self.refresh_jobs()
         self._go(self.jobs_page)
 
     def show_job(self, job_id):
         """From the side: the page of that job, on top of Home."""
-        if self._erase_holds():
-            return
         self.wizard = None
         self.selected_id = None
         self.nav.replace([self.overview, JobPage(self, job_id)])
@@ -398,9 +384,6 @@ class MainWindow(Adw.ApplicationWindow):
     def open_results(self, job_id):
         self.nav.push(ResultsPage(self, job_id))
 
-    def open_maintenance(self, device):
-        self.nav.push(MaintenancePage(self, device))
-
     def show_about(self):
         create_about().present(self)
 
@@ -410,24 +393,7 @@ class MainWindow(Adw.ApplicationWindow):
     def notify_text(self, text):
         w.toast(self.toasts, text)
 
-    # ----- Secure Erase keeps the computer awake, and the window open
-    def set_erase_running(self, running, allow_suspend=False):
-        app = self.get_application()
-        self.erase_running = running
-        if running and app:
-            flags = Gtk.ApplicationInhibitFlags.LOGOUT
-            if not allow_suspend:
-                flags |= Gtk.ApplicationInhibitFlags.SUSPEND
-            self._inhibit = app.inhibit(self, flags, _("A drive is being erased"))
-        elif self._inhibit and app:
-            app.uninhibit(self._inhibit)
-            self._inhibit = 0
-
     def _close_request(self, _window):
-        if self.erase_running:
-            w.alert(self, _("A drive is being erased"),
-                    _("Do not turn off the computer or disconnect the drive. This window can be closed when it ends."))
-            return True
         if self.engine.operations:
             w.alert(self, _("Wait a moment"),
                     _("An operation on a drive is still running. This window can be closed when it ends."))
@@ -439,7 +405,7 @@ class MainWindow(Adw.ApplicationWindow):
                     self._closing = True
                     self.close()
             w.alert(self, _("It keeps working"),
-                    _("The work continues in the background, also with this window closed. Open Big-Mount again to follow it."),
+                    _("The work continues in the background, also with this window closed. Open Big Storage Rescue again to follow it."),
                     responses=(("stay", _("Stay here")), ("close", _("Close the window"))),
                     default="stay", close="stay", callback=answered)
             return True

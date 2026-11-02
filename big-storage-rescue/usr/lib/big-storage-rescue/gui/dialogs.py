@@ -73,7 +73,7 @@ def _heading(args, doc):
     """What the dialog is about: its first heading, or the title it was given."""
     if doc and doc[0][0] == "h":
         return doc[0][1], doc[1:]
-    return args.title or "Big-Mount", doc
+    return args.title or "Big Storage Rescue", doc
 
 
 def _scrolled(child, wide):

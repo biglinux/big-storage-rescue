@@ -1177,7 +1177,7 @@ class PartitionsPage(Adw.NavigationPage):
             group.add_row(w.row(title, f"{p.get('type', '')} · {human_size(p.get('size'))} · {p.get('start', '')}"))
         if found:
             self.results.append(group)
-            self.results.append(w.label(_("Big-Mount does not rewrite partition tables, on purpose: a mistake there can lose everything. A disk image, or a search by content, recovers files without that risk."), css=("dim-label",)))
+            self.results.append(w.label(_("Big Storage Rescue does not rewrite partition tables, on purpose: a mistake there can lose everything. A disk image, or a search by content, recovers files without that risk."), css=("dim-label",)))
         elif search:
             self.results.append(w.label(_("The analysis did not recognize any partition. That does not prove there is no data: a search by content may still find files.")))
         else:
