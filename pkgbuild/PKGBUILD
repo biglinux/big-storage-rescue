@@ -1,34 +1,35 @@
 # Maintainer: Bruno Goncalves <bigbruno@gmail.com>
+# Maintainer: Rafael Ruscher <rruscher@gmail.com>
 
-pkgname=big-mount
+pkgname=big-storage-rescue
 # The build date and time, as every BigLinux package: each build of the build
 # service is newer than the last. The commit it was built from goes into
-# /usr/lib/big-mount/version, shown by "bigmount --version".
+# /usr/lib/big-storage-rescue/version, shown by "big-storage-rescue --version".
 pkgver=$(date +%y.%m.%d)
 pkgrel=$(date +%H%M)
 arch=('any')
-license=('GPL')
-# The boot path needs only bash, util-linux, udisks2 and ntfs-3g. The rest is the
-# desktop side: python, python-gobject, gtk4 and libadwaita (>= 1.5) draw the
-# application of --gui-drive and every dialog (--gui, --gui-remove, the notifier),
-# and are loaded only by them; libnotify sends the notifications; pkexec (polkit)
-# starts the helper; rsync does every copy and smartctl reads the health of a drive.
-# Commands of the base system (coreutils, findutils, gawk, systemd) are not listed.
-depends=('bash' 'util-linux' 'udisks2' 'polkit' 'ntfs-3g' 'lsof' 'rsync' 'smartmontools'
-         'python' 'python-gobject' 'gtk4' 'libadwaita>=1.5' 'libnotify')
+license=('GPL-3.0-or-later')
+# Everything runs as the user: bash and util-linux (lsblk, findmnt, flock,
+# setpriv), udisks2 mounts, unmounts and powers drives off, polkit (pkexec)
+# starts the two small helpers, lsof finds what keeps a device busy, rsync
+# does every copy and smartctl reads the health of a drive. python,
+# python-gobject, gtk4 and libadwaita draw the application and the dialogs;
+# libnotify sends the notifications. Commands of the base system (coreutils,
+# findutils, gawk, procps-ng, systemd) are not listed.
+# libadwaita has an epoch: without it, ">=1.5" would accept any version.
+depends=('bash' 'util-linux' 'udisks2' 'polkit' 'lsof' 'rsync' 'smartmontools'
+         'python' 'python-gobject' 'gtk4' 'libadwaita>=1:1.5' 'libnotify')
 optdepends=('ddrescue: disk images of a failing drive, before a deep analysis'
-            'testdisk: find lost partitions, search files by content (PhotoRec)')
-provides=('big-mount-git')
-conflicts=('big-mount-git')
-replaces=('big-mount-git')
-backup=('etc/big-mount.conf')
-install=big-mount.install
-# The official repository; work done in forks comes in by pull request
-url="https://github.com/biglinux/big-mount"
-pkgdesc="Mounts internal partitions at boot; diagnoses drives, rescues files from them and removes them safely"
-source=("git+https://github.com/biglinux/big-mount.git")
+            'testdisk: find lost partitions, search files by content (PhotoRec)'
+            'big-mount: mounts the internal partitions at boot')
+# A separate program from big-mount: both can be installed, neither needs the
+# other, and no file of one belongs to the other.
+url="https://github.com/biglinux/big-storage-rescue"
+pkgdesc="Diagnoses storage devices, explains why they cannot be written to or removed, and rescues files from failing drives"
+source=("git+https://github.com/biglinux/big-storage-rescue.git")
 makedepends=("git")
 md5sums=(SKIP)
+install=big-storage-rescue.install
 
 package() {
     # Verify default folder
@@ -38,27 +39,17 @@ package() {
         InternalDir="${srcdir}/${pkgname}"
     fi
 
-    # Copy files
-    if [ -d "${InternalDir}/usr" ]; then
-        cp -r "${InternalDir}/usr" "${pkgdir}/"
-    fi
+    # Only /usr: the application keeps no configuration in /etc
+    cp -r "${InternalDir}/usr" "${pkgdir}/"
 
-    if [ -d "${InternalDir}/etc" ]; then
-        cp -r "${InternalDir}/etc" "${pkgdir}/"
-    fi
-
-    if [ -d "${InternalDir}/opt" ]; then
-        cp -r "${InternalDir}/opt" "${pkgdir}/"
-    fi
-
-    # The revision this package was built from (bigmount --version, --doctor)
+    # The revision this package was built from (--version, --doctor)
     local rev
     if rev="$(git -C "${srcdir}/${pkgname}" rev-parse HEAD 2>/dev/null)"; then
         {
             printf 'revision=%s\n' "$rev"
             printf 'date=%s\n' "$(TZ=UTC git -C "${srcdir}/${pkgname}" log -1 --date=format-local:%Y-%m-%dT%H:%M:%SZ --format=%cd)"
             printf 'source=%s\n' "$url"
-        } > "${pkgdir}/usr/lib/big-mount/version"
-        chmod 644 "${pkgdir}/usr/lib/big-mount/version"
+        } > "${pkgdir}/usr/lib/big-storage-rescue/version"
+        chmod 644 "${pkgdir}/usr/lib/big-storage-rescue/version"
     fi
 }

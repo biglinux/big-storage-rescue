@@ -4,7 +4,7 @@ name: Tests
 # Linux (the base of BigLinux): the generated .desktop/polkit files depend on
 # the gettext version, so the same tools as on the users' systems are used.
 # Nothing here touches a disk: tests/integration.sh and tests/drive-integration.sh
-# need a local session with UDisks2 and are run by hand (see docs/09-testing.md).
+# need a local session with UDisks2 and are run by hand (see docs/15-testing.md).
 on:
   pull_request:
   workflow_dispatch:
@@ -31,30 +31,30 @@ jobs:
 
       - name: Bash syntax
         run: |
-          for f in big-mount/usr/bin/bigmount big-mount/usr/lib/big-mount/*.sh \
-                   big-mount/usr/lib/big-mount/bigmount-holders big-mount/usr/lib/big-mount/bigmount-drive-helper \
+          for f in big-storage-rescue/usr/bin/big-storage-rescue big-storage-rescue/usr/lib/big-storage-rescue/*.sh \
+                   big-storage-rescue/usr/lib/big-storage-rescue/bsr-holders big-storage-rescue/usr/lib/big-storage-rescue/bsr-drive-helper \
                    tests/*.sh locale/*.sh \
-                   pkgbuild/PKGBUILD pkgbuild/big-mount.install; do
+                   pkgbuild/PKGBUILD pkgbuild/big-storage-rescue.install; do
             bash -n "$f"
           done
 
       - name: ShellCheck
         shell: bash
         run: |
-          shopt -s extglob
-          shellcheck -x -P big-mount/usr/lib/big-mount:tests \
-            big-mount/usr/bin/bigmount big-mount/usr/lib/big-mount/*.sh \
-            big-mount/usr/lib/big-mount/bigmount-holders big-mount/usr/lib/big-mount/bigmount-drive-helper \
-            locale/*.sh tests/stubs/* tests/!(bigmount.old).sh
+          shellcheck -x -P big-storage-rescue/usr/lib/big-storage-rescue:tests \
+            big-storage-rescue/usr/bin/big-storage-rescue big-storage-rescue/usr/lib/big-storage-rescue/*.sh \
+            big-storage-rescue/usr/lib/big-storage-rescue/bsr-holders big-storage-rescue/usr/lib/big-storage-rescue/bsr-drive-helper \
+            locale/*.sh tests/stubs/* tests/*.sh
 
-      - name: Boot path (stubbed devices)
-        run: runuser -u ci -- bash tests/run-tests.sh new
 
       - name: Library
         run: runuser -u ci -- bash tests/lib-tests.sh
 
       - name: Drive manager (stubbed devices)
         run: runuser -u ci -- bash tests/drive-tests.sh
+
+      - name: State of Big-Mount 2.x (scratch folders, a real resume)
+        run: runuser -u ci -- bash tests/migrate-tests.sh
 
       - name: The application (GTK 4, on a private Broadway display)
         run: runuser -u ci -- python3 tests/gui-tests.py
