@@ -1,4 +1,0 @@
-#!/bin/bash
-: "${TESTROOT:?stub called outside the test harness}"
-echo "ntfsfix $*" >> "$TESTROOT/ntfsfix.log"
-exit 0
