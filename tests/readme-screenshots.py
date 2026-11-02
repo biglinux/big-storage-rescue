@@ -2,7 +2,7 @@
 """The pictures of the application in the README, always reproducible.
 
 This is the real window, drawn off screen, in English. Its data comes from a
-stand-in for `bigmount` that answers with sample drives, so a picture never shows
+stand-in for `big-storage-rescue` that answers with sample drives, so a picture never shows
 the disks, labels or files of whoever runs this. No disk is involved, and nothing
 appears on the screen.
 
@@ -172,11 +172,6 @@ shot(win, OUT / f"app-results{suffix}.png")
 
 win.show_overview()
 pump(timeout=0.1)
-fix("erase-check", {"device": "/dev/sde", "name": "sde (Samsung SSD 860, 500 GB)", "confirm_name": "sde", "serial": "X", "why": "", "why_text": "", "detail": "", "table": "gpt", "token": "", "eligible": True, "frozen": True, "diskseq": 9, "erase_minutes": 4, "size": 500 * GB,
-                    "partitions": [{"device": "/dev/sde1", "label": "DATA", "fstype": "ext4", "mountpoint": "", "size": 500 * GB}]})
-win.open_maintenance(win.device_by_id(BK["stable_id"]))
-pump(timeout=0.5)
-shot(win, OUT / f"app-erase{suffix}.png")
 
 win.show_overview()
 pump(timeout=0.2)
@@ -191,7 +186,7 @@ shot(win, OUT / f"app-about{suffix}.png")
 win.get_visible_dialog().force_close()
 pump(timeout=0.3)
 
-# The dialogs of bigmount --gui and --gui-remove, as dialog.py draws them
+# The dialogs of big-storage-rescue --gui-diagnose and --gui-remove, as dialog.py draws them
 import dialog as shell_dialog  # noqa: E402
 from gui import dialogs as shell_dialogs  # noqa: E402
 

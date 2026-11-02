@@ -1,21 +1,21 @@
 #!/bin/bash
 # shellcheck disable=SC2016  # bash -c '...$1' snippets
-# Reproducible measurements of the session tools (not the boot path, see
-# bench.sh): diagnosis time, latency from a mount to the notification, and
+# Reproducible measurements of the session tools (the boot path is measured
+# in Big-Mount, tests/bench.sh): diagnosis time, latency from a mount to the notification, and
 # idle cost of the notifier. Uses disposable images attached through UDisks2,
 # exactly like tests/integration.sh; never touches a real disk.
 #
-# Usage: tests/measure-session.sh [BIGMOUNT] [RUNS]
+# Usage: tests/measure-session.sh [BSR_BIN] [RUNS]
 
 set -u
 export LC_ALL=C.UTF-8
 HERE="$(cd "$(dirname "$0")" && pwd)"
-BM="$(readlink -f "${1:-$HERE/../big-mount/usr/bin/bigmount}")"
+BM="$(readlink -f "${1:-$HERE/../big-storage-rescue/usr/bin/big-storage-rescue}")"
 RUNS="${2:-5}"
 [ "$EUID" -ne 0 ] || { echo "do not run as root" >&2; exit 2; }
 
-IMG="$(mktemp -d "${TMPDIR:-/tmp}/bigmount-measure.XXXXXX")"
-NOTE="$(mktemp -d "${TMPDIR:-/tmp}/bigmount-measure-note.XXXXXX")"
+IMG="$(mktemp -d "${TMPDIR:-/tmp}/big-storage-rescue-measure.XXXXXX")"
+NOTE="$(mktemp -d "${TMPDIR:-/tmp}/big-storage-rescue-measure-note.XXXXXX")"
 LOOPS=() PIDS=()
 cleanup() {
     local p d
@@ -44,7 +44,7 @@ attach "$IMG/rw.img" || { echo "cannot set up loop devices (no active session?)"
 RW="$DEV"; mountdev "$RW"
 attach "$IMG/ro.img" ro; RO="$DEV"; mountdev "$RO"
 
-echo "bigmount: $BM"
+echo "big-storage-rescue: $BM"
 for dev in "$RW" "$RO"; do
     t=()
     for ((i = 0; i < RUNS; i++)); do

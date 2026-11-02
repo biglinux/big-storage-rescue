@@ -9,7 +9,7 @@
 # password) and runs as a normal user. Never run it as root.
 #
 # Usage: tests/integration.sh
-#        BM=/usr/bin/bigmount tests/integration.sh   (test the installed package)
+#        BM=/usr/bin/big-storage-rescue tests/integration.sh   (test the installed package)
 
 set -u
 # English messages, but UTF-8 so that accented labels are printed as they are
@@ -17,7 +17,7 @@ export LC_ALL=C.UTF-8
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO="$(dirname "$HERE")"
-BM="${BM:-$REPO/big-mount/usr/bin/bigmount}"
+BM="${BM:-$REPO/big-storage-rescue/usr/bin/big-storage-rescue}"
 
 if [ "$EUID" -eq 0 ]; then
     echo "integration: do not run as root" >&2
@@ -32,7 +32,7 @@ check() { local msg="$1"; shift; if "$@"; then ok "$msg"; else bad "$msg"; fi; }
 begin() { echo "— $1"; }
 
 # Images live in /tmp (no exec needed); helper binaries need an exec mount
-IMG="$(mktemp -d "${TMPDIR:-/tmp}/bigmount-integ.XXXXXX")"
+IMG="$(mktemp -d "${TMPDIR:-/tmp}/big-storage-rescue-integ.XXXXXX")"
 BIN="$(mktemp -d "$HERE/.integ.XXXXXX")"
 LOOPS=() PIDS=()
 
@@ -74,8 +74,8 @@ mountdev() {
     [ -n "$MP" ]
 }
 img() { rm -f "$IMG/$1"; truncate -s "${2:-64M}" "$IMG/$1"; }
-diag() { BM_OUT="$("$BM" --diagnose "$1" 2>&1)"; BM_RC=$?; }
-has() { grep -qF -- "$1" <<< "$BM_OUT"; }
+diag() { BSR_OUT="$("$BM" --diagnose "$1" 2>&1)"; BSR_RC=$?; }
+has() { grep -qF -- "$1" <<< "$BSR_OUT"; }
 mounted() { findmnt -n --source "$1" >/dev/null 2>&1; }
 bg() { "$@" & PIDS+=("$!"); LASTPID=$!; }
 
@@ -93,7 +93,7 @@ JOURNAL=0
 
 echo "========================================="
 echo "Integration tests (real UDisks2 mounts on loop devices)"
-echo "bigmount: $BM"
+echo "big-storage-rescue: $BM"
 echo "========================================="
 
 # ----- A..G: why can't I write? ----------------------------------------------
@@ -101,7 +101,7 @@ begin "healthy ext4 owned by the user"
 img ok.img; mkfs.ext4 -q -F -L BMOK -E root_owner="$(id -u):$(id -g)" "$IMG/ok.img"
 attach "$IMG/ok.img" && mountdev "$DEV"
 diag "$MP"
-check "diagnosis: ok (exit 0)" test "$BM_RC" -eq 0
+check "diagnosis: ok (exit 0)" test "$BSR_RC" -eq 0
 check "reports 'Device ready'" has "Device ready"
 OK_DEV="$DEV" OK_MP="$MP"
 
@@ -122,7 +122,7 @@ if [ -e "$MP/etc/os-release" ]; then
     diag "$DEV"
     check "cause: permission" has "diagnosis:   permission (root directory root:root 755)"
     check "explains it contains an operating system" has "contains an operating system"
-    check "take ownership NOT offered" bash -c '! grep -q "fix=take-ownership" <<< "$1"' _ "$BM_OUT"
+    check "take ownership NOT offered" bash -c '! grep -q "fix=take-ownership" <<< "$1"' _ "$BSR_OUT"
 else
     skip "operating system partition" "mkfs.ext4 -d unsupported"
 fi
@@ -134,7 +134,7 @@ WP_DEV="$DEV"
 diag "$DEV"
 check "cause: hw-readonly" has "diagnosis:   hw-readonly"
 check "explains the lock switch" has "lock switch"
-check "no fix offered" bash -c '! grep -q "fix=" <<< "$1"' _ "$BM_OUT"
+check "no fix offered" bash -c '! grep -q "fix=" <<< "$1"' _ "$BSR_OUT"
 
 begin "A: healthy filesystem mounted read-only"
 img ro.img; mkfs.ext4 -q -F -L BMRO -E root_owner="$(id -u):$(id -g)" "$IMG/ro.img"
@@ -150,14 +150,14 @@ RO_DEV="$DEV"
 
 begin "A: the remount correction itself"
 (
-    BIGMOUNT_LIB="$(dirname "$(readlink -f "$BM")")/../lib/big-mount"
-    # The library of whichever bigmount is being tested
+    BSR_LIB="$(dirname "$(readlink -f "$BM")")/../lib/big-storage-rescue"
+    # The library of whichever big-storage-rescue is being tested
     # shellcheck source=/dev/null
-    . "$BIGMOUNT_LIB/lib.sh"
-    bm_unmount_all "$RO_DEV" && bm_udisks mount -b "$RO_DEV" >/dev/null
+    . "$BSR_LIB/lib.sh"
+    bsr_unmount_all "$RO_DEV" && bsr_udisks mount -b "$RO_DEV" >/dev/null
 )
 diag "$RO_DEV"
-check "after remount the device is writable" test "$BM_RC" -eq 0
+check "after remount the device is writable" test "$BSR_RC" -eq 0
 
 begin "C: ext4 with recorded errors"
 img err.img 32M; mkfs.ext4 -q -F -L BMERR -E root_owner="$(id -u):$(id -g)" "$IMG/err.img"
@@ -170,7 +170,7 @@ udisksctl unmount --no-user-interaction -b "$DEV" >/dev/null 2>&1
 mountdev "$DEV" ro
 diag "$DEV"
 check "read-only + errors -> cause fs-errors" has "diagnosis:   fs-errors"
-check "never offers to remount a damaged filesystem" bash -c '! grep -q "fix=remount" <<< "$1"' _ "$BM_OUT"
+check "never offers to remount a damaged filesystem" bash -c '! grep -q "fix=remount" <<< "$1"' _ "$BSR_OUT"
 
 begin "D: hibernated NTFS (Windows Fast Startup)"
 img hib.img; mkntfs -q -F -f -L BMHIBER "$IMG/hib.img" >/dev/null 2>&1
@@ -185,7 +185,7 @@ else
         diag "$DEV"
         check "cause: ntfs-unsafe" has "diagnosis:   ntfs-unsafe"
         check "explains Fast Startup" has "Fast Startup"
-        check "no repair offered (needs Windows)" bash -c '! grep -q "fix=" <<< "$1"' _ "$BM_OUT"
+        check "no repair offered (needs Windows)" bash -c '! grep -q "fix=" <<< "$1"' _ "$BSR_OUT"
         check "image still hibernated: nothing was written" bash -c '! ntfs-3g.probe --readwrite "$1" >/dev/null 2>&1' _ "$IMG/hib.img"
     else
         skip "hibernated NTFS diagnosis" "read-only mount failed"
@@ -196,8 +196,8 @@ begin "NTFS (FUSE): unmount returns only after the driver finished writing"
 img fuse.img 96M; mkntfs -q -F -f -L BMFUSE "$IMG/fuse.img" >/dev/null 2>&1
 if attach "$IMG/fuse.img" && mountdev "$DEV" && [ "$(findmnt -n -o FSTYPE --source "$DEV")" = fuseblk ]; then
     head -c 48M /dev/urandom > "$MP/data.bin"
-    BM_OUT="$("$BM" --unmount "$DEV" 2>&1)"; BM_RC=$?
-    check "--unmount exits 0" test "$BM_RC" -eq 0
+    BSR_OUT="$("$BM" --unmount "$DEV" 2>&1)"; BSR_RC=$?
+    check "--unmount exits 0" test "$BSR_RC" -eq 0
     check "  ... and no FUSE daemon of the device is left when it returns" \
         bash -c '! pgrep -f -- "ntfs[^ ]* $1 " >/dev/null' _ "$DEV"
     check "the volume is clean afterwards (nothing left half written)" ntfs-3g.probe --readwrite "$IMG/fuse.img"
@@ -208,11 +208,11 @@ if attach "$IMG/fuse.img" && mountdev "$DEV" && [ "$(findmnt -n -o FSTYPE --sour
     if mountdev "$DEV" && mkdir -p "$MP/vol" && unshare -r -m --propagation private true 2>/dev/null; then
         bg unshare -r -m --propagation private bash -c 'mount --bind "$1" "$2" && sleep 4; true' _ "$MP/vol" "$IMG/bindto"
         sleep 0.5
-        BM_OUT="$("$BM" --busy "$DEV" 2>&1)"
+        BSR_OUT="$("$BM" --busy "$DEV" 2>&1)"
         check "--busy shows the bind mount of the other namespace" has "Also mounted inside an isolated environment"
-        check "  ... and only that one (not plain copies)" test "$(grep -c "isolated environment" <<< "$BM_OUT")" -eq 1
-        BM_OUT="$("$BM" --unmount "$DEV" 2>&1)"; BM_RC=$?
-        check "--unmount waits until it is gone (exit 0)" test "$BM_RC" -eq 0
+        check "  ... and only that one (not plain copies)" test "$(grep -c "isolated environment" <<< "$BSR_OUT")" -eq 1
+        BSR_OUT="$("$BM" --unmount "$DEV" 2>&1)"; BSR_RC=$?
+        check "--unmount waits until it is gone (exit 0)" test "$BSR_RC" -eq 0
         check "  ... the mount and the FUSE daemon are gone when it returns" \
             bash -c '! grep -qsF " $1 " /proc/[0-9]*/mountinfo && ! pgrep -f -- "ntfs[^ ]* $1 " >/dev/null' _ "$DEV"
     else
@@ -226,7 +226,7 @@ begin "a folder is judged where it is, not at the root of its partition"
 diag /usr/share
 check "a system folder owned by root -> permission-folder" has "diagnosis:   permission-folder"
 check "  ... names the owner" has "This folder belongs to root"
-check "  ... and offers no fix" bash -c '! grep -q "fix=" <<< "$1"' _ "$BM_OUT"
+check "  ... and offers no fix" bash -c '! grep -q "fix=" <<< "$1"' _ "$BSR_OUT"
 
 begin "G: filesystem without write support (ISO 9660 or SquashFS)"
 mkdir -p "$IMG/isodir"; echo data > "$IMG/isodir/file.txt"
@@ -247,7 +247,7 @@ for t in vfat exfat; do
     if [ "$t" = vfat ]; then mkfs.vfat -n BMFAT "$IMG/$t.img" >/dev/null; else mkfs.exfat -L BMEXFAT "$IMG/$t.img" >/dev/null; fi
     attach "$IMG/$t.img" && mountdev "$DEV"
     diag "$DEV"
-    check "$t: writable" test "$BM_RC" -eq 0
+    check "$t: writable" test "$BSR_RC" -eq 0
 done
 
 # ----- busy device -------------------------------------------------------------
@@ -265,24 +265,24 @@ bg bash -c 'exec 4>> "$1/b.txt"; exec sleep 300' _ "$BUSY_MP"; P_WRITE=$LASTPID
 cp /usr/bin/tail "$BIN/kioworker"
 bg bash -c 'cd "$1" && exec "$2" -f thumbnail' _ "$BUSY_MP" "$BIN/kioworker"; P_KIO=$LASTPID
 sleep 1
-BM_OUT="$("$BM" --busy "$BUSY_MP" 2>&1)"; BM_RC=$?
-check "--busy exits 3 (busy)" test "$BM_RC" -eq 3
+BSR_OUT="$("$BM" --busy "$BUSY_MP" 2>&1)"; BSR_RC=$?
+check "--busy exits 3 (busy)" test "$BSR_RC" -eq 3
 check "lists the shell with its folder on the device" has "Command shell (terminal)  |  bash  |  $P_SHELL  |  Current folder is on the device"
 check "lists the reader" has "sleep  |  $P_READ  |  Open for reading"
 check "lists the writer as writing (not as a transfer)" has "sleep  |  $P_WRITE  |  Open for writing"
 check "recognises a kioworker by its protocol" has "KDE thumbnail generator  |  kioworker  |  $P_KIO"
-check "no invented progress or speed" bash -c '! grep -qiE "[0-9]+ ?%|MB/s|remaining" <<< "$1"' _ "$BM_OUT"
+check "no invented progress or speed" bash -c '! grep -qiE "[0-9]+ ?%|MB/s|remaining" <<< "$1"' _ "$BSR_OUT"
 
 begin "busy: unmount is refused and nothing is forced"
-BM_OUT="$("$BM" --unmount "$BUSY_DEV" 2>&1)"; BM_RC=$?
-check "--unmount exits 3" test "$BM_RC" -eq 3
+BSR_OUT="$("$BM" --unmount "$BUSY_DEV" 2>&1)"; BSR_RC=$?
+check "--unmount exits 3" test "$BSR_RC" -eq 3
 check "device still mounted" mounted "$BUSY_DEV"
-check "no success message" bash -c '! grep -qE "Unmounted|removed safely" <<< "$1"' _ "$BM_OUT"
+check "no success message" bash -c '! grep -qE "Unmounted|removed safely" <<< "$1"' _ "$BSR_OUT"
 check "all holders still alive" kill -0 "$P_SHELL" "$P_READ" "$P_WRITE" "$P_KIO"
 
 begin "busy: closing programs only closes what is safe"
-BM_OUT="$("$BM" --unmount "$BUSY_DEV" --close-apps --assume-yes 2>&1)"; BM_RC=$?
-check "still busy because of the writer (exit 3)" test "$BM_RC" -eq 3
+BSR_OUT="$("$BM" --unmount "$BUSY_DEV" --close-apps --assume-yes 2>&1)"; BSR_RC=$?
+check "still busy because of the writer (exit 3)" test "$BSR_RC" -eq 3
 check "the writer was NOT closed" kill -0 "$P_WRITE"
 check "the shell was NOT closed (user must cd)" kill -0 "$P_SHELL"
 check "the reader was closed" bash -c '! kill -0 "$1" 2>/dev/null' _ "$P_READ"
@@ -292,8 +292,8 @@ check "device still mounted" mounted "$BUSY_DEV"
 
 begin "busy -> released -> unmounted"
 kill "$P_WRITE" "$P_SHELL" 2>/dev/null; sleep 0.5
-BM_OUT="$("$BM" --unmount "$BUSY_DEV" 2>&1)"; BM_RC=$?
-check "--unmount exits 0" test "$BM_RC" -eq 0
+BSR_OUT="$("$BM" --unmount "$BUSY_DEV" 2>&1)"; BSR_RC=$?
+check "--unmount exits 0" test "$BSR_RC" -eq 0
 check "really unmounted" bash -c '! findmnt -n --source "$1" >/dev/null' _ "$BUSY_DEV"
 check "success reported only now" has "Unmounted."
 
@@ -301,22 +301,22 @@ begin "other holders: a second mount and a nested mount"
 img outer.img; mkfs.ext4 -q -F -L BMOUTER -E root_owner="$(id -u):$(id -g)" "$IMG/outer.img"
 attach "$IMG/outer.img" && mountdev "$DEV"
 OUT_DEV="$DEV"
-BM_OUT="$("$BM" --busy "$OUT_DEV" 2>&1)"; BM_RC=$?
-check "--busy on an unused device exits 0" test "$BM_RC" -eq 0
-check "  ... and says none of your programs uses it (not 'still in use')" bash -c 'grep -q "None of your programs is using BMOUTER" <<< "$1" && ! grep -q "still in use" <<< "$1"' _ "$BM_OUT"
-check "  ... without claiming that nothing in the system uses it" bash -c '! grep -qi "nothing in the system" <<< "$1"' _ "$BM_OUT"
+BSR_OUT="$("$BM" --busy "$OUT_DEV" 2>&1)"; BSR_RC=$?
+check "--busy on an unused device exits 0" test "$BSR_RC" -eq 0
+check "  ... and says none of your programs uses it (not 'still in use')" bash -c 'grep -q "None of your programs is using BMOUTER" <<< "$1" && ! grep -q "still in use" <<< "$1"' _ "$BSR_OUT"
+check "  ... without claiming that nothing in the system uses it" bash -c '! grep -qi "nothing in the system" <<< "$1"' _ "$BSR_OUT"
 skip "second/nested mount detection" "needs root to create the extra mount (covered by tests/lib-tests.sh)"
 
 begin "only the requested filesystem is unmounted"
-BM_OUT="$("$BM" --unmount "$OUT_DEV" 2>&1)"; BM_RC=$?
-check "--unmount exits 0" test "$BM_RC" -eq 0
+BSR_OUT="$("$BM" --unmount "$OUT_DEV" 2>&1)"; BSR_RC=$?
+check "--unmount exits 0" test "$BSR_RC" -eq 0
 check "the other device stays mounted" mounted "$OK_DEV"
 
 begin "safe removal of a loop 'drive' (nothing to power off)"
-BM_OUT="$("$BM" --safe-remove "$OK_MP" 2>&1)"; BM_RC=$?
-check "--safe-remove exits 0" test "$BM_RC" -eq 0
+BSR_OUT="$("$BM" --safe-remove "$OK_MP" 2>&1)"; BSR_RC=$?
+check "--safe-remove exits 0" test "$BSR_RC" -eq 0
 check "really unmounted" bash -c '! findmnt -n --source "$1" >/dev/null' _ "$OK_DEV"
-check "does not claim a power-off" bash -c '! grep -q "removed safely" <<< "$1"' _ "$BM_OUT"
+check "does not claim a power-off" bash -c '! grep -q "removed safely" <<< "$1"' _ "$BSR_OUT"
 check "reports the unmount" has "Unmounted."
 
 begin "drive with two partitions (GPT: ext4 + FAT)"
@@ -330,14 +330,14 @@ attach "$IMG/disk.img"; DISK="$DEV"
 if mountdev "${DISK}p1" && P1_MP="$MP" && mountdev "${DISK}p2"; then
     P2_MP="$MP"; echo x > "$P2_MP/f"
     bg bash -c 'exec 3< "$1/f"; exec sleep 300' _ "$P2_MP"; P_P2=$LASTPID; sleep 0.5
-    BM_OUT="$("$BM" --safe-remove "$P1_MP" 2>&1)"; BM_RC=$?
-    check "one busy partition -> the whole removal stops (exit 3)" test "$BM_RC" -eq 3
+    BSR_OUT="$("$BM" --safe-remove "$P1_MP" 2>&1)"; BSR_RC=$?
+    check "one busy partition -> the whole removal stops (exit 3)" test "$BSR_RC" -eq 3
     check "the busy partition stays mounted" mounted "${DISK}p2"
-    check "no success message" bash -c '! grep -qE "Unmounted|removed safely" <<< "$1"' _ "$BM_OUT"
+    check "no success message" bash -c '! grep -qE "Unmounted|removed safely" <<< "$1"' _ "$BSR_OUT"
     check "names the program on the busy partition" has "$P_P2"
     kill "$P_P2" 2>/dev/null; sleep 0.5
-    BM_OUT="$("$BM" --safe-remove "$P1_MP" 2>&1)"; BM_RC=$?
-    check "released -> both partitions unmounted (exit 0)" test "$BM_RC" -eq 0
+    BSR_OUT="$("$BM" --safe-remove "$P1_MP" 2>&1)"; BSR_RC=$?
+    check "released -> both partitions unmounted (exit 0)" test "$BSR_RC" -eq 0
     check "partition 1 unmounted" bash -c '! findmnt -n --source "$1" >/dev/null' _ "${DISK}p1"
     check "partition 2 unmounted" bash -c '! findmnt -n --source "$1" >/dev/null' _ "${DISK}p2"
 else
@@ -348,26 +348,26 @@ begin "a device that disappears"
 img gone.img 32M; mkfs.ext4 -q -F -L BMGONE "$IMG/gone.img"
 attach "$IMG/gone.img"; GONE="$DEV"
 udisksctl loop-delete --no-user-interaction -b "$GONE" >/dev/null 2>&1; udevadm settle
-BM_OUT="$("$BM" --diagnose "$GONE" 2>&1)"; BM_RC=$?
-check "diagnosis of a vanished device fails cleanly (exit 1, message)" bash -c '[ "$1" -eq 1 ] && [ -n "$2" ] && ! grep -qiE "unbound|syntax|command not found" <<< "$2"' _ "$BM_RC" "$BM_OUT"
-BM_OUT="$("$BM" --safe-remove "$GONE" 2>&1)"; BM_RC=$?
-check "removal of a vanished device does not claim success" bash -c '[ "$1" -ne 0 ] && ! grep -qE "Unmounted|removed safely" <<< "$2"' _ "$BM_RC" "$BM_OUT"
-check "  ... and says it may have been disconnected" grep -q "disconnected" <<< "$BM_OUT"
+BSR_OUT="$("$BM" --diagnose "$GONE" 2>&1)"; BSR_RC=$?
+check "diagnosis of a vanished device fails cleanly (exit 1, message)" bash -c '[ "$1" -eq 1 ] && [ -n "$2" ] && ! grep -qiE "unbound|syntax|command not found" <<< "$2"' _ "$BSR_RC" "$BSR_OUT"
+BSR_OUT="$("$BM" --safe-remove "$GONE" 2>&1)"; BSR_RC=$?
+check "removal of a vanished device does not claim success" bash -c '[ "$1" -ne 0 ] && ! grep -qE "Unmounted|removed safely" <<< "$2"' _ "$BSR_RC" "$BSR_OUT"
+check "  ... and says it may have been disconnected" grep -q "disconnected" <<< "$BSR_OUT"
 
 begin "two removals of the same drive at the same time"
 img conc.img 32M; mkfs.ext4 -q -F -L BMCONC "$IMG/conc.img"
 attach "$IMG/conc.img" && mountdev "$DEV"; CONC="$DEV"
 # The first removal is simulated by holding its lock, as it would while a
 # dialog is open or a slow unmount runs
-flock "${XDG_RUNTIME_DIR:-/run/user/$EUID}/big-mount-drive-${CONC##*/}.lock" sleep 3 & HOLD=$!; PIDS+=("$HOLD")
+flock "${XDG_RUNTIME_DIR:-/run/user/$EUID}/big-storage-rescue-drive-${CONC##*/}.lock" sleep 3 & HOLD=$!; PIDS+=("$HOLD")
 sleep 0.5
-BM_OUT="$("$BM" --safe-remove "$CONC" 2>&1)"; BM_RC=$?
-check "a second removal while one runs: refused (exit 10)" test "$BM_RC" -eq 10
+BSR_OUT="$("$BM" --safe-remove "$CONC" 2>&1)"; BSR_RC=$?
+check "a second removal while one runs: refused (exit 10)" test "$BSR_RC" -eq 10
 check "  ... nothing was unmounted" mounted "$CONC"
-check "  ... and the user is told why" grep -q "in progress" <<< "$BM_OUT"
+check "  ... and the user is told why" grep -q "in progress" <<< "$BSR_OUT"
 wait "$HOLD" 2>/dev/null
-BM_OUT="$("$BM" --safe-remove "$CONC" 2>&1)"; BM_RC=$?
-check "once the first one ended, the removal works (exit 0: a loop drive is internal)" test "$BM_RC" -eq 0
+BSR_OUT="$("$BM" --safe-remove "$CONC" 2>&1)"; BSR_RC=$?
+check "once the first one ended, the removal works (exit 0: a loop drive is internal)" test "$BSR_RC" -eq 0
 check "  ... unmounted" bash -c '! findmnt -n --source "$1" >/dev/null' _ "$CONC"
 
 begin "encrypted (LUKS) drive: removal from the mount point locks it"
@@ -379,10 +379,10 @@ elif attach "$IMG/luks.img" && LUKS="$DEV" \
         --method org.freedesktop.UDisks2.Block.Format ext4 \
         "{'encrypt.passphrase': <'bm-test'>, 'label': <'BMLUKS'>, 'auth.no_user_interaction': <true>}" >/dev/null 2>&1 \
     && udevadm settle && CLEAR="$(lsblk -nrpo NAME "$LUKS" | sed -n 2p)" && [ -n "$CLEAR" ] && mountdev "$CLEAR"; then
-    BM_OUT="$("$BM" --diagnose "$MP" 2>&1)"
+    BSR_OUT="$("$BM" --diagnose "$MP" 2>&1)"
     check "the drive of the decrypted volume is the loop device, not the volume itself" has "disk $LUKS"
-    BM_OUT="$("$BM" --safe-remove "$MP" 2>&1)"; BM_RC=$?
-    check "--safe-remove from the mount point exits 0" test "$BM_RC" -eq 0
+    BSR_OUT="$("$BM" --safe-remove "$MP" 2>&1)"; BSR_RC=$?
+    check "--safe-remove from the mount point exits 0" test "$BSR_RC" -eq 0
     check "  ... unmounted" bash -c '! findmnt -n --source "$1" >/dev/null' _ "$CLEAR"
     check "  ... and the encrypted volume is locked" bash -c '[ -z "$(lsblk -nrpo NAME "$1" | sed -n 2p)" ]' _ "$LUKS"
 else
@@ -390,22 +390,22 @@ else
 fi
 
 begin "the running system is never unmounted"
-BM_OUT="$("$BM" --safe-remove / 2>&1)"; BM_RC=$?
-check "--safe-remove / refused (exit 4)" test "$BM_RC" -eq 4
+BSR_OUT="$("$BM" --safe-remove / 2>&1)"; BSR_RC=$?
+check "--safe-remove / refused (exit 4)" test "$BSR_RC" -eq 4
 check "/ still mounted" findmnt -n / >/dev/null
 if findmnt -n /home >/dev/null; then
-    BM_OUT="$("$BM" --unmount /home 2>&1)"; BM_RC=$?
-    check "--unmount /home refused (exit 4)" test "$BM_RC" -eq 4
+    BSR_OUT="$("$BM" --unmount /home 2>&1)"; BSR_RC=$?
+    check "--unmount /home refused (exit 4)" test "$BSR_RC" -eq 4
 fi
 
-begin "bigmount --doctor changes nothing and keeps private data out"
+begin "big-storage-rescue --doctor changes nothing and keeps private data out"
 before="$(findmnt -rn -o SOURCE,TARGET,OPTIONS | sort)"
-BM_OUT="$("$BM" --doctor 2>&1)"; BM_RC=$?
-check "runs to the end" grep -q "^Result: " <<< "$BM_OUT"
-check "no shell error" bash -c '! grep -qiE "unbound|syntax error|command not found" <<< "$1"' _ "$BM_OUT"
+BSR_OUT="$("$BM" --doctor 2>&1)"; BSR_RC=$?
+check "runs to the end" grep -q "^Result: " <<< "$BSR_OUT"
+check "no shell error" bash -c '! grep -qiE "unbound|syntax error|command not found" <<< "$1"' _ "$BSR_OUT"
 check "the mount table is unchanged" test "$before" = "$(findmnt -rn -o SOURCE,TARGET,OPTIONS | sort)"
-check "no volume label of the mounted test devices in the report" bash -c '! grep -qE "BMOK|BMWP|BMRO|BMPERM" <<< "$1"' _ "$BM_OUT"
-check "no home folder in the report" bash -c '! grep -qF "$2" <<< "$1"' _ "$BM_OUT" "$HOME"
+check "no volume label of the mounted test devices in the report" bash -c '! grep -qE "BMOK|BMWP|BMRO|BMPERM" <<< "$1"' _ "$BSR_OUT"
+check "no home folder in the report" bash -c '! grep -qF "$2" <<< "$1"' _ "$BSR_OUT" "$HOME"
 
 # ----- graphical flows with scripted clicks -------------------------------------
 # A stand-in for dialog.py answers from a script ("RC [ANSWER]" per dialog) and
@@ -427,11 +427,11 @@ cat > "$BIN/fake/notify-send" <<'EOF'
 printf '%s\n' "$*" >> "$FAKE_NOTIFY_LOG"
 EOF
 chmod +x "$BIN/fake/dialog" "$BIN/fake/notify-send"
-gui() { # ANSWER... -- bigmount args
+gui() { # ANSWER... -- big-storage-rescue args
     local answers=()
     while [ "$1" != -- ]; do answers+=("$1"); shift; done; shift
     printf '%s\n' "${answers[@]}" > "$BIN/answers"; : > "$BIN/dialog.log"; : > "$BIN/notify.log"; rm -f "$BIN/state"
-    BM_UI=gtk BM_DIALOG_PROGRAM="$BIN/fake/dialog" WAYLAND_DISPLAY=fake DBUS_SESSION_BUS_ADDRESS=fake PATH="$BIN/fake:$PATH" \
+    BSR_UI=gtk BSR_DIALOG_PROGRAM="$BIN/fake/dialog" WAYLAND_DISPLAY=fake DBUS_SESSION_BUS_ADDRESS=fake PATH="$BIN/fake:$PATH" \
         FAKE_DLG_ANSWERS="$BIN/answers" FAKE_DLG_STATE="$BIN/state" FAKE_DLG_LOG="$BIN/dialog.log" \
         FAKE_NOTIFY_LOG="$BIN/notify.log" "$BM" "$@" < /dev/null > /dev/null 2>&1
     GUI_RC=$?
@@ -487,12 +487,12 @@ begin "GUI diagnose: read-only mount -> Mount again with writing"
 udisksctl unmount --no-user-interaction -b "$GUI_DEV" >/dev/null 2>&1
 mountdev "$GUI_DEV" ro
 if [ "$JOURNAL" -eq 1 ]; then
-    gui "0 1" "0 yes" "0 no" -- --gui "$GUI_DEV"
+    gui "0 1" "0 yes" "0 no" -- --gui-diagnose "$GUI_DEV"
     check "fix offered in the dialog" dlg_has "--button=1=Mount again with writing"
     check "confirmation explains nothing is changed" dlg_has "Nothing on it is changed."
     check "success reported by a popup, not a dialog" grep -q "You can now write to this device." "$BIN/notify.log"
     diag "$GUI_DEV"
-    check "device really writable now" test "$BM_RC" -eq 0
+    check "device really writable now" test "$BSR_RC" -eq 0
 else
     skip "GUI remount" "kernel log not readable"
 fi
@@ -502,14 +502,14 @@ begin "GUI: a device that disappeared"
 img gone2.img 16M; mkfs.ext4 -q -F "$IMG/gone2.img"
 attach "$IMG/gone2.img"; GONE="$DEV"
 udisksctl loop-delete --no-user-interaction -b "$GONE" >/dev/null 2>&1; udevadm settle
-gui "0 3" -- --gui "$GONE"
+gui "0 3" -- --gui-diagnose "$GONE"
 check "dialog 'Unable to access storage device'" dlg_has "Unable to access storage device"
 check "  ... in plain words" dlg_has "It may have been disconnected or become temporarily unavailable."
 check "  ... offers Try again and the technical details" bash -c 'grep -qF -- "--button=1=Try again" "$1" && grep -qF -- "--button=2=Technical details" "$1"' _ "$BIN/dialog.log"
 check "  ... Close ends it without an error dialog loop" test "$GUI_RC" -eq 1
 
 begin "GUI diagnose: write-protected device has no fix button"
-gui "0 no" -- --gui "$WP_DEV"
+gui "0 no" -- --gui-diagnose "$WP_DEV"
 check "no fix label offered" bash -c '! grep -qE "Mount again|Become owner" "$1"' _ "$BIN/dialog.log"
 check "explains the lock switch" dlg_has "lock switch"
 
@@ -554,7 +554,7 @@ kill "$P_NOTE" 2>/dev/null; sleep 0.5
 check "a stopped notifier leaves no findmnt behind" bash -c '! kill -0 "$@" 2>/dev/null' _ $NOTE_POLL
 NOTE_LOCK_HELD=0
 for f in /proc/[0-9]*/fd/*; do
-    [ "$(readlink "$f" 2>/dev/null)" = "$NOTE_HOME/big-mount-notifier.lock" ] && NOTE_LOCK_HELD=1
+    [ "$(readlink "$f" 2>/dev/null)" = "$NOTE_HOME/big-storage-rescue-notifier.lock" ] && NOTE_LOCK_HELD=1
 done
 check "  ... nor anything holding its lock" test "$NOTE_LOCK_HELD" -eq 0
 (

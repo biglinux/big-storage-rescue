@@ -1,11 +1,11 @@
 #!/usr/bin/python3
 """Tests of the application, off screen, on a private Broadway display.
 
-The window talks to a stand-in for `bigmount` (BM_GUI_BIN) that answers with
+The window talks to a stand-in for `big-storage-rescue` (BSR_GUI_BIN) that answers with
 fixtures and records every call, so these tests are about the window: what it
 shows, what it asks the engine for, and what it refuses to pretend. No disk is
-involved, nothing appears on the screen, and there is no Secure Erase here that
-could touch anything: the stand-in only writes down that it was called.
+involved, nothing appears on the screen, and nothing can touch a disk: the
+stand-in only writes down that it was called.
 
 Usage: python3 tests/gui-tests.py [-v] [--shots DIR]
 """
@@ -78,14 +78,14 @@ def job_json(**kw):
 
 def leftover_items():
     """Selections written for the engine and not removed (the runtime folder is WORK)."""
-    return sorted((WORK / "big-mount").glob("items-*"))
+    return sorted((WORK / "big-storage-rescue").glob("items-*"))
 
 
 def reset():
     for path in FIX.iterdir():
         path.unlink()
     forget_calls()
-    (WORK / "config/big-mount/gui.ini").unlink(missing_ok=True)
+    (WORK / "config/big-storage-rescue/gui.ini").unlink(missing_ok=True)
     fix("list", {"partial": False, "devices": [system_disk(), seagate(), backup(DEST)]})
     fix("jobs", {"jobs": []})
     fix("methods", METHODS)
@@ -108,7 +108,6 @@ class Base(unittest.TestCase):
         self.win = new_window()
 
     def tearDown(self):
-        self.win.erase_running = False
         self.win.jobs = []
         dialog = self.win.get_visible_dialog()
         if dialog:
@@ -193,11 +192,11 @@ class Notifier(unittest.TestCase):
         self.assertFalse(entry.exists())
         forget_calls()
         set_notifier(True)
-        self.assertIn("Exec=/usr/bin/bigmount --notifier", entry.read_text(encoding="utf-8"))
+        self.assertIn("Exec=/usr/bin/big-storage-rescue --notifier", entry.read_text(encoding="utf-8"))
         self.assertTrue(pump(lambda: "--notifier" in calls(), 3), "the notifier was not started")
         # Off: the entry goes and the running notifier, named by its lock, stops
         proc = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)", "--notifier"])
-        (WORK / "big-mount-notifier.lock").write_text(f"{proc.pid}\n", encoding="utf-8")
+        (WORK / "big-storage-rescue-notifier.lock").write_text(f"{proc.pid}\n", encoding="utf-8")
         set_notifier(False)
         self.assertFalse(entry.exists())
         self.assertEqual(proc.wait(5), -signal.SIGTERM)
@@ -214,7 +213,7 @@ class Notifier(unittest.TestCase):
 
     def test_never_signals_another_program(self):
         proc = subprocess.Popen(["sleep", "60"])
-        (WORK / "big-mount-notifier.lock").write_text(f"{proc.pid}\n", encoding="utf-8")
+        (WORK / "big-storage-rescue-notifier.lock").write_text(f"{proc.pid}\n", encoding="utf-8")
         set_notifier(False)
         self.assertIsNone(proc.poll())
         proc.kill()
@@ -285,7 +284,7 @@ class EngineClient(unittest.TestCase):
 
     def test_a_program_that_is_not_there(self):
         got = {}
-        Engine(program="/nonexistent/bigmount").list_devices(lambda r: got.update(r=r))
+        Engine(program="/nonexistent/big-storage-rescue").list_devices(lambda r: got.update(r=r))
         self.assertTrue(pump(lambda: "r" in got, 3))
         self.assertEqual(got["r"].code, 127)
 
@@ -421,7 +420,8 @@ class HomeViews(Base):
             return set(row.drive_actions.list_actions())
         self.assertTrue(pump(lambda: len(self.rows()) == 3, 3))
         usb = actions_of("SanDisk Portable SSD")
-        self.assertTrue({"unmount", "force", "remove", "erase", "health", "rescue"} <= usb, usb)
+        self.assertTrue({"unmount", "force", "remove", "health", "rescue"} <= usb, usb)
+        self.assertNotIn("erase", usb)
         system = actions_of("ADATA LEGEND 800")
         self.assertFalse({"unmount", "force", "remove", "erase"} & system, system)
         self.assertIn("health", system)
@@ -433,7 +433,7 @@ class HomeViews(Base):
         forget_calls()
         button = next(b for b in widgets(row) if isinstance(b, Gtk.Button) and b.get_tooltip_text() == "Safely remove")
         button.emit("clicked")
-        self.assertTrue(pump(lambda: any(c.startswith("--drive safe-remove /dev/sda") for c in calls()), 3))
+        self.assertTrue(pump(lambda: any(c.startswith("--cli safe-remove /dev/sda") for c in calls()), 3))
 
 
 class DriveActions(Base):
@@ -465,8 +465,8 @@ class DriveActions(Base):
         dialog.emit("response", "close")
         # A refresh of the list may come in between, from any mount on the system
         def ops():
-            return [c for c in calls() if not c.startswith("--drive list")]
-        self.assertTrue(pump(lambda: "--drive close-apps /dev/sda1 --json" in ops() and ops()[-1].startswith("--drive unmount /dev/sda1"), 4), calls())
+            return [c for c in calls() if not c.startswith("--cli list")]
+        self.assertTrue(pump(lambda: "--cli close-apps /dev/sda1 --json" in ops() and ops()[-1].startswith("--cli unmount /dev/sda1"), 4), calls())
         self.assertFalse(any("-f" in c.split() or "--force" in c or "-l" in c.split() for c in calls()))
 
     def test_nothing_closable_offers_no_closing(self):
@@ -485,14 +485,14 @@ class DriveActions(Base):
         forget_calls()
         self.win.get_visible_dialog().emit("response", "close")
         self.assertTrue(pump(lambda: self.win.get_visible_dialog() and "did not close" in self.win.get_visible_dialog().get_heading(), 3))
-        self.assertFalse(any(c.startswith("--drive unmount") for c in calls()))
+        self.assertFalse(any(c.startswith("--cli unmount") for c in calls()))
 
     def test_force_without_holders_simply_unmounts(self):
         fix("busy", dict(self.BUSY, programs=[], count=0))
         fix("unmount", {"ok": True})
         forget_calls()
         self.actions.force_unmount(self.win, "/dev/sda1")
-        self.assertTrue(pump(lambda: any(c.startswith("--drive unmount /dev/sda1") for c in calls()), 3))
+        self.assertTrue(pump(lambda: any(c.startswith("--cli unmount /dev/sda1") for c in calls()), 3))
         self.assertFalse(any("close-apps" in c for c in calls()))
 
     def test_services_are_asked_before_they_are_stopped(self):
@@ -504,23 +504,17 @@ class DriveActions(Base):
         fix("unmount", {"ok": True})
         forget_calls()
         dialog.emit("response", "stop")
-        self.assertTrue(pump(lambda: "--drive unmount /dev/sda1 --allow-services --json" in calls(), 3), calls())
+        self.assertTrue(pump(lambda: "--cli unmount /dev/sda1 --allow-services --json" in calls(), 3), calls())
 
-    def test_erasing_warns_first_and_cancel_is_the_default(self):
-        dev = self.win.device_by_id("serial:SD1")
-        self.actions.erase(self.win, dev)
-        dialog = self.dialog()
-        self.assertIn("not recovery", dialog.get_body())
-        self.assertEqual(dialog.get_default_response(), "cancel")
-        self.assertEqual(dialog.get_close_response(), "cancel")
-        self.assertEqual(dialog.get_response_appearance("continue"), Adw.ResponseAppearance.DESTRUCTIVE)
-        dialog.emit("response", "cancel")
-        pump(timeout=0.1)
-        self.assertNotEqual(type(self.win.nav.get_visible_page()).__name__, "MaintenancePage")
-        self.actions.erase(self.win, dev)
-        fix("erase-check", {"device": "/dev/sda", "eligible": False, "why": "removable", "why_text": "Not through USB.", "partitions": []})
-        self.dialog().emit("response", "continue")
-        self.assertTrue(pump(lambda: type(self.win.nav.get_visible_page()).__name__ == "MaintenancePage", 3))
+    def test_no_erase_anywhere_in_the_menus(self):
+        for dev in self.win.devices:
+            button = self.actions.drive_menu(self.win, Gtk.Box(), dev)
+            model = button.get_menu_model()
+            labels = [model.get_item_link(i, "section").get_item_attribute_value(j, "label", None).unpack()
+                      for i in range(model.get_n_items()) for j in range(model.get_item_link(i, "section").get_n_items())]
+            self.assertFalse([x for x in labels if "rase" in x], labels)
+        self.assertFalse(hasattr(self.actions, "erase"))
+        self.assertFalse(hasattr(self.win, "open_maintenance"))
 
 
 class Sidebar(Base):
@@ -572,6 +566,17 @@ class Routing(Base):
         self.assertTrue(pump(lambda: self.win.nav.get_visible_page() is self.win.device_page, 3))
         self.assertEqual(self.win.device_page.stack.get_visible_child_name(), "health")
 
+    def test_rescue_opens_the_assistant_on_the_drive(self):
+        self.go("/run/media/x/ARQUIVOS", "rescue", {"ok": True, "disk": "/dev/sdb", "device": "/dev/sdb1"})
+        self.assertTrue(pump(lambda: type(self.win.nav.get_visible_page()).__name__ == "RescueWizard", 3))
+        self.assertEqual(self.win.wizard.plan.device.device, "/dev/sdb")
+        self.assertEqual(self.win.selected_id, "serial:S1DFL8G9")
+
+    def test_rescue_without_a_target_opens_the_assistant(self):
+        self.win.route("", "rescue")
+        self.assertTrue(pump(lambda: type(self.win.nav.get_visible_page()).__name__ == "RescueWizard", 3))
+        self.assertIsNone(self.win.wizard.plan.device)
+
     def test_a_partition_or_folder_selects_its_drive(self):
         self.go("/run/media/x/ARQUIVOS", "", {"ok": True, "disk": "/dev/sdb", "device": "/dev/sdb1"})
         self.assertTrue(pump(lambda: self.win.nav.get_visible_page() is self.win.device_page, 3))
@@ -596,7 +601,7 @@ class Routing(Base):
         self.assertEqual(self.win.device_page.stack.get_visible_child_name(), "health")
 
     def test_only_one_toolkit_in_the_code(self):
-        code = "".join(p.read_text() for p in (LIB / "gui").rglob("*.py")) + (LIB / "drive-gui.py").read_text()
+        code = "".join(p.read_text() for p in (LIB / "gui").rglob("*.py")) + (LIB / "app.py").read_text()
         for bad in ("PySide", "PyQt", "QtWidgets", "QML", "WebKit", "shell=True", "os.system", "Electron"):
             self.assertNotIn(bad, code)
 
@@ -720,10 +725,11 @@ class Health(Base):
         self.open()
         self.see("smartctl is not installed")
 
-    def test_maintenance_is_far_from_the_first_level(self):
+    def test_a_drive_page_offers_nothing_that_erases(self):
         self.win.show_device("serial:S1DFL8G9")
         pump(timeout=0.2)
-        self.assertNotIn("Erase", text(self.win).replace("Erase data permanently", ""))
+        self.assertNotIn("Erase", text(self.win))
+        self.assertNotIn("Advanced maintenance", text(self.win))
         self.assertIsNone(find_button(self.win, "Erase the whole drive"))
 
 
@@ -737,8 +743,8 @@ class Volumes(Base):
         forget_calls()
         fix("mount", {"ok": True, "mountpoint": "/run/media/x/A", "read_only": True})
         dialog.emit("response", "mount")
-        self.assertTrue(pump(lambda: any(c.startswith("--drive mount") for c in calls()), 3))
-        call = next(c for c in calls() if c.startswith("--drive mount"))
+        self.assertTrue(pump(lambda: any(c.startswith("--cli mount") for c in calls()), 3))
+        call = next(c for c in calls() if c.startswith("--cli mount"))
         self.assertIn("--read-only", call)
         self.assertIn("--expect-diskseq 7", call)
         self.assertIn("--protect", call, "at risk: writing blocked at the device, on by default")
@@ -755,8 +761,8 @@ class Volumes(Base):
         forget_calls()
         fix("mount", {"ok": True, "mountpoint": "/run/media/x/A", "read_only": True})
         dialog.emit("response", "mount")
-        self.assertTrue(pump(lambda: any(c.startswith("--drive mount") for c in calls()), 3))
-        self.assertNotIn("--protect", next(c for c in calls() if c.startswith("--drive mount")))
+        self.assertTrue(pump(lambda: any(c.startswith("--cli mount") for c in calls()), 3))
+        self.assertNotIn("--protect", next(c for c in calls() if c.startswith("--cli mount")))
 
     def test_log_replay_forced_only_at_risk(self):
         calm = drive("/dev/sdf", "Calm", serial="F2", volumes=[vol("/dev/sdf1", label="X", fstype="xfs", log_replay=True)])
@@ -914,12 +920,12 @@ class Wizard(Base):
     def test_start_copy_only_with_consent_and_exact_arguments(self):
         forget_calls()
         wiz = self.wizard_to("confirm")
-        self.assertFalse(any(c.startswith("--drive copy") and "--dry-run" not in c for c in calls()), "nothing before Start")
+        self.assertFalse(any(c.startswith("--cli copy") and "--dry-run" not in c for c in calls()), "nothing before Start")
         fix("copy", {"id": "20261031-120000-abcd"})
         fix("status", job_json())
         wiz.go_next()
-        self.assertTrue(pump(lambda: any(c.startswith("--drive copy") and "--no-wait" in c for c in calls()), 3))
-        call = next(c for c in calls() if "--no-wait" in c and c.startswith("--drive copy"))
+        self.assertTrue(pump(lambda: any(c.startswith("--cli copy") and "--no-wait" in c for c in calls()), 3))
+        call = next(c for c in calls() if "--no-wait" in c and c.startswith("--cli copy"))
         self.assertIn(f"--source {SOURCE}", call)
         self.assertIn(f"--destination {DEST}/Recovered files", call)
         self.assertTrue(pump(lambda: type(self.win.nav.get_visible_page()).__name__ == "JobPage", 3))
@@ -945,8 +951,8 @@ class Wizard(Base):
         fix("scan", {"id": "20261031-120000-abcd"})
         fix("status", job_json(kind="scan", state="analyzing", state_label="Listing the files", bytes_total=0, pausable=False))
         wiz.go_next()
-        self.assertTrue(pump(lambda: any(c.startswith("--drive scan") for c in calls()), 3))
-        call = next(c for c in calls() if c.startswith("--drive scan"))
+        self.assertTrue(pump(lambda: any(c.startswith("--cli scan") for c in calls()), 3))
+        call = next(c for c in calls() if c.startswith("--cli scan"))
         self.assertIn("--categories photos", call)
         self.assertIn(f"--copy-to {DEST}", call)
 
@@ -964,10 +970,10 @@ class Wizard(Base):
         wiz.go_next()
         self.assertTrue(pump(lambda: wiz.step == "confirm" and wiz.preflight is not None, 3))
         self.see("the search needs your confirmation")
-        self.assertFalse(any(c.startswith("--drive image") and "--no-wait" in c for c in calls()))
+        self.assertFalse(any(c.startswith("--cli image") and "--no-wait" in c for c in calls()))
         wiz.go_next()
-        self.assertTrue(pump(lambda: any("--no-wait" in c and c.startswith("--drive image") for c in calls()), 3))
-        call = next(c for c in calls() if "--no-wait" in c and c.startswith("--drive image"))
+        self.assertTrue(pump(lambda: any("--no-wait" in c and c.startswith("--cli image") for c in calls()), 3))
+        call = next(c for c in calls() if "--no-wait" in c and c.startswith("--cli image"))
         self.assertIn("--expect-diskseq 7", call)
         self.assertIn("--then-carve", call)
         self.assertIn("--categories photos", call)
@@ -1049,7 +1055,7 @@ class Wizard(Base):
         click(page, "Read the partition table")
         self.see("LOST", page)
         self.see("does not rewrite partition tables", page)
-        self.assertEqual(next(c for c in calls() if "partitions" in c), "--drive partitions /dev/sdb --json")
+        self.assertEqual(next(c for c in calls() if "partitions" in c), "--cli partitions /dev/sdb --json")
 
     def test_partitions_search_that_finds_nothing_promises_nothing(self):
         wiz = self.wizard_to("how", method="partitions")
@@ -1243,11 +1249,11 @@ class Jobs(Base):
         forget_calls()
         page = self.open(kind="image", state="completed", state_label="Disk image complete", destination=str(DEST / "a.img"), then_carve=str(DEST / "found"), categories="photos")
         self.assertTrue(page.next_btn.get_visible())
-        self.assertFalse(any(c.startswith("--drive carve") for c in calls()), "never by itself")
+        self.assertFalse(any(c.startswith("--cli carve") for c in calls()), "never by itself")
         fix("carve", {"id": "20261031-120000-beef"})
         page.next_btn.emit("clicked")
-        self.assertTrue(pump(lambda: any(c.startswith("--drive carve") for c in calls()), 3))
-        self.assertIn("--categories photos", next(c for c in calls() if c.startswith("--drive carve")))
+        self.assertTrue(pump(lambda: any(c.startswith("--cli carve") for c in calls()), 3))
+        self.assertIn("--categories photos", next(c for c in calls() if c.startswith("--cli carve")))
 
     def test_image_with_unread_areas_says_how_much(self):
         fix_text("report", "r")
@@ -1425,7 +1431,7 @@ class Results(Base):
         self.assertEqual(leftover_items(), [], "the check before it left nothing behind either")
 
     def test_a_selection_that_cannot_be_written_is_an_answer(self):
-        folder = WORK / "big-mount"
+        folder = WORK / "big-storage-rescue"
         shutil.rmtree(folder, ignore_errors=True)
         folder.write_text("not a folder")
         try:
@@ -1435,7 +1441,7 @@ class Results(Base):
             self.assertTrue(pump(lambda: got, 3), "the caller always gets an answer")
             self.assertFalse(got[0].ok)
             self.assertTrue(got[0].message)
-            self.assertFalse([c for c in calls() if c.startswith("--drive copy")], "nothing was started without its selection")
+            self.assertFalse([c for c in calls() if c.startswith("--cli copy")], "nothing was started without its selection")
         finally:
             folder.unlink()
 
@@ -1472,168 +1478,6 @@ class Results(Base):
         fix("results", {"id": "x", "result_kind": "existing-files", "ready": False, "categories": []})
         self.win.open_results("20261031-120000-beef")
         self.see("The list is not ready yet.", timeout=3)
-
-
-ERASE_OK = {"device": "/dev/sdb", "name": "sdb (Samsung SSD 860, 500 GB)", "confirm_name": "sdb", "serial": "X", "why": "", "why_text": "", "detail": "", "table": "gpt", "token": "", "eligible": True, "frozen": False,
-            "diskseq": 7, "erase_minutes": 4, "size": 500 * GB, "partitions": [{"device": "/dev/sdb1", "label": "DATA", "fstype": "ext4", "mountpoint": "", "size": 500 * GB}]}
-TICKET = "0" * 32
-
-
-class Erase(Base):
-    def open(self, check=ERASE_OK):
-        fix("erase-check", check)
-        fix("erase-prepare", {**check, "token": TICKET})
-        self.win.open_maintenance(self.win.device_by_id("serial:S1DFL8G9"))
-        page = self.win.nav.get_visible_page()
-        self.assertTrue(pump(lambda: page.check is not None, 3))
-        return page
-
-    def to_typing(self, page):
-        click(page, "Continue…")
-        self.dialog().emit("response", "continue")
-        self.assertTrue(pump(lambda: page.token is not None, 3))
-
-    def entry(self, page):
-        return next(x for x in widgets(page) if isinstance(x, Gtk.Entry) or isinstance(x, Gtk.Text) and False)
-
-    def test_says_what_it_is_and_what_it_is_not(self):
-        page = self.open()
-        self.see("IT ERASES ALL THE FILES ON THE DRIVE FOR GOOD. THIS IS NOT RECOVERY.", page)
-        self.see("DATA", page)
-        self.see("about 4 min", page)
-
-    def test_nothing_runs_by_opening(self):
-        forget_calls()
-        self.open()
-        pump(timeout=0.2)
-        self.assertFalse(any("__erase-run" in c or "erase-prepare" in c for c in calls()))
-
-    def test_ticket_only_for_drive_shown(self):
-        page = self.open()
-        forget_calls()
-        fix("erase-prepare", {"device": "/dev/sdb", "why": "replaced", "why_text": "The drive was disconnected or replaced. Nothing was erased.", "eligible": False}, rc=24)
-        click(page, "Continue…")
-        self.dialog().emit("response", "continue")
-        self.see("The drive was disconnected or replaced. Nothing was erased.", page)
-        self.assertIn("--expect-diskseq 7", next(c for c in calls() if "erase-prepare" in c))
-        self.assertIsNone(page.token)
-
-    def refusal(self, why, text_):
-        forget_calls()
-        page = self.open({**ERASE_OK, "eligible": False, "why": why, "why_text": text_})
-        self.see(text_, page)
-        self.assertIsNone(find_button(page, "Continue…"))
-        self.assertFalse(any("erase-prepare" in c or "__erase-run" in c for c in calls()))
-
-    def test_refused_system(self):
-        self.refusal("system", "It holds the operating system that is running now.")
-
-    def test_refused_usb(self):
-        self.refusal("removable", "Secure Erase is only offered for drives connected inside the computer")
-
-    def test_refused_nvme(self):
-        self.refusal("not-ata", "Secure Erase is only available for SATA drives.")
-
-    def test_refused_partition(self):
-        self.refusal("not-disk", "Secure Erase works on a whole drive, not on a partition.")
-
-    def test_refused_password(self):
-        self.refusal("password", "A security password is set on this drive.")
-
-    def test_first_confirmation_defaults_to_cancel(self):
-        page = self.open()
-        forget_calls()
-        click(page, "Continue…")
-        dialog = self.dialog()
-        self.assertEqual(dialog.get_default_response(), "cancel")
-        self.assertEqual(dialog.get_close_response(), "cancel")
-        dialog.emit("response", "cancel")
-        pump(timeout=0.1)
-        self.assertFalse(any("erase" in c for c in calls()))
-
-    def test_second_confirmation_wants_the_exact_name(self):
-        page = self.open()
-        self.to_typing(page)
-        forget_calls()
-        button = find_button(page, "Erase the whole drive")
-        self.assertFalse(button.get_sensitive())
-        entry = next(x for x in widgets(page) if isinstance(x, Gtk.Entry))
-        for wrong in ("SDB", "sd", "sdb ", "/dev/sdb", ""):
-            entry.set_text(wrong)
-            self.assertFalse(button.get_sensitive(), wrong)
-        entry.set_text("sdb")
-        self.assertTrue(button.get_sensitive())
-        self.assertFalse(entry.get_activates_default(), "Enter alone never erases")
-        self.assertFalse(any("__erase-run" in c for c in calls()))
-
-    def erase(self, page, result, rc=0):
-        self.to_typing(page)
-        entry = next(x for x in widgets(page) if isinstance(x, Gtk.Entry))
-        entry.set_text("sdb")
-        fix("__erase-run", result, rc=rc)
-        forget_calls()
-        click(page, "Erase the whole drive")
-        self.assertTrue(pump(lambda: any("__erase-run" in c for c in calls()), 3))
-        self.assertTrue(pump(lambda: not self.win.erase_running, 3))
-        return next(c for c in calls() if "__erase-run" in c)
-
-    def test_runs_with_the_ticket_and_the_typed_name_only(self):
-        page = self.open()
-        call = self.erase(page, {"ok": True, "stage": "finished", "title": "Drive erased", "kind": "info", "doc": [{"kind": "p", "text": "It keeps what is written."}]})
-        self.assertIn(f"__erase-run {TICKET} --typed sdb", call)
-        self.assertNotIn("--unfreeze", call)
-        self.assertNotIn("--allow-services", call)
-        self.see("Drive erased", page)
-        self.see("It keeps what is written.", page)
-
-    def test_failure_is_not_called_success(self):
-        page = self.open()
-        self.erase(page, {"ok": False, "stage": "finished", "title": "The drive is failing", "kind": "error", "doc": [{"kind": "p", "text": "Its old contents are still there."}]}, rc=12)
-        self.see("The drive is failing", page)
-        self.assertNotIn("Drive erased", text(page))
-
-    def test_authorization_denied_erases_nothing(self):
-        page = self.open()
-        self.erase(page, {"ok": False, "stage": "finished", "title": "Unable to erase the drive", "kind": "error", "doc": [{"kind": "p", "text": "Permission was not granted. Nothing was erased."}]}, rc=5)
-        self.see("Nothing was erased.", page)
-
-    def test_busy_says_who_and_erases_nothing(self):
-        page = self.open()
-        self.erase(page, {"ok": False, "stage": "busy", "busy_summary": "Dolphin is using it.", "busy_advice": "Close it.", "doc": []}, rc=3)
-        self.see("still in use", page)
-        pump(timeout=0.1)
-        self.assertIsNotNone(find_button(page, "Try again"))
-
-    def test_services_are_never_stopped_silently(self):
-        page = self.open()
-        self.erase(page, {"ok": False, "stage": "services", "title": "Services use this device", "doc": [{"kind": "li", "text": "Plex (plex.service)"}]}, rc=9)
-        dialog = self.dialog()
-        self.assertIn("Plex", dialog.get_body())
-        self.assertEqual(dialog.get_default_response(), "cancel")
-
-    def test_frozen_needs_an_explicit_decision_to_sleep(self):
-        page = self.open()
-        self.erase(page, {"ok": False, "stage": "frozen", "title": "The drive is locked against erasing", "doc": [{"kind": "p", "text": "Sleeping once usually unlocks them."}]}, rc=11)
-        dialog = self.dialog()
-        self.assertIn("Sleeping", dialog.get_body())
-        self.assertEqual(dialog.get_default_response(), "cancel")
-        fix("__erase-run", {"ok": True, "stage": "finished", "title": "Drive erased", "kind": "info", "doc": []})
-        forget_calls()
-        dialog.emit("response", "sleep")
-        self.assertTrue(pump(lambda: any("--unfreeze" in c for c in calls()), 3))
-
-    def test_window_stays_open_while_erasing(self):
-        self.win.erase_running = True
-        self.assertTrue(self.win._close_request(self.win))
-        dialog = self.dialog()
-        self.assertIn("Do not turn off", dialog.get_body())
-        dialog.force_close()
-
-    def test_no_way_around_the_questions(self):
-        code = (LIB / "gui/engine.py").read_text() + (LIB / "drive-erase.sh").read_text()
-        self.assertNotIn("assume-yes", code)
-        self.assertNotIn("--force", code)
-        self.assertNotIn("--yes", code)
 
 
 class Accessibility(Base):
@@ -1698,7 +1542,7 @@ class Launcher(unittest.TestCase):
     def run_b(self, *args, env=None, timeout=6):
         e = {k: v for k, v in os.environ.items()}
         e.update(env or {})
-        return subprocess.run([str(REPO / "big-mount/usr/bin/bigmount"), *args], capture_output=True, text=True, env=e, timeout=timeout)
+        return subprocess.run([str(REPO / "big-storage-rescue/usr/bin/big-storage-rescue"), *args], capture_output=True, text=True, env=e, timeout=timeout)
 
     def stays_open(self, *args):
         """The real program, on the private display, with the stand-in as the engine,
@@ -1706,7 +1550,7 @@ class Launcher(unittest.TestCase):
         env = {**os.environ, "DISPLAY": ":none", "LANGUAGE": "C", "PYTHONWARNINGS": "ignore"}
         log = WORK / f"launch-{time.time()}.log"
         with open(log, "w") as handle:
-            proc = subprocess.Popen(["dbus-run-session", "--", str(REPO / "big-mount/usr/bin/bigmount"), *args], env=env,
+            proc = subprocess.Popen(["dbus-run-session", "--", str(REPO / "big-storage-rescue/usr/bin/big-storage-rescue"), *args], env=env,
                                     stdout=subprocess.DEVNULL, stderr=handle, start_new_session=True)
         time.sleep(3)
         alive = proc.poll() is None
@@ -1727,38 +1571,39 @@ class Launcher(unittest.TestCase):
 
     @unittest.skipUnless(shutil.which("dbus-run-session"), "dbus-run-session is not installed")
     def test_gui_drive_opens_and_stays_open(self):
-        self.stays_open("--gui-drive")
+        self.stays_open("--gui")
 
     @unittest.skipUnless(shutil.which("dbus-run-session"), "dbus-run-session is not installed")
     def test_gui_drive_check_opens_the_same_application(self):
-        self.stays_open("--gui-drive-check", "/dev/sdb")
+        self.stays_open("--gui-health", "/dev/sdb")
 
     @unittest.skipUnless(shutil.which("dbus-run-session"), "dbus-run-session is not installed")
     def test_a_uuid_is_not_taken_for_a_path(self):
-        self.stays_open("--gui-drive", "UUID=ABCD-1234")
+        self.stays_open("--gui", "UUID=ABCD-1234")
 
     def test_both_flags_reach_the_same_program(self):
         code = (LIB / "drive.sh").read_text()
         self.assertEqual(code.count('python3 -I "$py"'), 1)
         cli = (LIB / "cli.sh").read_text()
-        self.assertIn('--gui-drive | --gui-drive-check)', cli)
-        self.assertIn('bm_gui_drive_main health "$@"', cli)
-        self.assertNotIn("bm_gui_secure_erase", cli)
+        self.assertIn('--gui | --gui-health | --gui-rescue)', cli)
+        self.assertIn('bsr_gui_drive_main health "$@"', cli)
+        self.assertIn('bsr_gui_drive_main rescue "$@"', cli)
+        self.assertNotIn("bsr_gui_secure_erase", cli)
 
     def test_no_session_points_to_the_terminal(self):
-        res = self.run_b("--gui-drive", env={"WAYLAND_DISPLAY": "", "DISPLAY": ""})
+        res = self.run_b("--gui", env={"WAYLAND_DISPLAY": "", "DISPLAY": ""})
         self.assertEqual(res.returncode, 25)
-        self.assertIn("bigmount --drive", res.stderr)
-        res = self.run_b("--gui-drive-check", env={"WAYLAND_DISPLAY": "", "DISPLAY": ""})
+        self.assertIn("big-storage-rescue --cli", res.stderr)
+        res = self.run_b("--gui-health", env={"WAYLAND_DISPLAY": "", "DISPLAY": ""})
         self.assertEqual(res.returncode, 25)
 
     def test_the_entry_point_is_only_python_and_gtk(self):
-        src = (LIB / "drive-gui.py").read_text()
+        src = (LIB / "app.py").read_text()
         self.assertIn('gi.require_version("Gtk", "4.0")', src)
         self.assertIn('gi.require_version("Adw", "1")', src)
 
     def test_boot_path_loads_nothing_of_this(self):
-        boot = (REPO / "big-mount/usr/bin/bigmount").read_text()
+        boot = (REPO / "big-storage-rescue/usr/bin/big-storage-rescue").read_text()
         for bad in ("python", "gi.repository", "drive-gui", "gtk"):
             self.assertNotIn(bad, boot.lower())
 
@@ -1782,29 +1627,31 @@ class AboutAndWelcome(Base):
         self.assertTrue(pump(lambda: self.win.get_visible_dialog() is not None, 2))
         about = self.win.get_visible_dialog()
         self.assertIsInstance(about, Adw.AboutDialog)
-        self.assertEqual(WEBSITE, "https://github.com/biglinux/big-mount")
+        self.assertEqual(WEBSITE, "https://github.com/biglinux/big-storage-rescue")
         self.assertEqual(about.get_website(), WEBSITE)
-        self.assertEqual(about.get_issue_url(), "https://github.com/biglinux/big-mount/issues")
+        self.assertEqual(about.get_issue_url(), "https://github.com/biglinux/big-storage-rescue/issues")
         self.assertEqual(about.get_issue_url(), ISSUES)
         self.assertEqual(about.get_developers(), ["Bruno Gonçalves <bigbruno@gmail.com>", "Rafael Ruscher <rruscher@gmail.com>"])
         self.assertEqual(about.get_copyright(), "© 2026 BigLinux Team")
         # "... comes with absolutely no warranty. See the GNU General Public License, version 3 or later"
         self.assertEqual(about.get_license_type(), Gtk.License.GPL_3_0)
         doctor = (LIB / "doctor.sh").read_text()
-        self.assertIn(f"\nBM_VERSION={about.get_version()}\n", doctor)
+        self.assertIn(f"\nBSR_VERSION={about.get_version()}\n", doctor)
         self.assertIn("rescues files from a failing disk", about.get_comments())
-        self.assertIn("mounts the partitions of internal disks at every boot", about.get_comments())
+        self.assertNotIn("at every boot", about.get_comments())
+        self.assertIn("also the ones that are not mounted", about.get_comments())
 
     def test_welcome_shows_what_it_can_do(self):
         self.win.show_welcome()
-        self.assertTrue(pump(lambda: "Welcome to Big-Mount" in text(self.win), 3))
+        self.assertTrue(pump(lambda: "Welcome to Big Storage Rescue" in text(self.win), 3))
         welcome = self.win.get_visible_dialog()
-        for words in ("Health in one word", "Rescue your files", "Safe removal", "Secure Erase", "Also in the terminal"):
+        for words in ("Health in one word", "Rescue your files", "Safe removal", "Also in the terminal"):
             self.assertIn(words, text(welcome))
+        self.assertNotIn("Secure Erase", text(welcome))
         self.assertTrue(welcome.show_switch.get_active())
         click(welcome, "Let's start")
         self.assertTrue(pump(lambda: self.win.get_visible_dialog() is None, 2))
-        self.assertTrue(welcome_at_start(parse(["bigmount"])))
+        self.assertTrue(welcome_at_start(parse(["big-storage-rescue"])))
 
     def test_welcome_can_stay_away(self):
         self.win.show_welcome()
@@ -1813,8 +1660,8 @@ class AboutAndWelcome(Base):
         welcome.show_switch.set_active(False)
         welcome.close()
         self.assertTrue(pump(lambda: self.win.get_visible_dialog() is None, 2))
-        self.assertIn("show=false", (WORK / "config/big-mount/gui.ini").read_text())
-        self.assertFalse(welcome_at_start(parse(["bigmount"])))
+        self.assertIn("show=false", (WORK / "config/big-storage-rescue/gui.ini").read_text())
+        self.assertFalse(welcome_at_start(parse(["big-storage-rescue"])))
         # And it is still in the menu
         self.win.show_welcome()
         self.assertTrue(pump(lambda: self.win.get_visible_dialog() is not None, 2))
@@ -1823,7 +1670,7 @@ class AboutAndWelcome(Base):
     def test_on_a_narrow_screen_the_button_stays_whole(self):
         present_at(self.win, 360, 700)
         self.win.show_welcome()
-        self.assertTrue(pump(lambda: "Welcome to Big-Mount" in text(self.win), 3))
+        self.assertTrue(pump(lambda: "Welcome to Big Storage Rescue" in text(self.win), 3))
         # Otherwise the test would pass on a wide window and prove nothing
         self.assertEqual(self.win.get_width(), 360)
         welcome = self.win.get_visible_dialog()
@@ -1835,12 +1682,12 @@ class AboutAndWelcome(Base):
 
     def test_never_over_a_drive_that_was_asked_for(self):
         save_setting("welcome", "show", "true")
-        self.assertFalse(welcome_at_start(parse(["bigmount", "--target", "/dev/sdb"])))
-        self.assertFalse(welcome_at_start(parse(["bigmount", "--section", "health"])))
+        self.assertFalse(welcome_at_start(parse(["big-storage-rescue", "--target", "/dev/sdb"])))
+        self.assertFalse(welcome_at_start(parse(["big-storage-rescue", "--section", "health"])))
 
 
 class ShellDialogs(unittest.TestCase):
-    """dialog.py: what bigmount --gui, --gui-remove and the notifier show."""
+    """dialog.py: what big-storage-rescue --gui, --gui-remove and the notifier show."""
 
     def make(self, argv, doc=()):
         d = shell_dialogs.Dialog(shell_dialog.parse(argv), list(doc))

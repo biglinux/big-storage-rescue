@@ -11,17 +11,17 @@ export LC_ALL=C.UTF-8 LANGUAGE=C
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO="$(dirname "$HERE")"
-BIGMOUNT_LIB="$REPO/big-mount/usr/lib/big-mount"
-L="$BIGMOUNT_LIB"
-B="$REPO/big-mount/usr/bin/bigmount"
-# shellcheck source=../big-mount/usr/lib/big-mount/cli.sh
-. "$BIGMOUNT_LIB/cli.sh"
-BM_UI=tty
-bm_ui_init
-bm_load drive.sh
-bm_load drive-copy.sh
-bm_load drive-recovery.sh
-bm_load drive-tui.sh
+BSR_LIB="$REPO/big-storage-rescue/usr/lib/big-storage-rescue"
+L="$BSR_LIB"
+B="$REPO/big-storage-rescue/usr/bin/big-storage-rescue"
+# shellcheck source=../big-storage-rescue/usr/lib/big-storage-rescue/cli.sh
+. "$BSR_LIB/cli.sh"
+BSR_UI=tty
+bsr_ui_init
+bsr_load drive.sh
+bsr_load drive-copy.sh
+bsr_load drive-recovery.sh
+bsr_load drive-tui.sh
 
 PASS=0 FAIL=0 FAILED=()
 check() {
@@ -34,9 +34,9 @@ begin() { echo "— $1"; }
 json_ok() { python3 -I -m json.tool >/dev/null; }
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
-export XDG_STATE_HOME="$WORK/state" XDG_RUNTIME_DIR="$WORK/run"
+export XDG_STATE_HOME="$WORK/state" XDG_CONFIG_HOME="$WORK/config" XDG_RUNTIME_DIR="$WORK/run"
 mkdir -p "$XDG_RUNTIME_DIR"
-BM_JOBS="$XDG_STATE_HOME/big-mount/jobs"
+BSR_JOBS="$XDG_STATE_HOME/big-storage-rescue/jobs"
 
 echo "========================================="
 echo "Drive manager unit tests"
@@ -89,16 +89,16 @@ lsblk() {
 }
 findmnt() { return 1; }
 FAKE_HEALTH_FIND=() FAKE_KLOG=1 FAKE_SMART=""
-bm_drive_health() {
+bsr_drive_health() {
    DH_FIND=("${FAKE_HEALTH_FIND[@]}") DH_COUNT=() DH_LINES=() DH_KLOG="$FAKE_KLOG" DH_SMART="$FAKE_SMART" DH_BAD="${FAKE_BAD:-0}"
    DH_HOURS="${FAKE_HOURS:-}" DH_TEMP="${FAKE_TEMP:-}" DH_NVME_USED="${FAKE_USED:-}" DH_ATTR_PAST="${FAKE_PAST:-}"
    DH_ATTR_FAIL="${FAKE_FAIL:-}" DH_NVME_WARN="${FAKE_WARN:-}" DH_NVME_MEDIA="" DH_NVME_HOT=""
    local f; for f in "${DH_FIND[@]}"; do DH_COUNT[$f]="${FAKE_COUNT:-5}"; done
 }
-bm_diskseq() { REPLY=7; }
+bsr_diskseq() { REPLY=7; }
 
 begin "detection: every kind of drive, one scan"
-bm_dv_scan
+bsr_dv_scan
 top=" ${DV_TOP[*]} "
 check "SATA, USB, NVMe and SD are drives" bash -c '[[ $1 == *" /dev/sda "* && $1 == *" /dev/sdc "* && $1 == *" /dev/nvme0n1 "* && $1 == *" /dev/mmcblk0 "* ]]' _ "$top"
 check "a disk without partitions is a drive" bash -c '[[ $1 == *" /dev/sdd "* ]]' _ "$top"
@@ -108,7 +108,7 @@ check "zram is not storage" bash -c '[[ $1 != *"zram"* ]]' _ "$top"
 check "an empty loop device (swap backing) is not storage" bash -c '[[ $1 != *" /dev/loop0 "* ]]' _ "$top"
 check "an image with a filesystem is" bash -c '[[ $1 == *" /dev/loop1 "* ]]' _ "$top"
 check "partitions are not listed as drives" bash -c '[[ $1 != *" /dev/sda1 "* ]]' _ "$top"
-kind() { bm_dv_kind "$1"; eq "$REPLY" "$2"; }
+kind() { bsr_dv_kind "$1"; eq "$REPLY" "$2"; }
 check "SATA rotational: hard disk" kind /dev/sda hdd
 check "SATA solid state: SSD" kind /dev/sdb ssd
 check "USB stays USB: a bridge says every disk rotates" kind /dev/sdc usb
@@ -119,13 +119,13 @@ check "image" kind /dev/loop1 image
 check "the bus is not a manufacturer" eq "${DV[/dev/sda|VENDOR]}" ""
 check "a model cut in two by a USB bridge is not a manufacturer" eq "${DV[/dev/sdc|VENDOR]}" ""
 check "escapes in a mount point are decoded" eq "${DV[/dev/sda2|MOUNTPOINTS]}" "/run/media/u/Win 10"
-bm_dv_tree /dev/sda; check "tree: disk and its partitions, in order" eq "${DV_TREE[*]}" "/dev/sda /dev/sda1 /dev/sda2 /dev/sda3"
-bm_dv_tree /dev/sdf; check "tree: LVM on a partition" eq "${DV_TREE[*]}" "/dev/sdf /dev/sdf1 /dev/mapper/vg-lv"
-bm_dv_multi_btrfs /dev/sdg1; check "multi-device Btrfs is seen by its UUID" eq "${DV_MULTI[*]}" "/dev/sdg1 /dev/sdh1"
-bm_dv_multi_btrfs /dev/nvme0n1p2; check "single-device Btrfs is not" eq "$?" 1
+bsr_dv_tree /dev/sda; check "tree: disk and its partitions, in order" eq "${DV_TREE[*]}" "/dev/sda /dev/sda1 /dev/sda2 /dev/sda3"
+bsr_dv_tree /dev/sdf; check "tree: LVM on a partition" eq "${DV_TREE[*]}" "/dev/sdf /dev/sdf1 /dev/mapper/vg-lv"
+bsr_dv_multi_btrfs /dev/sdg1; check "multi-device Btrfs is seen by its UUID" eq "${DV_MULTI[*]}" "/dev/sdg1 /dev/sdh1"
+bsr_dv_multi_btrfs /dev/nvme0n1p2; check "single-device Btrfs is not" eq "$?" 1
 
 begin "states: what a volume is, without touching it"
-state() { bm_dv_state "$1"; eq "$REPLY" "$2"; }
+state() { bsr_dv_state "$1"; eq "$REPLY" "$2"; }
 check "not mounted" state /dev/sda1 unmounted
 check "mounted, with a space in the path" state /dev/sda2 mounted-rw
 check "the running system" state /dev/nvme0n1p2 system
@@ -137,14 +137,14 @@ check "no filesystem" state /dev/sde no-fs
 check "a disk with partitions holds volumes" state /dev/sda container
 
 begin "health: never healthy just because it was detected"
-level() { bm_ds_level "$1"; eq "$DS_LEVEL" "$2"; }
+level() { bsr_ds_level "$1"; eq "$DS_LEVEL" "$2"; }
 FAKE_HEALTH_FIND=() FAKE_KLOG=0 FAKE_SMART=""
 check "no log and no SMART: unknown, not fine" level /dev/sda unknown
 check "  ... and that rests on nothing" eq "$DS_BASIS" none
 FAKE_KLOG=1
 check "no errors in the log: no alerts" level /dev/sda normal
 check "  ... but it says SMART was not read" bash -c '[ "$1" = log ]' _ "$DS_BASIS"
-bm_ds_level_label; check "  ... in its words" bash -c '[[ $1 == *"SMART not read"* ]]' _ "$REPLY"
+bsr_ds_level_label; check "  ... in its words" bash -c '[[ $1 == *"SMART not read"* ]]' _ "$REPLY"
 FAKE_SMART=ok
 check "SMART and log: no alerts" level /dev/sda normal
 check "  ... resting on both" eq "$DS_BASIS" smart+log
@@ -165,7 +165,7 @@ FAKE_BAD=0
 check "a disk image has no health" level /dev/loop1 na
 
 begin "grade: one word, and healthy only on the drive's own report"
-grade() { bm_ds_level "$1"; eq "$DS_GRADE:${DS_NOTES[*]}" "$2"; }
+grade() { bsr_ds_level "$1"; eq "$DS_GRADE:${DS_NOTES[*]}" "$2"; }
 FAKE_HEALTH_FIND=() FAKE_KLOG=1 FAKE_SMART=""
 check "the system log alone: good, and it says why not healthy" grade /dev/sda "good:smart-unread"
 FAKE_SMART=ok
@@ -173,7 +173,7 @@ check "SMART and log, nothing found: healthy" grade /dev/sdb "healthy:"
 FAKE_HOURS=36000
 check "a hard disk after about four years powered on: good" grade /dev/sda "good:old"
 check "  ... an SSD that long is still healthy" grade /dev/sdb "healthy:"
-bm_ds_level /dev/sda; bm_ds_note_text old; check "  ... in years a person reads" bash -c '[[ $1 == *36000*"4 years"* ]]' _ "$REPLY"
+bsr_ds_level /dev/sda; bsr_ds_note_text old; check "  ... in years a person reads" bash -c '[[ $1 == *36000*"4 years"* ]]' _ "$REPLY"
 FAKE_HOURS="" FAKE_TEMP=58
 check "a hard disk at 58 °C: good" grade /dev/sda "good:hot"
 check "  ... normal for an SSD" grade /dev/sdb "healthy:"
@@ -194,26 +194,26 @@ FAKE_HEALTH_FIND=() FAKE_KLOG=0
 check "nothing consulted: not assessed" grade /dev/sda "unknown:"
 check "a disk image: not applicable" grade /dev/loop1 "na:"
 FAKE_KLOG=1 FAKE_SMART=ok FAKE_HOURS=36000
-bm_ds_level /dev/sda
-out="{$(bm_ds_json)}"; printf '%s' "$out" | json_ok; check "health JSON with the grade: valid" eq "$?" 0
+bsr_ds_level /dev/sda
+out="{$(bsr_ds_json)}"; printf '%s' "$out" | json_ok; check "health JSON with the grade: valid" eq "$?" 0
 check "  ... grade, its word and why" bash -c 'python3 -I -c "import json,sys; h=json.loads(sys.argv[1])[\"health\"]; assert h[\"grade\"] == \"good\" and h[\"grade_label\"] and h[\"notes\"][0][\"key\"] == \"old\" and h[\"smart\"][\"hours\"] == 36000" "$1"' _ "$out"
 FAKE_SMART="" FAKE_HOURS="" FAKE_KLOG=1
 
 begin "the session notifier: a drive with problems gets a window, once per boot"
 (
-   BM_NOTIFIED="$WORK/notified"; : > "$BM_NOTIFIED"; BM_SELF=/bin/true
-   bm_ui_confirm() { bm_doc_render_text; printf '%s|%s|%s\n%s\n' "$1" "$3" "$4" "$REPLY" >> "$WORK/window.txt"; return 1; }
+   BSR_NOTIFIED="$WORK/notified"; : > "$BSR_NOTIFIED"; BSR_SELF=/bin/true
+   bsr_ui_confirm() { bsr_doc_render_text; printf '%s|%s|%s\n%s\n' "$1" "$3" "$4" "$REPLY" >> "$WORK/window.txt"; return 1; }
    F=([DISK]=/dev/sdc [DISK_TYPE]=disk)
    FAKE_HEALTH_FIND=(usb-resets) FAKE_COUNT=48
-   bm_notifier_health /dev/sdc1; wait
-   bm_notifier_health /dev/sdc1; wait
+   bsr_notifier_health /dev/sdc1; wait
+   bsr_notifier_health /dev/sdc1; wait
    F=([DISK]=/dev/sdb [DISK_TYPE]=disk) FAKE_HEALTH_FIND=()
-   bm_notifier_health /dev/sdb1; wait
+   bsr_notifier_health /dev/sdb1; wait
    F=([DISK]=/dev/loop1 [DISK_TYPE]=loop) FAKE_HEALTH_FIND=(io-errors) FAKE_COUNT=9
-   bm_notifier_health /dev/loop1; wait
+   bsr_notifier_health /dev/loop1; wait
 )
 check "one window, for the drive with problems only" eq "$(grep -c '^A drive needs attention|' "$WORK/window.txt")" 1
-check "  ... with the way to Big-Mount, or to close it" grep -q '^A drive needs attention|Open Big-Mount|Close$' "$WORK/window.txt"
+check "  ... with the way to Big Storage Rescue, or to close it" grep -q '^A drive needs attention|Open Big Storage Rescue|Close$' "$WORK/window.txt"
 check "  ... naming the drive, its grade and what was found" bash -c 'grep -q "ST1000DM003-1CH162: Poor" "$1" && grep -q "USB connection was reset" "$1"' _ "$WORK/window.txt"
 check "  ... remembered once per boot and drive, not per volume" eq "$(wc -l < "$WORK/notified")" 1
 
@@ -232,7 +232,7 @@ ID# ATTRIBUTE_NAME          FLAG     VALUE WORST THRESH TYPE      UPDATED  WHEN_
 198 Offline_Uncorrectable   0x0010   089   089   000    Old_age   Offline      -       1848
 199 UDMA_CRC_Error_Count    0x003e   200   108   000    Old_age   Always       -       355
 SM
-bm_ds_smart_parse "$SMF"
+bsr_ds_smart_parse "$SMF"
 check "verdict" eq "$SM_VERDICT" passed
 check "pending" eq "$SM_PENDING" 1848
 check "reallocated" eq "$SM_REALLOC" 912
@@ -241,36 +241,36 @@ check "CRC" eq "$SM_CRC" 355
 check "hours" eq "$SM_HOURS" 1552
 check "temperature" eq "$SM_TEMP" 38
 printf '240 Head_Flying_Hours       0x0000   100   253   000    Old_age   Offline      -       29457h+31m+12.583s\n' >> "$SMF"
-bm_ds_smart_parse "$SMF"
+bsr_ds_smart_parse "$SMF"
 check "a wrapped power-on counter: the head flying hours are a floor" eq "$SM_HOURS" 29457
-bm_ds_smart_file /dev/sdc; mkdir -p "${REPLY%/*}"; cp "$SMF" "$REPLY"
+bsr_ds_smart_file /dev/sdc; mkdir -p "${REPLY%/*}"; cp "$SMF" "$REPLY"
 FAKE_HEALTH_FIND=() FAKE_KLOG=1
 check "PASSED does not hide it: critical" level /dev/sdc critical
 check "  ... with the reason first" eq "${DS_WHY[0]}" pending-sectors
-bm_ds_why_text pending-sectors; check "  ... that names the verdict" bash -c '[[ $1 == *1848*PASSED* ]]' _ "$REPLY"
-rm -f "${SMF}" "$XDG_RUNTIME_DIR/big-mount/"*
+bsr_ds_why_text pending-sectors; check "  ... that names the verdict" bash -c '[[ $1 == *1848*PASSED* ]]' _ "$REPLY"
+rm -f "${SMF}" "$XDG_RUNTIME_DIR/big-storage-rescue/"*
 cat > "$SMF" <<'SM'
 SMART/Health Information (NVMe Log 0x02, NSID 0xffffffff)
 Critical Warning:                   0x04
 Percentage Used:                    12%
 Media and Data Integrity Errors:    7
 SM
-bm_ds_smart_parse "$SMF"
+bsr_ds_smart_parse "$SMF"
 check "NVMe: warning" eq "$SM_NVME_WARN" 0x04
 check "NVMe: media errors" eq "$SM_NVME_MEDIA" 7
-printf 'garbage\n\n' > "$SMF"; bm_ds_smart_parse "$SMF"; check "garbage gives nothing" eq "$SM_VERDICT$SM_PENDING" ""
-bm_ds_smart_parse "$WORK/none"; check "a missing file is not an error of anyone's" eq "$?" 1
+printf 'garbage\n\n' > "$SMF"; bsr_ds_smart_parse "$SMF"; check "garbage gives nothing" eq "$SM_VERDICT$SM_PENDING" ""
+bsr_ds_smart_parse "$WORK/none"; check "a missing file is not an error of anyone's" eq "$?" 1
 
 begin "the port of a USB disk, and its resets"
 (
-   unset -f bm_drive_health
+   unset -f bsr_drive_health
    . "$L/lib.sh"
    readlink() { printf '%s\n' /sys/devices/pci0000:00/0000:00:01.3/0000:02:00.0/usb1/1-9/1-9.1/1-9.1:1.0/host11/target11:0:0/11:0:0:0/block/sdb; }
-   bm_drive_port /dev/sdb
+   bsr_drive_port /dev/sdb
    [ "$REPLY" = 1-9.1 ] || { echo "      port [$REPLY]"; exit 1; }
-   bm_udev_props() { UP=(); }
-   bm_udisks_drive() { return 1; }
-   bm_drive_kmsg() {
+   bsr_udev_props() { UP=(); }
+   bsr_udisks_drive() { return 1; }
+   bsr_drive_kmsg() {
       DKMSG=("usb 1-9.1: reset high-speed USB device number 7 using xhci_hcd"
          "usb 1-9.1: reset high-speed USB device number 7 using xhci_hcd"
          "usb 1-9.1: USB disconnect, device number 5"
@@ -280,7 +280,7 @@ begin "the port of a USB disk, and its resets"
          "Buffer I/O error on dev sdb1, logical block 44975696, async page read"
          "I/O error, dev sdba, sector 1 op 0x0:(READ)")
    }
-   bm_drive_health /dev/sdb
+   bsr_drive_health /dev/sdb
    [ "${DH_COUNT[usb-resets]}" = 3 ] || { echo "      resets [${DH_COUNT[usb-resets]:-}]"; exit 1; }
    [ "${DH_COUNT[io-errors]}" = 2 ] || { echo "      io [${DH_COUNT[io-errors]:-}]"; exit 1; }
    [ "${DH_COUNT[timeouts]}" = 1 ] || { echo "      offline [${DH_COUNT[timeouts]:-}]"; exit 1; }
@@ -289,33 +289,33 @@ begin "the port of a USB disk, and its resets"
 (
    . "$L/lib.sh"
    readlink() { printf '%s\n' /sys/devices/x/usb1/1-9/1-9:1.0/host11/target/block/sdb; }
-   bm_udev_props() { UP=(); }
-   bm_udisks_drive() { return 1; }
-   bm_drive_kmsg() { DKMSG=("usb 1-9: reset high-speed USB device number 7 using xhci_hcd" "usb 1-9: reset high-speed USB device number 7 using xhci_hcd"); }
-   bm_drive_health /dev/sdb
+   bsr_udev_props() { UP=(); }
+   bsr_udisks_drive() { return 1; }
+   bsr_drive_kmsg() { DKMSG=("usb 1-9: reset high-speed USB device number 7 using xhci_hcd" "usb 1-9: reset high-speed USB device number 7 using xhci_hcd"); }
+   bsr_drive_health /dev/sdb
    [ "${#DH_FIND[@]}" -eq 0 ]
 ); check "two resets are normal while a disk spins up" eq "$?" 0
 
 begin "JSON: device data cannot break it"
 evil=$'a"b\\c\nd\te\x01f'
-bm_jo k "$evil" | json_ok; check "quotes, backslashes, controls" eq "${PIPESTATUS[1]}" 0
-check "the value survives" eq "$(bm_jo k 'x"y' | python3 -I -c 'import json,sys; print(json.load(sys.stdin)["k"])')" 'x"y'
-check "a number is a number" eq "$(bm_jn a 12 b nope)" '"a":12,"b":null'
-check "booleans" eq "$(bm_jb a 1 b 0 c "")" '"a":true,"b":false,"c":false'
+bsr_jo k "$evil" | json_ok; check "quotes, backslashes, controls" eq "${PIPESTATUS[1]}" 0
+check "the value survives" eq "$(bsr_jo k 'x"y' | python3 -I -c 'import json,sys; print(json.load(sys.stdin)["k"])')" 'x"y'
+check "a number is a number" eq "$(bsr_jn a 12 b nope)" '"a":12,"b":null'
+check "booleans" eq "$(bsr_jb a 1 b 0 c "")" '"a":true,"b":false,"c":false'
 FAKE_HEALTH_FIND=() FAKE_KLOG=1 FAKE_SMART=""
-bm_dv_list_json | json_ok; check "the whole list" eq "${PIPESTATUS[1]}" 0
-n="$(bm_dv_list_json | python3 -I -c 'import json,sys; d=json.load(sys.stdin); print(len(d["devices"]))')"
+bsr_dv_list_json | json_ok; check "the whole list" eq "${PIPESTATUS[1]}" 0
+n="$(bsr_dv_list_json | python3 -I -c 'import json,sys; d=json.load(sys.stdin); print(len(d["devices"]))')"
 check "every drive" eq "$n" "${#DV_TOP[@]}"
-bm_dv_list_text >/dev/null; check "the text list does not fail" eq "$?" 0
-check "a label cannot send escape sequences to the terminal" bash -c '! printf %s "$1" | grep -q $'"'"'\033'"'"'' _ "$(BM_TUI_COLOR=0 bm_tui_paint none $'x\033[31my')"
+bsr_dv_list_text >/dev/null; check "the text list does not fail" eq "$?" 0
+check "a label cannot send escape sequences to the terminal" bash -c '! printf %s "$1" | grep -q $'"'"'\033'"'"'' _ "$(BSR_TUI_COLOR=0 bsr_tui_paint none $'x\033[31my')"
 
 begin "mounting: what cannot be mounted says why"
 findmnt() { return 1; }
-bm_udisks() { UD_ERROR="" UD_MESSAGE=""; printf '%s\n' "$*" >> "$WORK/udisks.log"; return 0; }
-bm_mounts() { M_TARGET=() M_FSTYPE=() M_VFSOPT=() M_FSOPT=(); [ -n "${FAKE_MP:-}" ] && { M_TARGET=("$FAKE_MP"); M_VFSOPT=("$FAKE_OPTS"); M_FSTYPE=(x); M_FSOPT=(x); }; return 0; }
-bm_facts() { F=([DISK]=/dev/sdc [FSTYPE]="${DV[$1|FSTYPE]:-}" [NAME]="$1" [KNAME]="${1##*/}"); [ -n "${DV[$1|TYPE]:-}" ]; }
+bsr_udisks() { UD_ERROR="" UD_MESSAGE=""; printf '%s\n' "$*" >> "$WORK/udisks.log"; return 0; }
+bsr_mounts() { M_TARGET=() M_FSTYPE=() M_VFSOPT=() M_FSOPT=(); [ -n "${FAKE_MP:-}" ] && { M_TARGET=("$FAKE_MP"); M_VFSOPT=("$FAKE_OPTS"); M_FSTYPE=(x); M_FSOPT=(x); }; return 0; }
+bsr_facts() { F=([DISK]=/dev/sdc [FSTYPE]="${DV[$1|FSTYPE]:-}" [NAME]="$1" [KNAME]="${1##*/}"); [ -n "${DV[$1|TYPE]:-}" ]; }
 mnt() { # DEV EXPECTED_RC EXPECTED_WHY [MODE] [PROTECT] [REMOUNT]
-   bm_mnt_mount "$1" "${4:-ro}" "${5:-0}" "${6:-0}"; local rc=$?
+   bsr_mnt_mount "$1" "${4:-ro}" "${5:-0}" "${6:-0}"; local rc=$?
    [ "$rc" = "$2" ] && [ "$MNT_WHY" = "$3" ] || { echo "      rc=$rc why=$MNT_WHY"; return 1; }
 }
 : > "$WORK/udisks.log"
@@ -325,8 +325,8 @@ check "no filesystem: refused" mnt /dev/sde 20 no-fs
 check "swap: refused" mnt /dev/sda3 20 swap
 check "gone: exit 24" mnt /dev/sdz9 24 gone
 check "  ... UDisks2 was never asked" test ! -s "$WORK/udisks.log"
-bm_mnt_options ext4; check "ext4 read-only: no journal replay" eq "$REPLY" "ro,noatime,nosuid,nodev,noexec,noload"
-bm_mnt_options ntfs; check "NTFS read-only" eq "$REPLY" "ro,noatime,nosuid,nodev,noexec"
+bsr_mnt_options ext4; check "ext4 read-only: no journal replay" eq "$REPLY" "ro,noatime,nosuid,nodev,noexec,noload"
+bsr_mnt_options ntfs; check "NTFS read-only" eq "$REPLY" "ro,noatime,nosuid,nodev,noexec"
 FAKE_MP=/m FAKE_OPTS=rw,noatime
 check "the table says rw after asking ro: a failure, whatever mount said" mnt /dev/sdc1 1 unknown
 FAKE_OPTS=ro,noatime
@@ -338,7 +338,7 @@ FAKE_HEALTH_FIND=() FAKE_SMART=""
 FAKE_MP=""
 check "already rw and ro asked: it does not unmount by surprise" mnt /dev/sda2 20 already-rw
 fake_helper() { printf '%s\n' "$*" >> "$WORK/helper.log"; return "${FAKE_HELPER_RC:-0}"; }
-BM_HELPER_CMD=fake_helper FAKE_MP=/m FAKE_OPTS=ro,noatime
+BSR_HELPER_CMD=fake_helper FAKE_MP=/m FAKE_OPTS=ro,noatime
 : > "$WORK/helper.log"
 check "btrfs read-only, healthy drive: mounted" mnt /dev/sdg1 0 ""
 check "  ... without asking for the password" test ! -s "$WORK/helper.log"
@@ -348,28 +348,28 @@ check "  ... with writing blocked on the device" grep -qx 'protect /dev/sdg1' "$
 : > "$WORK/helper.log"
 check "ext4 read-only, drive at risk: no protection" mnt /dev/sda1 0 ""
 check "  ... so no password is asked" test ! -s "$WORK/helper.log"
-bm_facts /dev/sdg1; bm_chosen_ro /dev/sdg1
+bsr_facts /dev/sdg1; bsr_chosen_ro /dev/sdg1
 check "  ... recorded as chosen" eq "$?" 0
-bm_diskseq() { REPLY=8; }; bm_facts /dev/sdg1; bm_chosen_ro /dev/sdg1
+bsr_diskseq() { REPLY=8; }; bsr_facts /dev/sdg1; bsr_chosen_ro /dev/sdg1
 check "  ... not for a replaced device" eq "$?" 1
-bm_diskseq() { REPLY=7; }
+bsr_diskseq() { REPLY=7; }
 FAKE_HELPER_RC=3; check "btrfs, a sibling volume writing: refused" mnt /dev/sdg1 20 protect-busy
 FAKE_HELPER_RC=4; check "btrfs on the system drive: refused" mnt /dev/sdg1 20 protect-system
-unset BM_HELPER_CMD FAKE_HELPER_RC; FAKE_MP="" FAKE_HEALTH_FIND=() FAKE_SMART=""
-explain() { bm_mnt_explain /dev/sdc1 ntfs "$1"; eq "$MNT_WHY" "$2"; }
-bm_kernel_messages() { KMSG=(); }
+unset BSR_HELPER_CMD FAKE_HELPER_RC; FAKE_MP="" FAKE_HEALTH_FIND=() FAKE_SMART=""
+explain() { bsr_mnt_explain /dev/sdc1 ntfs "$1"; eq "$MNT_WHY" "$2"; }
+bsr_kernel_messages() { KMSG=(); }
 check "no driver" explain "unknown filesystem type 'apfs'" no-driver
 check "hibernated" explain "Windows is hibernated, refused to mount" ntfs-hibernated
 check "read error" explain "can't read superblock on /dev/sdc1" io-error
 check "bad superblock" explain "wrong fs type, bad option, bad superblock" fs-damaged
 check "not authorized" explain "org.freedesktop.UDisks2.Error.NotAuthorized" not-authorized
 check "not explainable: says so" explain "something else" unknown
-bm_kernel_messages() { KMSG=("XFS (loop3): recovery required on read-only device."); }
+bsr_kernel_messages() { KMSG=("XFS (loop3): recovery required on read-only device."); }
 check "journal needed: from the kernel" explain "mount failed" needs-recovery
 
 begin "a list shorter than the part of it that is shown"
 KMSG=("I/O error, dev sdc, sector 1")
-out="$(F=([DISK]=/dev/sdc [KNAME]=sdc [TRAN]=usb [RM]=1 [HOTPLUG]=1 [RO]=0 [DISK_RO]=0 [FSTYPE]=ntfs [FSVER]="" [LABEL]="" [UUID]="" [VENDOR]="" [MODEL]=""); D_CAUSE=io-errors D_DETAIL="" D_FIX="" D_WARN=(); DH_DISK=""; DH_FIND=(); bm_tech_report /dev/sdc1)"
+out="$(F=([DISK]=/dev/sdc [KNAME]=sdc [TRAN]=usb [RM]=1 [HOTPLUG]=1 [RO]=0 [DISK_RO]=0 [FSTYPE]=ntfs [FSVER]="" [LABEL]="" [UUID]="" [VENDOR]="" [MODEL]=""); D_CAUSE=io-errors D_DETAIL="" D_FIX="" D_WARN=(); DH_DISK=""; DH_FIND=(); bsr_tech_report /dev/sdc1)"
 check "one kernel message is shown" bash -c '[[ $1 == *"sector 1"* ]]' _ "$out"
 
 begin "the map of ddrescue: real numbers"
@@ -383,17 +383,17 @@ cat > "$WORK/map" <<'MAP'
 0x00101000  0x0001F000  *
 0x00120000  0x00EE0000  ?
 MAP
-bm_rec_map_parse "$WORK/map"
+bsr_rec_map_parse "$WORK/map"
 check "rescued" eq "$MP_RESCUED" 1048576
 check "given up" eq "$MP_BAD" 4096
 check "left to do" eq "$MP_TODO" $((0x1F000 + 0xEE0000))
-: > "$WORK/map"; bm_rec_map_parse "$WORK/map"; check "an empty map is not progress" eq "$?" 1
+: > "$WORK/map"; bsr_rec_map_parse "$WORK/map"; check "an empty map is not progress" eq "$?" 1
 
 begin "the log of rsync: what counts as copied"
-JS=([FILES_DONE]=0 [BYTES_DONE]=0 [READ_FAILS]=0) BM_FAILED=() BM_NOSPACE=0 BM_RECENT_A=() BM_RECENT_B=()
-BM_RUN_S=/src BM_RUN_D=/dst BM_RUN_DIR="$WORK"
+JS=([FILES_DONE]=0 [BYTES_DONE]=0 [READ_FAILS]=0) BSR_FAILED=() BSR_NOSPACE=0 BSR_RECENT_A=() BSR_RECENT_B=()
+BSR_RUN_S=/src BSR_RUN_D=/dst BSR_RUN_DIR="$WORK"
 : > "$WORK/events.log"
-ll() { printf '2026/10/30 14:37:02 [1] %s\n' "$1" | tee -a "$WORK/events.log" | while IFS= read -r x; do :; done; bm_job_log_line "2026/10/30 14:37:02 [1] $1"; }
+ll() { printf '2026/10/30 14:37:02 [1] %s\n' "$1" | tee -a "$WORK/events.log" | while IFS= read -r x; do :; done; bsr_job_log_line "2026/10/30 14:37:02 [1] $1"; }
 ll '>f+++++++++|100|ok.jpg'
 ll 'cd+++++++++|4096|pasta/'
 ll 'cL+++++++++|11|link'
@@ -407,125 +407,125 @@ check "a name that is not valid UTF-8 still counts" eq "${JS[FILES_DONE]}" 4
 ll '>f+++++++++|100|ok.jpg'
 check "sent again around a restart: counted once" eq "${JS[BYTES_DONE]}" 155
 ll '>f+++++++++|1000|ruim.bin'
-bm_job_out_line 'rsync: [sender] read errors mapping "/src/ruim.bin": Input/output error (5)'
-bm_job_out_line 'WARNING: ruim.bin failed verification -- update discarded (will try again).'
+bsr_job_out_line 'rsync: [sender] read errors mapping "/src/ruim.bin": Input/output error (5)'
+bsr_job_out_line 'WARNING: ruim.bin failed verification -- update discarded (will try again).'
 check "a failed attempt is taken back" eq "${JS[BYTES_DONE]}" 155
 ll '>f+++++++++|1000|ruim.bin'
-bm_job_out_line 'ERROR: ruim.bin failed verification -- update discarded.'
+bsr_job_out_line 'ERROR: ruim.bin failed verification -- update discarded.'
 check "the last one too" eq "${JS[BYTES_DONE]}" 155
-check "and it is a failure" test -n "${BM_FAILED[ruim.bin]:-}"
-bm_job_out_line 'rsync: [receiver] write failed on "/dst/video.mkv": No space left on device (28)'
-check "no space is noticed" eq "$BM_NOSPACE" 1
-check "the file is named, relative" test -n "${BM_FAILED[video.mkv]:-}"
-out="$(printf 'a\033]0;x\007b\xc2\x9bc\n' | bm_printable_lines)"
+check "and it is a failure" test -n "${BSR_FAILED[ruim.bin]:-}"
+bsr_job_out_line 'rsync: [receiver] write failed on "/dst/video.mkv": No space left on device (28)'
+check "no space is noticed" eq "$BSR_NOSPACE" 1
+check "the file is named, relative" test -n "${BSR_FAILED[video.mkv]:-}"
+out="$(printf 'a\033]0;x\007b\xc2\x9bc\n' | bsr_printable_lines)"
 check "listed names lose control characters" eq "$out" "  a]0;xbc"
-out="$(printf 'not read\tPhotos/a.jpg\n' | bm_printable_lines)"
+out="$(printf 'not read\tPhotos/a.jpg\n' | bsr_printable_lines)"
 check "  ... and keep the reason apart" eq "$out" "  not read  Photos/a.jpg"
-bm_job_out_line 'rsync: [sender] send_files failed to open "/src/segredo": Permission denied (13)'
-check "no permission" eq "${BM_FAILED[segredo]:-}" "Permission denied"
-bm_job_out_line 'rsync error: some files/attrs were not transferred (see previous errors) (code 23)'
-check "a summary line is not a file" eq "${#BM_FAILED[@]}" 3
+bsr_job_out_line 'rsync: [sender] send_files failed to open "/src/segredo": Permission denied (13)'
+check "no permission" eq "${BSR_FAILED[segredo]:-}" "Permission denied"
+bsr_job_out_line 'rsync error: some files/attrs were not transferred (see previous errors) (code 23)'
+check "a summary line is not a file" eq "${#BSR_FAILED[@]}" 3
 # rsync 3.5 logs both attempts of a file it cannot read and then says ERROR,
 # and both records are read once a second: the retry and its verdict often
 # arrive in the same look
 mkdir -p "$WORK/tick"; : > "$WORK/tick/events.log"; : > "$WORK/tick/rsync.out"
-( BM_RUN_DIR="$WORK/tick" JS=([FILES_DONE]=0 [BYTES_DONE]=0) BM_RECENT_A=() BM_RECENT_B=() BM_LOG_PART="" BM_OUT_PART=""
-  exec {BM_LOG_FD}<"$WORK/tick/events.log" {BM_OUT_FD}<"$WORK/tick/rsync.out"
+( BSR_RUN_DIR="$WORK/tick" JS=([FILES_DONE]=0 [BYTES_DONE]=0) BSR_RECENT_A=() BSR_RECENT_B=() BSR_LOG_PART="" BSR_OUT_PART=""
+  exec {BSR_LOG_FD}<"$WORK/tick/events.log" {BSR_OUT_FD}<"$WORK/tick/rsync.out"
   printf '2026/10/30 14:37:02 [1] >f+++++++++|1000|ruim.bin\n' >> "$WORK/tick/events.log"
-  bm_job_read_log
+  bsr_job_read_log
   printf '2026/10/30 14:37:03 [1] >f+++++++++|1000|ruim.bin\n' >> "$WORK/tick/events.log"
   printf 'ERROR: ruim.bin failed verification -- update discarded.\n' >> "$WORK/tick/rsync.out"
-  bm_job_read_log
+  bsr_job_read_log
   printf '%s %s\n' "${JS[FILES_DONE]}" "${JS[BYTES_DONE]}" > "$WORK/tick/result" )
 check "retry and error together: not counted" eq "$(cat "$WORK/tick/result")" "0 0"
-bm_pwned() { : > "$WORK/pwned"; }
-ll '>f+++++++++|7|$(bm_pwned)'
-bm_job_out_line 'WARNING: $(bm_pwned) failed verification -- update discarded (will try again).'
+bsr_pwned() { : > "$WORK/pwned"; }
+ll '>f+++++++++|7|$(bsr_pwned)'
+bsr_job_out_line 'WARNING: $(bsr_pwned) failed verification -- update discarded (will try again).'
 check "a file name is never run" test ! -e "$WORK/pwned"
 
 begin "job.conf: one KEY=value per line"
-JC=([DEST]='/x/backup=' [NAME]=ok); bm_job_conf_save "$WORK"; bm_job_conf_load "$WORK"
+JC=([DEST]='/x/backup=' [NAME]=ok); bsr_job_conf_save "$WORK"; bsr_job_conf_load "$WORK"
 check "a trailing = survives" eq "${JC[DEST]}" '/x/backup='
-JC=([DEST]=/x [NAME]=$'Fotos\nDEST=/home/victim'); bm_job_conf_save "$WORK" 2>/dev/null
+JC=([DEST]=/x [NAME]=$'Fotos\nDEST=/home/victim'); bsr_job_conf_save "$WORK" 2>/dev/null
 check "a line break is refused" eq "$?" 1
-bm_job_conf_load "$WORK"; check "  ... and the saved job is unchanged" eq "${JC[DEST]}" '/x/backup='
+bsr_job_conf_load "$WORK"; check "  ... and the saved job is unchanged" eq "${JC[DEST]}" '/x/backup='
 
 begin "an image job finds its source again"
-bm_is_block() { :; }
-JC=([DEVICE]=/dev/sdz1 [SERIAL]=WD1 [PART]=1 [SIZE]=500000000000); bm_rec_image_device
+bsr_is_block() { :; }
+JC=([DEVICE]=/dev/sdz1 [SERIAL]=WD1 [PART]=1 [SIZE]=500000000000); bsr_rec_image_device
 check "a renamed partition is found again" eq "$REPLY" /dev/sda1
-JC=([DEVICE]=/dev/sda [SERIAL]=WD1 [PART]="" [SIZE]=1000000000000); bm_rec_image_device
+JC=([DEVICE]=/dev/sda [SERIAL]=WD1 [PART]="" [SIZE]=1000000000000); bsr_rec_image_device
 check "the whole disk" eq "$REPLY" /dev/sda
-JC=([DEVICE]=/dev/sda1 [SERIAL]=GONE [PART]=1 [SIZE]=500000000000); bm_rec_image_device
+JC=([DEVICE]=/dev/sda1 [SERIAL]=GONE [PART]=1 [SIZE]=500000000000); bsr_rec_image_device
 check "a missing serial: no name fallback" eq "$REPLY" ""
-bm_is_block() { [ -b "$1" ]; }
-out="$(ddrescue() { :; }; bm_resolve() { R_DEV="$1"; }; bm_rec_check_dest() { REC_ERR=""; }
-   : > "$WORK/old.img"; bm_rec_image_cmd --source /dev/sda1 --image "$WORK/old.img" --dry-run --json)"
+bsr_is_block() { [ -b "$1" ]; }
+out="$(ddrescue() { :; }; bsr_resolve() { R_DEV="$1"; }; bsr_rec_check_dest() { REC_ERR=""; }
+   : > "$WORK/old.img"; bsr_rec_image_cmd --source /dev/sda1 --image "$WORK/old.img" --dry-run --json)"
 check "an existing file is never imaged over" grep -q '"error":"image-exists"' <<< "$out"
 
 begin "jobs: state on disk"
-d="$BM_JOBS/20261030-140000-abcd"; mkdir -p "$d"
+d="$BSR_JOBS/20261030-140000-abcd"; mkdir -p "$d"
 JC=([ID]=20261030-140000-abcd [KIND]=copy [SOURCE]="/a b" [DEST]=/c [NAME]=x)
-bm_job_conf_save "$d"
-JC=(); bm_job_conf_load "$d"
+bsr_job_conf_save "$d"
+JC=(); bsr_job_conf_load "$d"
 check "paths with spaces survive" eq "${JC[SOURCE]}" "/a b"
-bm_job_dir 20261030-140000-abcd; check "a valid id" eq "$?" 0
-bm_job_dir ../../etc; check "a path is not an id" eq "$?" 1
-bm_job_dir '20261030-140000-abcd/../..'; check "  ... nor this" eq "$?" 1
-JS=([STATE]=running [PID]=999999 [PID_START]=1); bm_job_state_save "$d"
-bm_job_state_load "$d"; check "running, but its supervisor is gone: interrupted" eq "${JS[STATE]}" interrupted
-JS=([STATE]=running [PID]="$$"); bm_proc_state "$$"; JS[PID_START]="$PROC_START"; bm_job_state_save "$d"
-bm_job_state_load "$d"; check "running, and alive: running" eq "${JS[STATE]}" running
-JS=([STATE]=running [PID]="$$" [PID_START]=1); bm_job_state_save "$d"
-bm_job_state_load "$d"; check "a reused PID is not the supervisor" eq "${JS[STATE]}" interrupted
-JS=([STATE]=pending [PID]=""); bm_job_state_save "$d"
-bm_job_state_load "$d"; check "pending, before the supervisor starts" eq "${JS[STATE]}" pending
-JS=([STATE]=completed); bm_job_exit; check "exit: completed 0" eq "$?" 0
-JS=([STATE]=needs-attention [REASON]=files-left); bm_job_exit; check "exit: files left 22" eq "$?" 22
-JS=([STATE]=needs-attention [REASON]=no-space); bm_job_exit; check "exit: no space 21" eq "$?" 21
-JS=([STATE]=needs-attention [REASON]=source-gone); bm_job_exit; check "exit: gone 24" eq "$?" 24
-JS=([STATE]=cancelled); bm_job_exit; check "exit: cancelled 23" eq "$?" 23
-JS=([STATE]=paused); bm_job_exit; check "exit: paused 23" eq "$?" 23
-JS=([STATE]=failed); bm_job_exit; check "exit: failed 1" eq "$?" 1
-bm_job_bar 54; check "the bar shows the number it was given" bash -c '[[ $1 == *"54%" ]]' _ "$REPLY"
+bsr_job_dir 20261030-140000-abcd; check "a valid id" eq "$?" 0
+bsr_job_dir ../../etc; check "a path is not an id" eq "$?" 1
+bsr_job_dir '20261030-140000-abcd/../..'; check "  ... nor this" eq "$?" 1
+JS=([STATE]=running [PID]=999999 [PID_START]=1); bsr_job_state_save "$d"
+bsr_job_state_load "$d"; check "running, but its supervisor is gone: interrupted" eq "${JS[STATE]}" interrupted
+JS=([STATE]=running [PID]="$$"); bsr_proc_state "$$"; JS[PID_START]="$PROC_START"; bsr_job_state_save "$d"
+bsr_job_state_load "$d"; check "running, and alive: running" eq "${JS[STATE]}" running
+JS=([STATE]=running [PID]="$$" [PID_START]=1); bsr_job_state_save "$d"
+bsr_job_state_load "$d"; check "a reused PID is not the supervisor" eq "${JS[STATE]}" interrupted
+JS=([STATE]=pending [PID]=""); bsr_job_state_save "$d"
+bsr_job_state_load "$d"; check "pending, before the supervisor starts" eq "${JS[STATE]}" pending
+JS=([STATE]=completed); bsr_job_exit; check "exit: completed 0" eq "$?" 0
+JS=([STATE]=needs-attention [REASON]=files-left); bsr_job_exit; check "exit: files left 22" eq "$?" 22
+JS=([STATE]=needs-attention [REASON]=no-space); bsr_job_exit; check "exit: no space 21" eq "$?" 21
+JS=([STATE]=needs-attention [REASON]=source-gone); bsr_job_exit; check "exit: gone 24" eq "$?" 24
+JS=([STATE]=cancelled); bsr_job_exit; check "exit: cancelled 23" eq "$?" 23
+JS=([STATE]=paused); bsr_job_exit; check "exit: paused 23" eq "$?" 23
+JS=([STATE]=failed); bsr_job_exit; check "exit: failed 1" eq "$?" 1
+bsr_job_bar 54; check "the bar shows the number it was given" bash -c '[[ $1 == *"54%" ]]' _ "$REPLY"
 JS=([STATE]=running [BYTES_NOW]=100 [BYTES_TOTAL]=0 [FILES_DONE]=3); JC=([SOURCE]=/a [DEST]=/b)
-bm_job_status_text "$d" >/dev/null; check "a job that could be read: exit 0" eq "$?" 0
-out="$(bm_job_status_text "$d")"
+bsr_job_status_text "$d" >/dev/null; check "a job that could be read: exit 0" eq "$?" 0
+out="$(bsr_job_status_text "$d")"
 check "without a total: no percentage" bash -c '[[ $1 != *"%"* ]]' _ "$out"
 check "  ... and no time left" bash -c '[[ $1 != *Remaining* ]]' _ "$out"
 JC=([ID]=x [DST_FS]=ext4 [SRC_FS]=ext4 [ON_CONFLICT]=skip [BWLIMIT]=""); touch "$d/excludes.txt"
-bm_cp_rsync_args "$d" /dst
+bsr_cp_rsync_args "$d" /dst
 args=" ${RS[*]} "
 check "rsync: never deletes" bash -c '[[ $1 != *--delete* && $1 != *--remove-source* ]]' _ "$args"
 check "rsync: does not follow links" bash -c '[[ $1 != *" -L "* && $1 != *--copy-links* && $1 == *" -rlt "* ]]' _ "$args"
 check "rsync: stays on the filesystem" bash -c '[[ $1 == *--one-file-system* ]]' _ "$args"
 check "rsync: existing files are kept by default" bash -c '[[ $1 == *--ignore-existing* ]]' _ "$args"
-JC[ON_CONFLICT]=overwrite; bm_cp_rsync_args "$d" /dst
+JC[ON_CONFLICT]=overwrite; bsr_cp_rsync_args "$d" /dst
 check "rsync: overwrite only when asked" bash -c '[[ $1 != *--ignore-existing* ]]' _ " ${RS[*]} "
-JC[ON_CONFLICT]=backup; bm_cp_rsync_args "$d" /dst
-check "rsync: backup keeps the old ones" bash -c '[[ $1 == *--backup-dir=/dst/.big-mount-backup-x* ]]' _ " ${RS[*]} "
-JC=([ID]=x [DST_FS]=vfat [SRC_FS]=ext4 [ON_CONFLICT]=skip); bm_cp_rsync_args "$d" /dst
+JC[ON_CONFLICT]=backup; bsr_cp_rsync_args "$d" /dst
+check "rsync: backup keeps the old ones" bash -c '[[ $1 == *--backup-dir=/dst/.big-storage-rescue-backup-x* ]]' _ " ${RS[*]} "
+JC=([ID]=x [DST_FS]=vfat [SRC_FS]=ext4 [ON_CONFLICT]=skip); bsr_cp_rsync_args "$d" /dst
 check "rsync: FAT has no permissions, and 2 s dates" bash -c '[[ $1 == *--no-perms* && $1 == *--modify-window=2* ]]' _ " ${RS[*]} "
 
 begin "anonymizing"
-out="$(printf '{"serial":"TESTSERIAL1","label":"Fotos da Maria","name":"x"}\nSerial number: TESTSERIAL1\n%s/segredo /run/media/%s/ARQUIVOS “Fotos”\n' "$HOME" "$(id -un)" | bm_anon_filter)"
+out="$(printf '{"serial":"TESTSERIAL1","label":"Fotos da Maria","name":"x"}\nSerial number: TESTSERIAL1\n%s/segredo /run/media/%s/ARQUIVOS “Fotos”\n' "$HOME" "$(id -un)" | bsr_anon_filter)"
 check "no serial" bash -c '[[ $1 != *TESTSERIAL1* ]]' _ "$out"
 check "no label" bash -c '[[ $1 != *Maria* && $1 != *“Fotos”* ]]' _ "$out"
 check "no user" bash -c '[[ $1 != *"$2"* ]]' _ "$out" "/run/media/$(id -un)"
 check "no home" bash -c '[[ $1 != *"$2"* ]]' _ "$out" "$HOME"
 # A real report: found by running one, where the label was in the title and the mount point
-bm_anon_labels() { printf '%s\n' 'OLD DATA' 'x.*' 'ab'; }
-out="$(printf '== OLD DATA ==\nUUID: 7044c98d-66a1\nMounted at: /run/media/%s/OLD DATA\n/run/media/%s/7044-ABCD/x\n{"uuid":"7044","source_uuid":"7044"}\nabout a x.* file\n' "$(id -un)" "$(id -un)" | bm_anon_filter)"
+bsr_anon_labels() { printf '%s\n' 'OLD DATA' 'x.*' 'ab'; }
+out="$(printf '== OLD DATA ==\nUUID: 7044c98d-66a1\nMounted at: /run/media/%s/OLD DATA\n/run/media/%s/7044-ABCD/x\n{"uuid":"7044","source_uuid":"7044"}\nabout a x.* file\n' "$(id -un)" "$(id -un)" | bsr_anon_filter)"
 check "no volume name, in a title or a mount point" bash -c '[[ $1 != *"OLD DATA"* ]]' _ "$out"
 check "no UUID, as text or JSON, or as the name of a mount point" bash -c '[[ $1 != *7044* ]]' _ "$out"
 check "a mount point comes out clean" bash -c '[[ $1 == *"/run/media/USER/(hidden)"$'"'"'\n'"'"'* && $1 != *"(hidden))"* ]]' _ "$out"
 check "a volume name is data, not a pattern" bash -c '[[ $1 == *"about a (hidden) file"* ]]' _ "$out"
 check "a name of two letters does not hit ordinary words" bash -c '[[ $1 == *about* ]]' _ "$out"
-unset -f bm_anon_labels
-out="$(printf 'plain line' | bm_anon_filter)"; check "the last line stays without a line break of its own" eq "$out" "plain line"
+unset -f bsr_anon_labels
+out="$(printf 'plain line' | bsr_anon_filter)"; check "the last line stays without a line break of its own" eq "$out" "plain line"
 
 begin "commands: usage and exit codes (a new process each)"
-run_b() { env -u BIGMOUNT_LIB "$B" "$@"; }
+run_b() { env -u BSR_LIB "$B" "$@"; }
 run_b --drive --help >/dev/null; check "--drive --help" eq "$?" 0
 run_b --drive nonsense >/dev/null 2>&1; check "an unknown command: exit 2" eq "$?" 2
 run_b --drive list --nope >/dev/null 2>&1; check "an unknown option: exit 2" eq "$?" 2
@@ -546,87 +546,89 @@ for c in "unmount --dry-run" "safe-remove --dry-run" busy close-apps; do
 done
 run_b --drive </dev/null >/dev/null 2>&1; check "the interactive manager without a terminal: exit 2" eq "$?" 2
 out="$(NO_COLOR=1 run_b --drive --help | grep -c $'\033')"; check "NO_COLOR: no escape sequences" eq "$out" 0
-LC_ALL=C bash -c 'BIGMOUNT_X=1; "$0" --drive list >/dev/null' "$B"; check "a plain terminal locale works" eq "$?" 0
-check "the old commands are still in the help" bash -c 'h="$("$1" --help)"; for c in --dry-run --diagnose --busy --unmount --safe-remove --gui --gui-remove --secure-erase --doctor --version; do [[ $h == *"$c"* ]] || exit 1; done' _ "$B"
-env -u WAYLAND_DISPLAY -u DISPLAY "$B" --gui-drive >/dev/null 2>"$WORK/nogui"; check "no graphical session: exit 25" eq "$?" 25
-check "  ... and it says where the same tools are" grep -q 'bigmount --drive' "$WORK/nogui"
-env -u WAYLAND_DISPLAY -u DISPLAY "$B" --gui-drive-check /dev/null >/dev/null 2>&1; check "  ... also for the alias" eq "$?" 25
-check "the two flags go to one program, GTK 4 and libadwaita" bash -c '[ "$(grep -c "python3 -I \"\$py\"" "$1/drive.sh")" = 1 ] && grep -q "gi.require_version(\"Adw\", \"1\")" "$1/drive-gui.py" && ! grep -rqE "PySide|PyQt|kdialog|zenity" "$1/drive-gui.py" "$1/gui"' _ "$L"
+LC_ALL=C bash -c 'BSR_BIN_X=1; "$0" --drive list >/dev/null' "$B"; check "a plain terminal locale works" eq "$?" 0
+check "every command is in the help" bash -c 'h="$("$1" --help)"; for c in --gui --gui-health --gui-rescue --cli --diagnose --busy --unmount --safe-remove --gui-diagnose --gui-remove --notifier --migrate-state --doctor --version; do [[ $h == *"$c"* ]] || exit 1; done' _ "$B"
+check "  ... and nothing of the automount or of Secure Erase" bash -c 'h="$("$1" --help)"; [[ $h != *--dry-run* && $h != *--secure-erase* && $h != *big-mount.service* ]]' _ "$B"
+check "--drive (the name in Big-Mount) is the same manager as --cli" bash -c '[ "$("$1" --cli --help)" = "$("$1" --drive --help)" ]' _ "$B"
+env -u WAYLAND_DISPLAY -u DISPLAY "$B" --gui >/dev/null 2>"$WORK/nogui"; check "no graphical session: exit 25" eq "$?" 25
+check "  ... and it says where the same tools are" grep -q 'big-storage-rescue --cli' "$WORK/nogui"
+env -u WAYLAND_DISPLAY -u DISPLAY "$B" --gui-health /dev/null >/dev/null 2>&1; check "  ... also for the alias" eq "$?" 25
+check "the two flags go to one program, GTK 4 and libadwaita" bash -c '[ "$(grep -c "python3 -I \"\$py\"" "$1/drive.sh")" = 1 ] && grep -q "gi.require_version(\"Adw\", \"1\")" "$1/app.py" && ! grep -rqE "PySide|PyQt|kdialog|zenity" "$1/app.py" "$1/gui"' _ "$L"
 
 begin "the boot path knows nothing of this"
-check "bigmount loads no drive module by itself" bash -c '! grep -nE "drive[-.]|python|gtk|Gtk" "$1" | grep -v "^[0-9]*:#"' _ "$B"
+check "big-storage-rescue loads no drive module by itself" bash -c '! grep -nE "drive[-.]|python|gtk|Gtk" "$1" | grep -v "^[0-9]*:#"' _ "$B"
 check "cli.sh does not load them either until asked" bash -c '[ "$(grep -cE "^\. .*drive" "$1/cli.sh")" = 0 ]' _ "$L"
 
 begin "commands that must not exist in the drive manager"
-grep -hvE '^[[:space:]]*#' "$L"/drive*.sh "$L"/bigmount-drive-helper "$L"/drive-gui.py "$L"/gui/*.py "$L"/gui/pages/*.py > "$WORK/code.txt"
-for bad in 'fsck' 'mkfs' 'wipefs' 'dd if=' 'umount -f' 'umount -l' 'kill -9' 'kill -KILL' 'fuser -k' 'chmod -R' 'chown -R' 'btrfs check' 'ntfsfix' 'shred' 'blkdiscard' 'sgdisk' 'parted' ' eval ' 'rm -rf /'; do
+grep -hvE '^[[:space:]]*#' "$L"/drive*.sh "$L"/bsr-drive-helper "$L"/app.py "$L"/gui/*.py "$L"/gui/pages/*.py > "$WORK/code.txt"
+for bad in 'fsck' 'mkfs' 'wipefs' 'dd if=' 'umount -f' 'umount -l' 'kill -9' 'kill -KILL' 'fuser -k' 'chmod -R' 'chown -R' 'btrfs check' 'ntfsfix' 'shred' 'blkdiscard' 'sgdisk' 'parted' ' eval ' 'rm -rf /' \
+   'SecurityEraseUnit' 'hdparm' 'nvme format' 'nvme sanitize'; do
    check "no '$bad'" bash -c '! grep -nF -- "$2" "$1"' _ "$WORK/code.txt" "$bad"
 done
-check "the helper changes a device only through the read-only flag" bash -c '[ "$(grep -cE "blockdev --set" "$1")" = 2 ] && ! grep -E "of=/dev|[^2&]> */dev/(sd|nvme|loop|mapper|disk|mmc)" "$1"' _ "$L/bigmount-drive-helper"
-check "the helper has a fixed library path" grep -q '^BM_LIB="/usr/lib/big-mount"$' "$L/bigmount-drive-helper"
-check "the helper resets PATH" grep -q '^export PATH=/usr/bin:/bin:/usr/sbin:/sbin$' "$L/bigmount-drive-helper"
+check "the helper changes a device only through the read-only flag" bash -c '[ "$(grep -cE "blockdev --set" "$1")" = 2 ] && ! grep -E "of=/dev|[^2&]> */dev/(sd|nvme|loop|mapper|disk|mmc)" "$1"' _ "$L/bsr-drive-helper"
+check "the helper has a fixed library path" grep -q '^BSR_LIB="/usr/lib/big-storage-rescue"$' "$L/bsr-drive-helper"
+check "the helper resets PATH" grep -q '^export PATH=/usr/bin:/bin:/usr/sbin:/sbin$' "$L/bsr-drive-helper"
 check "rsync is started with fixed options, in one place" eq "$(grep -cE '^ *ionice .*rsync ' "$L/drive-copy.sh")" 1
 
 begin "the application: what the window is told"
-. "$L/drive-erase.sh"
-bm_dv_scan
-bm_dv_stable_id /dev/sdc; check "a drive is known by its serial, not its name" eq "$REPLY" serial:S1
-bm_dv_stable_id /dev/sdg; check "  ... without a serial, by its first filesystem" eq "$REPLY" uuid:multi
-bm_dv_stable_id /dev/sde; check "  ... without either, by name and size, which says so" eq "$REPLY" device:/dev/sde:16000000000
-bm_dv_disk_json /dev/sdc | json_ok; check "the JSON of a drive is valid" eq "$?" 0
-bm_dv_part_json /dev/sdg1 | grep -q '"log_replay":true'; check "btrfs: its log replays read-only" eq "$?" 0
-bm_dv_part_json /dev/sda1 | grep -q '"log_replay"'; check "  ... ext4 does not say so" eq "$?" 1
-bm_dv_disk_json /dev/sdc | grep -q '"stable_id":"serial:S1"'; check "  ... with its identity" eq "$?" 0
-bm_dv_disk_json /dev/sdc | grep -q '"diskseq":7'; check "  ... and this connection of it" eq "$?" 0
-bm_rec_categories_valid photos,videos; check "types of file: known ones" eq "$?" 0
-bm_rec_categories_valid all; check "  ... all" eq "$?" 0
-bm_rec_categories_valid "photos,evil;rm"; check "  ... anything else is refused" eq "$?" 1
-bm_rec_categories_valid ""; check "  ... nothing is not a choice" eq "$?" 1
-bm_rec_carve_commands photos,documents
+bsr_dv_scan
+bsr_dv_stable_id /dev/sdc; check "a drive is known by its serial, not its name" eq "$REPLY" serial:S1
+bsr_dv_stable_id /dev/sdg; check "  ... without a serial, by its first filesystem" eq "$REPLY" uuid:multi
+bsr_dv_stable_id /dev/sde; check "  ... without either, by name and size, which says so" eq "$REPLY" device:/dev/sde:16000000000
+bsr_dv_disk_json /dev/sdc | json_ok; check "the JSON of a drive is valid" eq "$?" 0
+bsr_dv_part_json /dev/sdg1 | grep -q '"log_replay":true'; check "btrfs: its log replays read-only" eq "$?" 0
+bsr_dv_part_json /dev/sda1 | grep -q '"log_replay"'; check "  ... ext4 does not say so" eq "$?" 1
+bsr_dv_disk_json /dev/sdc | grep -q '"stable_id":"serial:S1"'; check "  ... with its identity" eq "$?" 0
+bsr_dv_disk_json /dev/sdc | grep -q '"diskseq":7'; check "  ... and this connection of it" eq "$?" 0
+bsr_rec_categories_valid photos,videos; check "types of file: known ones" eq "$?" 0
+bsr_rec_categories_valid all; check "  ... all" eq "$?" 0
+bsr_rec_categories_valid "photos,evil;rm"; check "  ... anything else is refused" eq "$?" 1
+bsr_rec_categories_valid ""; check "  ... nothing is not a choice" eq "$?" 1
+bsr_rec_carve_commands photos,documents
 check "PhotoRec: only the families asked for" eq "$REPLY" "partition_none,fileopt,everything,disable,jpg,enable,png,enable,gif,enable,bmp,enable,tif,enable,orf,enable,pdf,enable,doc,enable,zip,enable,txt,enable,wholespace,search"
-bm_rec_carve_commands documents,archives
+bsr_rec_carve_commands documents,archives
 check "  ... a family asked twice counts once" eq "$(grep -o 'zip,enable' <<< "$REPLY" | wc -l)" 1
-bm_rec_carve_commands all
+bsr_rec_carve_commands all
 check "  ... all of them, without the one that matches empty blocks where it exists" bash -c '[[ $1 == partition_none,fileopt,everything,enable,*wholespace,search ]]' _ "$REPLY"
 screen=$'\033[6;6HPartition\033[6;33HStart\n\033[9;3HLinux\033[9;27H0  32 33\033[9;42H4  52 48\033[9;58H65536 [TEST LOST]\r\n\033[10;3HLinux\033[10;27H0  32 33\033[10;42H4  52 48\033[10;58H65536 [TEST LOST]\n Analyse cylinder     4/8: 51%\n 2 P HPFS - NTFS              1  37 37     2  10  8      14336\n'
-bm_rec_parse_partitions <<< "$screen"
+bsr_rec_parse_partitions <<< "$screen"
 check "TestDisk: the analysis screen, each partition once" eq "${#PT_TYPE[@]}" 2
 check "  ... its type" eq "${PT_TYPE[0]}" Linux
 check "  ... its size in sectors" eq "${PT_SECTORS[0]}" 65536
 check "  ... its label, with spaces" eq "${PT_LABEL[0]}" "TEST LOST"
 check "  ... the list format too" eq "${PT_TYPE[1]}:${PT_SECTORS[1]}" "HPFS - NTFS:14336"
-bm_rec_parse_partitions < "$HERE/fixtures/testdisk-gpt-list.txt"
+bsr_rec_parse_partitions < "$HERE/fixtures/testdisk-gpt-list.txt"
 check "TestDisk reads a GPT table" eq "${#PT_TYPE[@]}:${PT_START[0]}:${PT_SECTORS[0]}:${PT_LABEL[0]}" "4:2048:1638400:DataPart"
-bm_rec_parse_partitions < "$HERE/fixtures/testdisk-gpt-analyze.txt"
+bsr_rec_parse_partitions < "$HERE/fixtures/testdisk-gpt-analyze.txt"
 check "  ... and its analysis" eq "${#PT_TYPE[@]}:${PT_TYPE[2]}:${PT_LABEL[3]}:${PT_SECTORS[3]}" "4:Linux filesys. data:NO NAME:1638378"
 testdisk() { :; }
 stop_helper() { printf '%s\n' "$*" > "$WORK/helper.args"; while [ ! -e "$3" ]; do sleep 0.1; done; return 143; }
 rm -f "$WORK/helper.args"
-out="$(BM_HELPER_CMD=stop_helper; bm_resolve() { R_DEV="$1"; }; bm_rec_partitions /dev/sda --search --json & p=$!
+out="$(BSR_HELPER_CMD=stop_helper; bsr_resolve() { R_DEV="$1"; }; bsr_rec_partitions /dev/sda --search --json & p=$!
    until [ -e "$WORK/helper.args" ]; do sleep 0.1; done; kill -TERM "$p"; wait "$p")"
 check "TestDisk stops through its stop file" grep -q '"error":"cancelled"' <<< "$out"
 check "  ... with the analysis arguments" grep -qE '^partitions /dev/sda /.+/stop search (gpt|i386)$' "$WORK/helper.args"
 unset -f testdisk
-DV=() bm_drive_is_uuid UUID=ABCD; check "a UUID is a target" eq "$REPLY" ABCD
-bm_drive_is_uuid /dev/sda; check "  ... a path is not" eq "$?" 1
-bm_drive_uuid_device u-a1; check "UUID of one device: found" eq "$?:$REPLY" 0:/dev/sda1
-bm_drive_uuid_device multi; check "  ... of two devices: ambiguous, nothing is guessed" eq "$?" 2
-bm_drive_uuid_device nope; check "  ... of none: not found" eq "$?" 1
-bm_rec_methods_case() { bm_resolve() { R_DEV="$1"; R_PATH=""; }; bm_rec_methods "$1" --json; }
-bm_dv_fs_supported() { return 0; }
-bm_ds_level() { DS_LEVEL="${FAKE_LEVEL:-normal}"; DS_WHY=() DS_BASIS=log; }
+DV=() bsr_drive_is_uuid UUID=ABCD; check "a UUID is a target" eq "$REPLY" ABCD
+bsr_drive_is_uuid /dev/sda; check "  ... a path is not" eq "$?" 1
+bsr_drive_uuid_device u-a1; check "UUID of one device: found" eq "$?:$REPLY" 0:/dev/sda1
+bsr_drive_uuid_device multi; check "  ... of two devices: ambiguous, nothing is guessed" eq "$?" 2
+bsr_drive_uuid_device nope; check "  ... of none: not found" eq "$?" 1
+bsr_rec_methods_case() { bsr_resolve() { R_DEV="$1"; R_PATH=""; }; bsr_rec_methods "$1" --json; }
+bsr_dv_fs_supported() { return 0; }
+bsr_ds_level() { DS_LEVEL="${FAKE_LEVEL:-normal}"; DS_WHY=() DS_BASIS=log; }
 method() { python3 -I -c 'import json,sys; d=json.load(sys.stdin); m={x["id"]:x for x in d["methods"]}; print(d["recommended"], m[sys.argv[1]]["available"], m[sys.argv[1]]["why"])' "$1"; }
-out="$(bm_rec_methods_case /dev/sda1)"; printf '%s' "$out" | json_ok; check "methods: valid JSON" eq "$?" 0
-FAKE_LEVEL=normal; check "  ... a healthy volume: list first" eq "$(bm_rec_methods_case /dev/sda1 | python3 -I -c 'import json,sys; print(json.load(sys.stdin)["recommended"])')" quick
-FAKE_LEVEL=critical; check "  ... a drive at risk with a volume: copy what matters" eq "$(bm_rec_methods_case /dev/sda1 | python3 -I -c 'import json,sys; print(json.load(sys.stdin)["recommended"])')" copy
-check "  ... a locked volume cannot be listed, and says why" bash -c '[[ $1 == *"False locked" ]]' _ "$(bm_rec_methods_case /dev/sdb1 | method quick)"
-FAKE_LEVEL=critical; check "  ... a drive at risk that cannot be opened: an image" eq "$(bm_rec_methods_case /dev/sdb1 | python3 -I -c 'import json,sys; print(json.load(sys.stdin)["recommended"])')" image
-FAKE_LEVEL=normal; check "  ... a whole disk has no files to list until a volume is chosen" bash -c '[[ $1 == *"False pick-volume" ]]' _ "$(bm_rec_methods_case /dev/sdc | method copy)"
+out="$(bsr_rec_methods_case /dev/sda1)"; printf '%s' "$out" | json_ok; check "methods: valid JSON" eq "$?" 0
+FAKE_LEVEL=normal; check "  ... a healthy volume: list first" eq "$(bsr_rec_methods_case /dev/sda1 | python3 -I -c 'import json,sys; print(json.load(sys.stdin)["recommended"])')" quick
+FAKE_LEVEL=critical; check "  ... a drive at risk with a volume: copy what matters" eq "$(bsr_rec_methods_case /dev/sda1 | python3 -I -c 'import json,sys; print(json.load(sys.stdin)["recommended"])')" copy
+check "  ... a locked volume cannot be listed, and says why" bash -c '[[ $1 == *"False locked" ]]' _ "$(bsr_rec_methods_case /dev/sdb1 | method quick)"
+FAKE_LEVEL=critical; check "  ... a drive at risk that cannot be opened: an image" eq "$(bsr_rec_methods_case /dev/sdb1 | python3 -I -c 'import json,sys; print(json.load(sys.stdin)["recommended"])')" image
+FAKE_LEVEL=normal; check "  ... a whole disk has no files to list until a volume is chosen" bash -c '[[ $1 == *"False pick-volume" ]]' _ "$(bsr_rec_methods_case /dev/sdc | method copy)"
 FAKE_LEVEL=attention; check "  ... a whole disk at risk: an image, and never 'its files cannot be opened'" bash -c '[[ $1 == image$'"'"'\t'"'"'* && $1 == *"choose one of its volumes"* && $1 != *"cannot be opened"* ]]' _ \
-    "$(LANGUAGE=C bm_rec_methods_case /dev/sdc | python3 -I -c 'import json,sys; d=json.load(sys.stdin); print(d["recommended"] + "\t" + d["recommended_why"])')"
-printf 'x' > "$WORK/some.img"; check "  ... an image: search it, it touches no disk" bash -c '[[ $1 == deep* ]]' _ "$(bm_rec_methods_case "$WORK/some.img" | method deep)"
-check "  ... an image is not imaged again" bash -c '[[ $1 == *"False image-file" ]]' _ "$(bm_rec_methods_case "$WORK/some.img" | method image)"
-unset -f bm_resolve bm_dv_fs_supported bm_ds_level bm_rec_methods_case method
+    "$(LANGUAGE=C bsr_rec_methods_case /dev/sdc | python3 -I -c 'import json,sys; d=json.load(sys.stdin); print(d["recommended"] + "\t" + d["recommended_why"])')"
+printf 'x' > "$WORK/some.img"; check "  ... an image: search it, it touches no disk" bash -c '[[ $1 == deep* ]]' _ "$(bsr_rec_methods_case "$WORK/some.img" | method deep)"
+check "  ... an image is not imaged again" bash -c '[[ $1 == *"False image-file" ]]' _ "$(bsr_rec_methods_case "$WORK/some.img" | method image)"
+unset -f bsr_resolve bsr_dv_fs_supported bsr_ds_level bsr_rec_methods_case method
 . "$L/lib.sh"; . "$L/drive-diag.sh"
 
 begin "the application: a list of what exists, for real, in a scratch folder"

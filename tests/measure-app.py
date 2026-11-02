@@ -45,11 +45,11 @@ def children_of(pid):
 def measure_process():
     env = {**os.environ, "DISPLAY": ":none", "PYTHONWARNINGS": "ignore"}
     t0 = time.time()
-    proc = subprocess.Popen(["dbus-run-session", "--", "python3", "-I", str(REPO / "big-mount/usr/lib/big-mount/drive-gui.py")],
+    proc = subprocess.Popen(["dbus-run-session", "--", "python3", "-I", str(REPO / "big-storage-rescue/usr/lib/big-storage-rescue/app.py")],
                             env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
     pid = None
     while time.time() - t0 < 15 and pid is None:
-        found = subprocess.run(["pgrep", "-g", str(proc.pid), "-f", "drive-gui.py"], capture_output=True, text=True).stdout.split()
+        found = subprocess.run(["pgrep", "-g", str(proc.pid), "-f", "app.py"], capture_output=True, text=True).stdout.split()
         pid = next((int(p) for p in found if int(p) != proc.pid and "python3" in open(f"/proc/{p}/cmdline", "rb").read().decode("utf-8", "replace").split("\0")[0]), None)
         time.sleep(0.02)
     calls = WORK / "calls"

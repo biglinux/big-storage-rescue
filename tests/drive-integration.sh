@@ -14,9 +14,9 @@ set -u
 export LC_ALL=C.UTF-8 LANGUAGE=C
 HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO="$(dirname "$HERE")"
-B="${BM:-$REPO/big-mount/usr/bin/bigmount}"
+B="${BM:-$REPO/big-storage-rescue/usr/bin/big-storage-rescue}"
 WORK="$(mktemp -d "${TMPDIR:-/var/tmp}/bm-drive-XXXXXX")"
-export XDG_STATE_HOME="$WORK/state" XDG_RUNTIME_DIR_REAL="${XDG_RUNTIME_DIR:-}"
+export XDG_STATE_HOME="$WORK/state" XDG_CONFIG_HOME="$WORK/config" XDG_RUNTIME_DIR_REAL="${XDG_RUNTIME_DIR:-}"
 PASS=0 FAIL=0 FAILED=()
 LOOPS=() DMS=() MNTS=()
 check() {
@@ -29,7 +29,7 @@ begin() { echo "— $1"; }
 # DEBUG=1: what a job left behind, when something fails
 job_dump() {
    [ -n "${DEBUG:-}" ] || return 0
-   local j="$XDG_STATE_HOME/big-mount/jobs/$1"
+   local j="$XDG_STATE_HOME/big-storage-rescue/jobs/$1"
    echo "      --- job $1"; sed 's/^/      /' "$j/state.env" | grep -E 'STATE|REASON|RSYNC_RC|FILES_|BYTES_DONE|DEFERRED|FAILED'
    for f in events.log rsync.out failed.txt deferred.txt supervisor.log; do
       echo "      --- $f"; tail -n 14 "$j/$f" 2>/dev/null | cut -c1-150 | sed 's/^/      /'
@@ -168,7 +168,7 @@ need_pair() {
    DSTMP="$(mnt_rw "$DST")"
    sudo -n chown "$EUID" "$DSTMP"
 }
-fresh_dest() { rm -rf "$DSTMP/out" "$DSTMP"/.big-mount-*; mkdir -p "$DSTMP/out"; }
+fresh_dest() { rm -rf "$DSTMP/out" "$DSTMP"/.big-storage-rescue-*; mkdir -p "$DSTMP/out"; }
 
 if want copy; then
 begin "a copy: names, depth, links, resuming the same job, the report"
@@ -185,7 +185,7 @@ check "the tree is identical (unicode, depth, specials, links)" tree_same "$SRCM
 check "the absolute link was copied as a link, not followed" eq "$(readlink "$DSTMP/out/link-absoluto")" /etc/passwd
 check "the file counted as complete has the right size" eq "$(stat -c %s "$DSTMP/out/video.mkv")" 40000000
 check "total was measured: 100%" eq "$(json bytes_done <<< "$s")" "$(json bytes_total <<< "$s")"
-check "no temporary folder left" bash -c '! compgen -G "$1/out/.big-mount-*" >/dev/null' _ "$DSTMP"
+check "no temporary folder left" bash -c '! compgen -G "$1/out/.big-storage-rescue-*" >/dev/null' _ "$DSTMP"
 check "the source was mounted read-only all along" bash -c '[[ ,$(findmnt -n -o VFS-OPTIONS --mountpoint "$1"), == *,ro,* ]]' _ "$SRCMP"
 "$B" --drive report "$id" >"$WORK/rep.txt"; check "report written" grep -q 'Files copied' "$WORK/rep.txt"
 "$B" --drive jobs --json | valid_json; check "history is valid JSON" eq "${PIPESTATUS[1]}" 0
@@ -211,7 +211,7 @@ printf 'minha versão\n' > "$DSTMP/out/foto1.jpg"
 "$B" --drive copy --source "$SRCMP/data" --destination "$DSTMP/out" --on-conflict backup >/dev/null; rc=$?
 check "backup: exit 0" eq "$rc" 0
 check "backup: replaced" cmp -s "$DSTMP/out/foto1.jpg" "$SRCMP/data/foto1.jpg"
-check "backup: the old one was kept" bash -c 'grep -qx "minha versão" "$1"/out/.big-mount-backup-*/foto1.jpg' _ "$DSTMP"
+check "backup: the old one was kept" bash -c 'grep -qx "minha versão" "$1"/out/.big-storage-rescue-backup-*/foto1.jpg' _ "$DSTMP"
 fresh_dest
 printf 'minha versão\n' > "$DSTMP/out/foto1.jpg"
 "$B" --drive copy --source "$SRCMP/data" --destination "$DSTMP/out" --on-conflict overwrite >/dev/null
@@ -283,14 +283,14 @@ check "what was copied stays" bash -c 'compgen -G "$1/out/*" >/dev/null' _ "$DST
 "$B" --drive resume "$id" --no-wait >/dev/null; wait_state "$id" running
 sleep 2
 # A power cut: the supervisor and rsync vanish without any chance to clean up
-pid="$(grep '^PID=' "$XDG_STATE_HOME/big-mount/jobs/$id/state.env" | cut -d= -f2)"
+pid="$(grep '^PID=' "$XDG_STATE_HOME/big-storage-rescue/jobs/$id/state.env" | cut -d= -f2)"
 pkill -KILL -P "$pid"; kill -KILL "$pid"; sleep 1; pkill -KILL -f "rsync.*$DSTMP/out" ; sleep 1
 check "it is seen as interrupted" eq "$("$B" --drive status "$id" --json | json state)" interrupted
 "$B" --drive status "$id" --watch >/dev/null; check "--watch does not hang on it, exit 24" eq "$?" 24
 "$B" --drive resume "$id" --no-wait >/dev/null; wait_state "$id" completed needs-attention failed
 check "resumed to the end" eq "$("$B" --drive status "$id" --json | json state)" completed
 check "the tree is identical" tree_same "$SRCMP/data" "$DSTMP/out"
-check "no temporary folder left" bash -c '! compgen -G "$1/out/.big-mount-*" >/dev/null' _ "$DSTMP"
+check "no temporary folder left" bash -c '! compgen -G "$1/out/.big-storage-rescue-*" >/dev/null' _ "$DSTMP"
 fi
 
 # Build a device-mapper device with one file's blocks replaced by TARGET
@@ -330,12 +330,12 @@ check "the good files are all there" bash -c 'for i in 1 2 3 4 5; do cmp -s "$1/
 check "the file after the bad one was not lost" cmp -s "$m/zz-depois.bin" "$DSTMP/out/zz-depois.bin"
 check "the bad file was NOT left with its final name" test ! -e "$DSTMP/out/ruim.bin"
 # shellcheck disable=SC2012  # job names have no special characters
-id="$(ls -t "$XDG_STATE_HOME/big-mount/jobs" | head -1)"
+id="$(ls -t "$XDG_STATE_HOME/big-storage-rescue/jobs" | head -1)"
 s_json="$("$B" --drive status "$id" --json)"
 check "state: needs attention" eq "$(json state <<< "$s_json")" needs-attention
 check "the bad file is not counted as copied (6 of 7 files)" eq "$(json files_done <<< "$s_json")" 6
 check "nor its bytes" eq "$(json bytes_done <<< "$s_json")" 1200000
-check "the report names the file" grep -q 'ruim.bin' "$XDG_STATE_HOME/big-mount/jobs/$id/failed.txt"
+check "the report names the file" grep -q 'ruim.bin' "$XDG_STATE_HOME/big-storage-rescue/jobs/$id/failed.txt"
 job_dump "$id"
 sudo -n umount "$m"; MNTS=("${MNTS[@]/$m}")
 fi
@@ -360,7 +360,7 @@ wait_state "$id" completed needs-attention failed
 s_json="$("$B" --drive status "$id" --json)"
 check "finished, needing attention" eq "$(json state <<< "$s_json")" needs-attention
 check "one file set aside" eq "$(json deferred <<< "$s_json")" 1
-check "it is that file" grep -qx 'preso.bin' "$XDG_STATE_HOME/big-mount/jobs/$id/deferred.txt"
+check "it is that file" grep -qx 'preso.bin' "$XDG_STATE_HOME/big-storage-rescue/jobs/$id/deferred.txt"
 check "the file after it was saved" cmp -s "$m/zz.bin" "$DSTMP/out/zz.bin"
 check "a file sent twice around the restart counts once (4 of 5 files)" eq "$(json files_done <<< "$s_json")" 4
 check "nothing with the name of the file set aside" test ! -e "$DSTMP/out/preso.bin"
@@ -409,7 +409,7 @@ sj="$("$B" --drive status "$id" --json)"
 check "the reason is the lack of space" eq "$(json reason <<< "$sj")" no-space
 "$B" --drive status "$id" --watch >/dev/null; check "exit 21" eq "$?" 21
 check "the big file is not left there half copied" test ! -e "$smp/out/video.mkv"
-check "the file the disk refused is named" grep -q 'video.mkv' "$XDG_STATE_HOME/big-mount/jobs/$id/failed.txt"
+check "the file the disk refused is named" grep -q 'video.mkv' "$XDG_STATE_HOME/big-storage-rescue/jobs/$id/failed.txt"
 job_dump "$id"
 umnt "$sm"
 fi
@@ -439,9 +439,9 @@ if want protect; then
 begin "writing blocked on the device, through the helper"
 # The helper as installed reads /usr/lib; this copy reads this checkout
 H="$WORK/helper"
-sed -e "s|^BM_LIB=.*|BM_LIB=$REPO/big-mount/usr/lib/big-mount|" "$REPO/big-mount/usr/lib/big-mount/bigmount-drive-helper" > "$H"; chmod +x "$H"
+sed -e "s|^BSR_LIB=.*|BSR_LIB=$REPO/big-storage-rescue/usr/lib/big-storage-rescue|" "$REPO/big-storage-rescue/usr/lib/big-storage-rescue/bsr-drive-helper" > "$H"; chmod +x "$H"
 W="$WORK/sudo-helper"; printf '#!/bin/bash\nexec sudo -n "%s" "$@"\n' "$H" > "$W"; chmod +x "$W"
-export BM_HELPER_CMD="$W"
+export BSR_HELPER_CMD="$W"
 new_img pr 64M mkfs.ext4 -q -F -L T_PR; d="$REPLY"
 "$B" --drive protect "$d" >/dev/null; check "protect: exit 0" eq "$?" 0
 check "the kernel says read-only" eq "$(lsblk -dn -o RO "$d" | tr -d ' ')" 1
@@ -466,7 +466,7 @@ check "the disk of the running system is refused (exit 4)" eq "$rc" 4
 check "and nothing would have run" bash -c '! grep -q WOULD-RUN "$1"' _ "$WORK/refused.txt"
 sudo -n "$H.safe" protect '/dev/loop0; touch /tmp/pwn' >/dev/null 2>&1; check "a name with a command is rejected (exit 2)" eq "$?" 2
 sudo -n "$H.safe" protect /dev/../etc/passwd >/dev/null 2>&1; check "a path out of /dev is rejected (exit 2)" eq "$?" 2
-unset BM_HELPER_CMD
+unset BSR_HELPER_CMD
 fi
 
 if want busy; then
@@ -560,11 +560,11 @@ repo, source, dest, luks_dev, keyfile = sys.argv[1:6]
 os.environ["LANGUAGE"] = "C"
 sys.path.insert(0, repo + "/tests")
 from gui_support import make_app, pump
-os.environ.pop("BM_GUI_BIN", None)
+os.environ.pop("BSR_GUI_BIN", None)
 app = make_app()
 from gui.engine import Engine
 from gui.window import MainWindow
-w = MainWindow(app, engine=Engine(program=repo + "/big-mount/usr/bin/bigmount"))
+w = MainWindow(app, engine=Engine(program=repo + "/big-storage-rescue/usr/bin/big-storage-rescue"))
 w.present()
 assert pump(lambda: w.loaded and w.devices, 20), "no devices"
 print("listed", len(w.devices))
@@ -619,16 +619,16 @@ check "preflight, copy, full check and report through the window (exit $rc)" gre
 check "the passphrase never appears in the process list or the log" bash -c '! grep -q chave-de-teste "$1"' _ "$WORK/gui.out"
 udisksctl lock -b "$gl" --no-user-interaction >/dev/null 2>&1
 # Without a graphical session it says where the same tools are
-env -u WAYLAND_DISPLAY -u DISPLAY "$B" --gui-drive "$SRC" </dev/null >"$WORK/fb.txt" 2>&1; rc=$?
-check "--gui-drive without a session: the terminal manager is named (exit $rc)" bash -c '[ "$2" = 25 ] && grep -q "bigmount --drive" "$1"' _ "$WORK/fb.txt" "$rc"
+env -u WAYLAND_DISPLAY -u DISPLAY "$B" --gui "$SRC" </dev/null >"$WORK/fb.txt" 2>&1; rc=$?
+check "--gui without a session: the terminal manager is named (exit $rc)" bash -c '[ "$2" = 25 ] && grep -q "big-storage-rescue --cli" "$1"' _ "$WORK/fb.txt" "$rc"
 if command -v gtk4-broadwayd >/dev/null; then
    gtk4-broadwayd :77 >/dev/null 2>&1 &
    broadway=$!
    sleep 0.5
-   GDK_BACKEND=broadway BROADWAY_DISPLAY=:77 DISPLAY=:none timeout 4 dbus-run-session -- "$B" --gui-drive "$SRCMP/data" >/dev/null 2>&1; rc=$?
-   check "--gui-drive with a folder opens the window and stays open" eq "$rc" 124
-   GDK_BACKEND=broadway BROADWAY_DISPLAY=:77 DISPLAY=:none timeout 4 dbus-run-session -- "$B" --gui-drive-check "$SRC" >/dev/null 2>&1; rc=$?
-   check "--gui-drive-check opens the same application and stays open" eq "$rc" 124
+   GDK_BACKEND=broadway BROADWAY_DISPLAY=:77 DISPLAY=:none timeout 4 dbus-run-session -- "$B" --gui "$SRCMP/data" >/dev/null 2>&1; rc=$?
+   check "--gui with a folder opens the window and stays open" eq "$rc" 124
+   GDK_BACKEND=broadway BROADWAY_DISPLAY=:77 DISPLAY=:none timeout 4 dbus-run-session -- "$B" --gui-health "$SRC" >/dev/null 2>&1; rc=$?
+   check "--gui-health opens the same application and stays open" eq "$rc" 124
    kill "$broadway" 2>/dev/null
 fi
 fi
@@ -652,12 +652,12 @@ dd if="$dev" of="$out" bs=1M status=none
 STUB
 chmod +x "$SB/ddrescue"
 H="$WORK/ihelper"
-sed -e "s|^BM_LIB=.*|BM_LIB=$REPO/big-mount/usr/lib/big-mount|" -e "s|^export PATH=.*|export PATH=$SB:/usr/bin:/bin:/usr/sbin:/sbin|" "$REPO/big-mount/usr/lib/big-mount/bigmount-drive-helper" > "$H"; chmod +x "$H"
+sed -e "s|^BSR_LIB=.*|BSR_LIB=$REPO/big-storage-rescue/usr/lib/big-storage-rescue|" -e "s|^export PATH=.*|export PATH=$SB:/usr/bin:/bin:/usr/sbin:/sbin|" "$REPO/big-storage-rescue/usr/lib/big-storage-rescue/bsr-drive-helper" > "$H"; chmod +x "$H"
 W="$WORK/isudo"; printf '#!/bin/bash\nexec sudo -n env PKEXEC_UID=%s "%s" "$@"\n' "$EUID" "$H" > "$W"; chmod +x "$W"
 new_img im 32M mkfs.ext4 -q -F -L T_IMG; d="$REPLY"
 need_pair; mkdir -p "$DSTMP/img"
 (
-   export PATH="$SB:$PATH" BM_HELPER_CMD="$W"
+   export PATH="$SB:$PATH" BSR_HELPER_CMD="$W"
    out="$("$B" --drive image --source "$d" --image "$DSTMP/img/disco.img" --no-wait --json)"; id="$(job_id <<< "$out")"
    echo "$id" > "$WORK/image.id"
    wait_state "$id" completed needs-attention failed
@@ -670,7 +670,7 @@ check "the image is the device" cmp -s "$WORK/im.img" "$DSTMP/img/disco.img"
 check "the image belongs to the user" eq "$(stat -c %u "$DSTMP/img/disco.img")" "$EUID"
 check "the map belongs to the user" eq "$(stat -c %u "$DSTMP/img/disco.img.map")" "$EUID"
 (
-   export PATH="$SB:$PATH" BM_HELPER_CMD="$W" STUB_DELAY=5
+   export PATH="$SB:$PATH" BSR_HELPER_CMD="$W" STUB_DELAY=5
    out="$("$B" --drive image --source "$d" --image "$DSTMP/img/b.img" --no-wait --json)"; id2="$(job_id <<< "$out")"
    sleep 3
    "$B" --drive cancel "$id2" >/dev/null
@@ -682,7 +682,7 @@ SF="$WORK/fail-bin"; mkdir -p "$SF"; printf '#!/bin/bash\necho "ddrescue: read e
 sed -e "s|^export PATH=.*|export PATH=$SF:/usr/bin:/bin:/usr/sbin:/sbin|" "$H" > "$H.fail"; chmod +x "$H.fail"
 printf '#!/bin/bash\nexec sudo -n env PKEXEC_UID=%s "%s" "$@"\n' "$EUID" "$H.fail" > "$W.fail"; chmod +x "$W.fail"
 (
-   export PATH="$SB:$PATH" BM_HELPER_CMD="$W.fail"
+   export PATH="$SB:$PATH" BSR_HELPER_CMD="$W.fail"
    out="$("$B" --drive image --source "$d" --image "$DSTMP/img/f.img" --no-wait --json)"; id3="$(job_id <<< "$out")"
    wait_state "$id3" completed needs-attention failed
    "$B" --drive status "$id3" --json > "$WORK/image3.json"

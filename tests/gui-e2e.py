@@ -27,13 +27,13 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 from gui_support import CALLBACK_ERRORS, REPO, WORK, Gtk, find_button, make_app, pump, text, widgets  # noqa: E402
 
-os.environ.pop("BM_GUI_BIN", None)
+os.environ.pop("BSR_GUI_BIN", None)
 app = make_app()
 
 from gui.engine import Engine  # noqa: E402
 from gui.window import MainWindow  # noqa: E402
 
-REAL = str(REPO / "big-mount/usr/bin/bigmount")
+REAL = str(REPO / "big-storage-rescue/usr/bin/big-storage-rescue")
 STATE = WORK / "state"
 os.environ["XDG_STATE_HOME"] = str(STATE)
 SOURCE = pathlib.Path(tempfile.mkdtemp(prefix="bm-e2e-src-", dir="/var/tmp"))
@@ -97,20 +97,10 @@ class Real(unittest.TestCase):
         for dev in self.win.devices:
             self.assertTrue(dev.stable_id)
 
-    def test_secure_erase_is_refused_for_the_running_system(self):
-        system = next((d for d in self.win.devices if d.has_system), None)
-        if not system:
-            self.skipTest("no drive of the running system is visible here")
-        res = self.call(lambda cb: self.win.engine.erase_check(system.device, cb))
-        self.assertFalse(res.data["eligible"])
-        res = self.call(lambda cb: self.win.engine.erase_prepare(system.device, cb))
-        self.assertEqual(res.code, 20)
-        self.assertEqual(res.data.get("token"), "")
-
-    def test_forged_ticket_changes_nothing(self):
-        res = self.call(lambda cb: self.win.engine.erase_run("0" * 32, "sda", cb))
-        self.assertEqual(res.code, 20)
-        self.assertFalse(res.data["ok"])
+    def test_the_engine_has_no_erase(self):
+        res = self.call(lambda cb: self.win.engine.run(["erase-check", "/dev/sda"], cb))
+        self.assertEqual(res.code, 2)
+        self.assertFalse([name for name in dir(self.win.engine) if "erase" in name])
 
     @unittest.skipIf(same_filesystem(), "the scratch folders share a filesystem here")
     def test_list_select_and_recover_through_the_window(self):

@@ -1,5 +1,5 @@
 """What the tests of the application share: a private display (Broadway, so nothing
-appears on the screen), a stand-in for `bigmount` that answers with fixtures and
+appears on the screen), a stand-in for `big-storage-rescue` that answers with fixtures and
 records every call, sample drives, and pictures of the real widgets.
 
 No disk is involved: the window only ever talks to the stand-in.
@@ -34,11 +34,13 @@ def _record_callback_error(kind, value, tb):
 sys.excepthook = _record_callback_error
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
-LIB = REPO / "big-mount/usr/lib/big-mount"
+LIB = REPO / "big-storage-rescue/usr/lib/big-storage-rescue"
 # Not /tmp: it is often mounted noexec, and the stand-in must run
 WORK = pathlib.Path(tempfile.mkdtemp(prefix="bm-gui-", dir=os.environ.get("TMPDIR", "/var/tmp")))
 atexit.register(shutil.rmtree, WORK, ignore_errors=True)
-STUB = WORK / "bigmount"
+# Not named big-storage-rescue: WORK is also the runtime folder, where the
+# application keeps its own big-storage-rescue folder
+STUB = WORK / "bsr-stand-in"
 CALLS = WORK / "calls"
 FIX = WORK / "fix"
 FIX.mkdir()
@@ -72,7 +74,7 @@ rc="{FIX}/$key.rc"
 exit 0
 """)
 STUB.chmod(STUB.stat().st_mode | stat.S_IEXEC)
-os.environ["BM_GUI_BIN"] = str(STUB)
+os.environ["BSR_GUI_BIN"] = str(STUB)
 
 
 def start_display():
@@ -151,7 +153,7 @@ def system_disk():
 
 
 def fix(key, data, rc=None, delay=None):
-    """What the stand-in answers to `bigmount --drive KEY` (KEY-dry with --dry-run),
+    """What the stand-in answers to `big-storage-rescue --cli KEY` (KEY-dry with --dry-run),
     after `delay` seconds when it should take a while."""
     (FIX / f"{key}.json").write_text(json.dumps(data) if not isinstance(data, str) else data)
     delayf = FIX / f"{key}.delay"
@@ -296,6 +298,6 @@ def make_app():
     load_style()
     # No frame arrives on a display nobody looks at: a transition would never end
     Gtk.Settings.get_default().set_property("gtk-enable-animations", False)
-    app = Adw.Application(application_id="org.biglinux.big-mount.tests")
+    app = Adw.Application(application_id="org.biglinux.big-storage-rescue.tests")
     app.register(None)
     return app
