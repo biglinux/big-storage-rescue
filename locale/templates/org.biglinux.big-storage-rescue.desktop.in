@@ -1,17 +1,23 @@
 [Desktop Entry]
 Type=Application
-Name=Big-Mount
-GenericName=Drive manager and file rescue
-Comment=See how your drives are doing, rescue files from them and remove them safely
-Exec=/usr/bin/bigmount --gui-drive
-StartupWMClass=org.biglinux.big-mount
-Icon=big-mount
+Name=Big Storage Rescue
+GenericName=Storage diagnosis and file rescue
+Comment=Find out what is wrong with a drive, why it cannot be written to or removed, and rescue your files from it
+Exec=/usr/bin/big-storage-rescue --gui
+StartupWMClass=org.biglinux.big-storage-rescue
+StartupNotify=true
+Icon=big-storage-rescue
 Terminal=false
 Categories=System;Filesystem;
-Keywords=disk;drive;usb;mount;unmount;read-only;busy;eject;ssd;erase;recover;rescue;backup;smart;storage;diagnostics;
-Actions=storageDiagnostics;
+Keywords=disk;drive;usb;ssd;nvme;sd;read-only;busy;eject;unmount;recover;recovery;rescue;backup;image;ddrescue;testdisk;photorec;smart;health;storage;diagnostics;
+Actions=storageDiagnostics;recoverFiles;
 
 [Desktop Action storageDiagnostics]
-Name=Storage Diagnostics
-Icon=drive-harddisk
-Exec=/usr/bin/bigmount --gui
+Name=Why can't I write to a device?
+Icon=dialog-information
+Exec=/usr/bin/big-storage-rescue --gui-diagnose
+
+[Desktop Action recoverFiles]
+Name=Recover files
+Icon=document-save
+Exec=/usr/bin/big-storage-rescue --gui-rescue

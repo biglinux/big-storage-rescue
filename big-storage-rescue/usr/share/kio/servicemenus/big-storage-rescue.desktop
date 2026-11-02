@@ -5,23 +5,35 @@ X-KDE-Protocols=file
 X-KDE-RequiredNumberOfUrls=1
 X-KDE-Submenu[pt_BR]=Dispositivo de armazenamento
 X-KDE-Submenu=Storage device
-Icon=big-mount
-Actions=diagnose;safeRemove;manage;
+Icon=big-storage-rescue
+Actions=diagnose;safeRemove;health;rescue;manage;
 
 [Desktop Action diagnose]
 Name[pt_BR]=Por que não consigo gravar aqui?
 Name=Why can't I write here?
 Icon=dialog-information
-Exec=/usr/bin/bigmount --gui %f
+Exec=/usr/bin/big-storage-rescue --gui-diagnose %f
 
 [Desktop Action safeRemove]
 Name[pt_BR]=Remover com segurança (mostra o que o mantém ocupado)
 Name=Safely remove (shows what keeps it busy)
 Icon=media-eject
-Exec=/usr/bin/bigmount --gui-remove %f
+Exec=/usr/bin/big-storage-rescue --gui-remove %f
+
+[Desktop Action health]
+Name[pt_BR]=Verificar a saúde desta unidade
+Name=Check the health of this drive
+Icon=drive-harddisk
+Exec=/usr/bin/big-storage-rescue --gui-health %f
+
+[Desktop Action rescue]
+Name[pt_BR]=Recuperar arquivos desta unidade…
+Name=Recover files from this drive…
+Icon=document-save
+Exec=/usr/bin/big-storage-rescue --gui-rescue %f
 
 [Desktop Action manage]
-Name[pt_BR]=Diagnosticar a unidade e resgatar arquivos
-Name=Diagnose the drive and rescue files
-Icon=drive-harddisk
-Exec=/usr/bin/bigmount --gui-drive %f
+Name[pt_BR]=Abrir no Big Storage Rescue
+Name=Open in Big Storage Rescue
+Icon=big-storage-rescue
+Exec=/usr/bin/big-storage-rescue --gui %f

@@ -7,28 +7,28 @@
   <vendor_url>https://www.biglinux.com.br</vendor_url>
 
   <!-- Read-only: lists the processes of every user that keep one mount point busy -->
-  <action id="org.biglinux.big-mount.inspect-processes">
+  <action id="org.biglinux.big-storage-rescue.inspect-processes">
     <description>Show the programs of all users that keep a storage device busy</description>
     <message>Authentication is required to see the programs of all users that are using this device</message>
-    <icon_name>big-mount</icon_name>
+    <icon_name>big-storage-rescue</icon_name>
     <defaults>
       <allow_any>auth_admin</allow_any>
       <allow_inactive>auth_admin</allow_inactive>
       <allow_active>auth_admin_keep</allow_active>
     </defaults>
-    <annotate key="org.freedesktop.policykit.exec.path">/usr/lib/big-mount/bigmount-holders</annotate>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/lib/big-storage-rescue/bsr-holders</annotate>
   </action>
 
   <!-- Blocks or allows writing on a device, reads SMART, images a disk: never changes data on it -->
-  <action id="org.biglinux.big-mount.drive-helper">
+  <action id="org.biglinux.big-storage-rescue.drive-helper">
     <description>Protect a storage device, read its health or make a disk image</description>
     <message>Authentication is required to protect this storage device, read its health or make a disk image</message>
-    <icon_name>big-mount</icon_name>
+    <icon_name>big-storage-rescue</icon_name>
     <defaults>
       <allow_any>auth_admin</allow_any>
       <allow_inactive>auth_admin</allow_inactive>
       <allow_active>auth_admin_keep</allow_active>
     </defaults>
-    <annotate key="org.freedesktop.policykit.exec.path">/usr/lib/big-mount/bigmount-drive-helper</annotate>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/lib/big-storage-rescue/bsr-drive-helper</annotate>
   </action>
 </policyconfig>

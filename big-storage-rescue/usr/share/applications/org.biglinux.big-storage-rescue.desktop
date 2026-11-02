@@ -1,22 +1,29 @@
 [Desktop Entry]
 Type=Application
-Name[pt_BR]=Big-Mount
-Name=Big-Mount
-GenericName[pt_BR]=Gerenciador de unidades e resgate de arquivos
-GenericName=Drive manager and file rescue
-Comment[pt_BR]=Veja como estão suas unidades, resgate arquivos delas e remova-as com segurança
-Comment=See how your drives are doing, rescue files from them and remove them safely
-Exec=/usr/bin/bigmount --gui-drive
-StartupWMClass=org.biglinux.big-mount
-Icon=big-mount
+Name[pt_BR]=Big Storage Rescue
+Name=Big Storage Rescue
+GenericName[pt_BR]=Diagnóstico de armazenamento e resgate de arquivos
+GenericName=Storage diagnosis and file rescue
+Comment[pt_BR]=Descubra o que há de errado com uma unidade, por que ela não aceita gravação ou não pode ser removida, e resgate seus arquivos dela
+Comment=Find out what is wrong with a drive, why it cannot be written to or removed, and rescue your files from it
+Exec=/usr/bin/big-storage-rescue --gui
+StartupWMClass=org.biglinux.big-storage-rescue
+StartupNotify=true
+Icon=big-storage-rescue
 Terminal=false
 Categories=System;Filesystem;
-Keywords[pt_BR]=disco;unidade;usb;pendrive;montar;desmontar;somente leitura;ocupado;ejetar;ssd;apagar;recuperar;resgatar;backup;smart;armazenamento;diagnóstico;
-Keywords=disk;drive;usb;mount;unmount;read-only;busy;eject;ssd;erase;recover;rescue;backup;smart;storage;diagnostics;
-Actions=storageDiagnostics;
+Keywords[pt_BR]=disco;unidade;usb;pendrive;ssd;nvme;cartão;somente leitura;ocupado;ejetar;desmontar;recuperar;recuperação;resgatar;backup;imagem;ddrescue;testdisk;photorec;smart;saúde;armazenamento;diagnóstico;
+Keywords=disk;drive;usb;ssd;nvme;sd;read-only;busy;eject;unmount;recover;recovery;rescue;backup;image;ddrescue;testdisk;photorec;smart;health;storage;diagnostics;
+Actions=storageDiagnostics;recoverFiles;
 
 [Desktop Action storageDiagnostics]
-Name[pt_BR]=Diagnóstico de Armazenamento
-Name=Storage Diagnostics
-Icon=drive-harddisk
-Exec=/usr/bin/bigmount --gui
+Name[pt_BR]=Por que não consigo gravar num dispositivo?
+Name=Why can't I write to a device?
+Icon=dialog-information
+Exec=/usr/bin/big-storage-rescue --gui-diagnose
+
+[Desktop Action recoverFiles]
+Name[pt_BR]=Recuperar arquivos
+Name=Recover files
+Icon=document-save
+Exec=/usr/bin/big-storage-rescue --gui-rescue
