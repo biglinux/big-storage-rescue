@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 # shellcheck disable=SC2034,SC2015  # DS_*, MNT_* are read by the other drive modules; A && B || C on purpose
 #
-# big-mount drive manager: how a drive is doing, and mounting it without
+# Big Storage Rescue drive manager: how a drive is doing, and mounting it without
 # changing it. Diagnosis only reads /proc, /sys, udev, UDisks2 and the kernel
 # log. It never reads the device: looking at a failing disk must not wear it.
 
@@ -12,19 +12,19 @@
 # bridge can take more than a minute on a failing disk. So it only runs when
 # asked, and what it said is kept for this connection of the drive: another
 # drive under the same name has another diskseq.
-bm_ds_smart_file() {
-   local dir="${XDG_RUNTIME_DIR:-/run/user/$EUID}/big-mount"
-   bm_diskseq "$1"
+bsr_ds_smart_file() {
+   local dir="${XDG_RUNTIME_DIR:-/run/user/$EUID}/big-storage-rescue"
+   bsr_diskseq "$1"
    REPLY="$dir/smart-${1##*/}-${REPLY:-0}.txt"
 }
 
-# bm_ds_smart_parse FILE: what matters from `smartctl -H -A`. Sets
+# bsr_ds_smart_parse FILE: what matters from `smartctl -H -A`. Sets
 #   SM_VERDICT     passed | failed | "" (not reported)
 #   SM_PENDING SM_OFFLINE SM_REALLOC SM_UNCORR SM_CRC SM_HOURS  raw values or ""
 #   SM_NVME_WARN   NVMe critical warning (0x00 is fine)  SM_NVME_MEDIA  media errors
 #   SM_NVME_USED   percentage used
 #   SM_TEMP        temperature, °C
-bm_ds_smart_parse() {
+bsr_ds_smart_parse() {
    local line id raw k v head=""
    SM_VERDICT="" SM_PENDING="" SM_OFFLINE="" SM_REALLOC="" SM_UNCORR="" SM_CRC="" SM_HOURS=""
    SM_NVME_WARN="" SM_NVME_MEDIA="" SM_NVME_USED="" SM_TEMP=""
@@ -64,13 +64,13 @@ bm_ds_smart_parse() {
    return 0
 }
 
-# bm_ds_smart_read DISK: ask the helper (password) and keep the answer
-bm_ds_smart_read() {
+# bsr_ds_smart_read DISK: ask the helper (password) and keep the answer
+bsr_ds_smart_read() {
    local disk="$1" f tmp rc
-   bm_ds_smart_file "$disk"; f="$REPLY"
+   bsr_ds_smart_file "$disk"; f="$REPLY"
    mkdir -p -- "${f%/*}" 2>/dev/null
    tmp="$(mktemp -- "$f.XXXXXX")" || return 1
-   bm_helper smart "$disk" > "$tmp" 2>/dev/null; rc=$?
+   bsr_helper smart "$disk" > "$tmp" 2>/dev/null; rc=$?
    if [ "$rc" -eq 0 ] && [ -s "$tmp" ]; then
       mv -f -- "$tmp" "$f"
       return 0
@@ -82,12 +82,12 @@ bm_ds_smart_read() {
 # ---------------------------------------------------------------------------
 # Level of a drive
 
-# bm_ds_level DISK: what can be said about a drive, and how sure it is.
+# bsr_ds_level DISK: what can be said about a drive, and how sure it is.
 #   DS_LEVEL  normal | attention | critical | unknown | na (a disk image)
-#   DS_WHY    reasons, most serious first (bm_ds_why_text)
+#   DS_WHY    reasons, most serious first (bsr_ds_why_text)
 #   DS_BASIS  smart+log | log | smart | none: what the verdict rests on. "normal"
 #             never means healthy: it means no check found anything
-bm_ds_level() {
+bsr_ds_level() {
    local disk="$1" w
    DS_LEVEL=unknown DS_WHY=() DS_BASIS=none DS_SMART_AT="" SM_VERDICT="" SM_PENDING="" SM_OFFLINE="" SM_REALLOC="" SM_UNCORR="" SM_CRC="" SM_HOURS=""
    SM_NVME_WARN="" SM_NVME_MEDIA="" SM_NVME_USED="" SM_TEMP="" DS_DISK="$disk" DS_GRADE=unknown DS_NOTES=()
@@ -95,12 +95,12 @@ bm_ds_level() {
    case "${DV[$disk|TYPE]:-disk}" in
       loop | rom) DS_LEVEL=na DS_GRADE=na; return 0 ;;
    esac
-   bm_drive_health "$disk"
-   bm_ds_smart_file "$disk"
+   bsr_drive_health "$disk"
+   bsr_ds_smart_file "$disk"
    local have_smart=0
    DS_SMART_AT=""
    if [ -s "$REPLY" ]; then
-      bm_ds_smart_parse "$REPLY"; have_smart=1
+      bsr_ds_smart_parse "$REPLY"; have_smart=1
       DS_SMART_AT="$(stat -c %Y -- "$REPLY" 2>/dev/null)"
    fi
    # What UDisks2 keeps without a password fills what was not read with it
@@ -142,18 +142,18 @@ bm_ds_level() {
    elif [ "${#attn[@]}" -gt 0 ]; then DS_LEVEL=attention
    elif [ "$DS_BASIS" != none ]; then DS_LEVEL=normal
    fi
-   bm_ds_grade
+   bsr_ds_grade
    return 0
 }
 
-# bm_ds_grade: the level in one word for a person, also weighing wear, age
-# and heat (called by bm_ds_level).
+# bsr_ds_grade: the level in one word for a person, also weighing wear, age
+# and heat (called by bsr_ds_level).
 #   DS_GRADE  critical | poor | good | healthy | unknown | na
-#   DS_NOTES  why a drive without alerts is not "healthy" (bm_ds_note_text)
+#   DS_NOTES  why a drive without alerts is not "healthy" (bsr_ds_note_text)
 # "healthy" needs the drive's own report: from the system log alone the best
 # that can be said is "good". Age alone never makes a drive poor: worn-out
 # flash (90 % of its rated life) does.
-bm_ds_grade() {
+bsr_ds_grade() {
    DS_NOTES=()
    case "$DS_LEVEL" in
       critical) DS_GRADE=critical; return 0 ;;
@@ -179,7 +179,7 @@ bm_ds_grade() {
    fi
 }
 
-bm_ds_grade_label() {
+bsr_ds_grade_label() {
    case "$DS_GRADE" in
       critical) REPLY=$"Critical" ;;
       poor) REPLY=$"Poor" ;;
@@ -190,8 +190,8 @@ bm_ds_grade_label() {
    esac
 }
 
-# bm_ds_note_text KEY: one sentence for a person
-bm_ds_note_text() {
+# bsr_ds_note_text KEY: one sentence for a person
+bsr_ds_note_text() {
    local years
    case "$1" in
       smart-unread) REPLY=$"Only the system log was consulted. Without the drive's own report (SMART) it cannot be called healthy." ;;
@@ -206,7 +206,7 @@ bm_ds_note_text() {
       *) REPLY="$1" ;;
    esac
 }
-bm_ds_level_label() {
+bsr_ds_level_label() {
    case "$DS_LEVEL" in
       critical) REPLY=$"Critical: high risk for the data" ;;
       attention) REPLY=$"Attention: needs a closer look" ;;
@@ -222,8 +222,8 @@ bm_ds_level_label() {
    esac
 }
 
-# bm_ds_why_text KEY: one sentence for a person
-bm_ds_why_text() {
+# bsr_ds_why_text KEY: one sentence for a person
+bsr_ds_why_text() {
    case "$1" in
       smart-failing) REPLY=$"The drive itself reports that it is failing (SMART)." ;;
       pending-sectors) printf -v REPLY $"The drive has sectors it can no longer read (%s pending), even if its overall verdict says PASSED." "${SM_PENDING:-${SM_OFFLINE:-?}}" ;;
@@ -242,89 +242,89 @@ bm_ds_why_text() {
 }
 
 # The health members of a drive object (F is not needed)
-bm_ds_json() {
+bsr_ds_json() {
    local w first=1 why=""
    for w in "${DS_WHY[@]}"; do
-      bm_ds_why_text "$w"
+      bsr_ds_why_text "$w"
       [ "$first" = 1 ] && first=0 || why+=","
-      why+="$(bm_jo key "$w" text "$REPLY")"
+      why+="$(bsr_jo key "$w" text "$REPLY")"
    done
    local notes="" note
    first=1
    for w in "${DS_NOTES[@]}"; do
-      bm_ds_note_text "$w"
+      bsr_ds_note_text "$w"
       [ "$first" = 1 ] && first=0 || notes+=","
-      notes+="$(bm_jo key "$w" text "$REPLY")"
+      notes+="$(bsr_jo key "$w" text "$REPLY")"
    done
-   bm_ds_level_label; local label="$REPLY"
-   bm_ds_grade_label; note="$REPLY"
+   bsr_ds_level_label; local label="$REPLY"
+   bsr_ds_grade_label; note="$REPLY"
    printf '"health":{"level":"%s","label":%s,"grade":"%s","grade_label":%s,"basis":"%s","reasons":[%s],"notes":[%s],"smart":{%s}}' \
-      "$DS_LEVEL" "$(bm_js "$label"; printf '%s' "$REPLY")" "$DS_GRADE" "$(bm_js "$note"; printf '%s' "$REPLY")" "$DS_BASIS" "$why" "$notes" \
-      "$(bm_jn pending "$SM_PENDING" offline "$SM_OFFLINE" reallocated "$SM_REALLOC" uncorrectable "$SM_UNCORR" crc "$SM_CRC" hours "$SM_HOURS" temperature "$SM_TEMP" read_at "$DS_SMART_AT" nvme_media "$SM_NVME_MEDIA" nvme_used "$SM_NVME_USED"),$(bm_jo_inner verdict "$SM_VERDICT" nvme_warning "$SM_NVME_WARN")"
+      "$DS_LEVEL" "$(bsr_js "$label"; printf '%s' "$REPLY")" "$DS_GRADE" "$(bsr_js "$note"; printf '%s' "$REPLY")" "$DS_BASIS" "$why" "$notes" \
+      "$(bsr_jn pending "$SM_PENDING" offline "$SM_OFFLINE" reallocated "$SM_REALLOC" uncorrectable "$SM_UNCORR" crc "$SM_CRC" hours "$SM_HOURS" temperature "$SM_TEMP" read_at "$DS_SMART_AT" nvme_media "$SM_NVME_MEDIA" nvme_used "$SM_NVME_USED"),$(bsr_jo_inner verdict "$SM_VERDICT" nvme_warning "$SM_NVME_WARN")"
 }
 
 # ---------------------------------------------------------------------------
 # Diagnosis
 
-# Why a mounted volume cannot be written, in the words of bm_cause_text.
+# Why a mounted volume cannot be written, in the words of bsr_cause_text.
 # Empty when it can (REPLY)
-bm_dg_write_cause() {
+bsr_dg_write_cause() {
    local dev="$1"
    REPLY=""
-   bm_facts "$dev" || return 1
-   bm_diagnose_write "$dev" ""
-   bm_cause_key
+   bsr_facts "$dev" || return 1
+   bsr_diagnose_write "$dev" ""
+   bsr_cause_key
    return 0
 }
 
-# bm_dg_show TARGET: the diagnosis as text
-bm_dg_show() {
+# bsr_dg_show TARGET: the diagnosis as text
+bsr_dg_show() {
    local target="$1" d="$2" w p st
-   bm_dv_name "$d"
-   bm_doc_new
-   bm_doc_h "$REPLY"
-   bm_dv_kind "$d"; bm_dv_kind_label "$REPLY"; bm_doc_kv $"Type" "$REPLY"
-   bm_human_size "${DV[$d|SIZE]:-}"; bm_doc_kv $"Capacity" "$REPLY"
-   bm_tran_label "${DV[$d|TRAN]:-}"; bm_doc_kv $"Connection" "$REPLY"
-   bm_doc_kv $"Device" "$d"
-   bm_ds_level "$d"
-   bm_ds_grade_label; local grade="$REPLY"
-   bm_ds_level_label; bm_doc_kv $"Health" "$grade — $REPLY"
-   [ -n "$SM_VERDICT" ] && bm_doc_kv $"SMART verdict" "$SM_VERDICT"
+   bsr_dv_name "$d"
+   bsr_doc_new
+   bsr_doc_h "$REPLY"
+   bsr_dv_kind "$d"; bsr_dv_kind_label "$REPLY"; bsr_doc_kv $"Type" "$REPLY"
+   bsr_human_size "${DV[$d|SIZE]:-}"; bsr_doc_kv $"Capacity" "$REPLY"
+   bsr_tran_label "${DV[$d|TRAN]:-}"; bsr_doc_kv $"Connection" "$REPLY"
+   bsr_doc_kv $"Device" "$d"
+   bsr_ds_level "$d"
+   bsr_ds_grade_label; local grade="$REPLY"
+   bsr_ds_level_label; bsr_doc_kv $"Health" "$grade — $REPLY"
+   [ -n "$SM_VERDICT" ] && bsr_doc_kv $"SMART verdict" "$SM_VERDICT"
    if [ "${#DS_WHY[@]}" -gt 0 ]; then
-      bm_doc_p $"What was found:"
-      for w in "${DS_WHY[@]}"; do bm_ds_why_text "$w"; bm_doc_li "$REPLY"; done
+      bsr_doc_p $"What was found:"
+      for w in "${DS_WHY[@]}"; do bsr_ds_why_text "$w"; bsr_doc_li "$REPLY"; done
    fi
    if [ "${#DS_NOTES[@]}" -gt 0 ]; then
-      bm_doc_p $"Why it is not called healthy:"
-      for w in "${DS_NOTES[@]}"; do bm_ds_note_text "$w"; bm_doc_li "$REPLY"; done
+      bsr_doc_p $"Why it is not called healthy:"
+      for w in "${DS_NOTES[@]}"; do bsr_ds_note_text "$w"; bsr_doc_li "$REPLY"; done
    fi
-   bm_ds_advice
-   for w in "${DS_ADVICE[@]}"; do bm_doc_li "$w"; done
-   bm_doc_p $"Volumes:"
-   bm_dv_tree "$d"
+   bsr_ds_advice
+   for w in "${DS_ADVICE[@]}"; do bsr_doc_li "$w"; done
+   bsr_doc_p $"Volumes:"
+   bsr_dv_tree "$d"
    local tree=("${DV_TREE[@]}")
    for p in "${tree[@]}"; do
       [ "$p" = "$d" ] && [ -z "${DV[$p|FSTYPE]:-}" ] && continue
-      bm_dv_state "$p"; st="$REPLY"
-      bm_dv_state_label "$st"
+      bsr_dv_state "$p"; st="$REPLY"
+      bsr_dv_state_label "$st"
       local line="$p: ${DV[$p|FSTYPE]:-?} — $REPLY${DV_MP:+ ($DV_MP)}"
-      if [ "$st" = unmounted ] && ! bm_dv_fs_supported "${DV[$p|FSTYPE]}"; then
+      if [ "$st" = unmounted ] && ! bsr_dv_fs_supported "${DV[$p|FSTYPE]}"; then
          line+=" — "$"no driver for this filesystem on this computer"
       fi
       [ "${DV[$p|RO]:-0}" = 1 ] && line+=" — "$"writing blocked on the device"
-      bm_doc_li "$line"
+      bsr_doc_li "$line"
    done
-   bm_ui_show info ""
+   bsr_ui_show info ""
    if [ "$DS_BASIS" = log ] || [ "$DS_BASIS" = none ]; then
       case "${DV[$d|TYPE]}" in
-         disk) printf '%s\n' $"For the SMART details of the drive, which need the administrator password: bigmount --drive diagnose DEVICE --smart" ;;
+         disk) printf '%s\n' $"For the SMART details of the drive, which need the administrator password: big-storage-rescue --cli diagnose DEVICE --smart" ;;
       esac
    fi
 }
 
 # What the level means in practice (DS_ADVICE)
-bm_ds_advice() {
+bsr_ds_advice() {
    DS_ADVICE=()
    case "$DS_LEVEL" in
       critical)
@@ -345,13 +345,13 @@ bm_ds_advice() {
 # Options for a read-only mount. UDisks2 only accepts a known list: noload
 # (ext3/ext4: do not replay the journal, which writes) is on it. XFS
 # norecovery and Btrfs rescue= are not, so those are protected at the device.
-bm_mnt_options() {
+bsr_mnt_options() {
    REPLY="ro,noatime,nosuid,nodev,noexec"
    case "$1" in ext3 | ext4) REPLY+=",noload" ;; esac
 }
 
 # Why a mount failed (MNT_WHY), from the error of mount and the kernel log
-bm_mnt_explain() {
+bsr_mnt_explain() {
    local dev="$1" fs="$2" msg="$3" l
    MNT_WHY=unknown
    case "$msg" in
@@ -362,7 +362,7 @@ bm_mnt_explain() {
       *"bad superblock"* | *"wrong fs type"* | *"Can't find"* | *"NTFS signature is missing"*) MNT_WHY="fs-damaged" ;;
       *"write-protected"* | *"Read-only file system"* | *"read-only"*) MNT_WHY=needs-recovery ;;
    esac
-   bm_kernel_messages "${dev##*/}" "${F[DISK]##*/}"
+   bsr_kernel_messages "${dev##*/}" "${F[DISK]##*/}"
    for l in "${KMSG[@]:$((${#KMSG[@]} > 8 ? ${#KMSG[@]} - 8 : 0))}"; do
       case "$l" in
          *"I/O error"* | *"critical medium error"*) MNT_WHY=io-error; return ;;
@@ -372,7 +372,7 @@ bm_mnt_explain() {
    return 0
 }
 
-bm_mnt_why_text() {
+bsr_mnt_why_text() {
    case "$1" in
       not-authorized) REPLY=$"Permission to mount was not granted." ;;
       no-driver) REPLY=$"This computer has no driver for this filesystem. Installing the right package may solve it." ;;
@@ -386,7 +386,7 @@ bm_mnt_why_text() {
       swap) REPLY=$"This is swap space, not a place for files." ;;
       gone) REPLY=$"The device was disconnected or replaced. Nothing was done." ;;
       refused-rw) REPLY=$"This drive reported problems, so it is only mounted read-only. Writing to it can destroy what is still readable." ;;
-      already-rw) REPLY=$"It is already mounted with writing enabled. Unmount it first to mount it read-only (bigmount --drive mount DEVICE --remount)." ;;
+      already-rw) REPLY=$"It is already mounted with writing enabled. Unmount it first to mount it read-only (big-storage-rescue --cli mount DEVICE --remount)." ;;
       busy) REPLY=$"It is in use, so it could not be unmounted to be mounted again." ;;
       protect-busy) REPLY=$"Writing could not be blocked on the drive: another volume of it is mounted with writing enabled. Unmount it first." ;;
       protect-system) REPLY=$"Writing cannot be blocked on the drive of the running system, so the volume was not mounted." ;;
@@ -394,28 +394,28 @@ bm_mnt_why_text() {
    esac
 }
 
-# bm_mnt_auto_protect MODE FSTYPE: whether a mount needs writing blocked on the
+# bsr_mnt_auto_protect MODE FSTYPE: whether a mount needs writing blocked on the
 # device without being asked. Uses DS_LEVEL of its drive.
-bm_mnt_auto_protect() {
-   [ "$1" = ro ] && bm_dv_fs_replays "$2" && [[ ${DS_LEVEL:-} == attention || ${DS_LEVEL:-} == critical ]]
+bsr_mnt_auto_protect() {
+   [ "$1" = ro ] && bsr_dv_fs_replays "$2" && [[ ${DS_LEVEL:-} == attention || ${DS_LEVEL:-} == critical ]]
 }
 
-# bm_mnt_mount DEV MODE PROTECT REMOUNT: mount one volume. MODE ro|rw. PROTECT=1
+# bsr_mnt_mount DEV MODE PROTECT REMOUNT: mount one volume. MODE ro|rw. PROTECT=1
 # blocks writing on the block device first (administrator password): whatever
 # a driver or another program tries afterwards, the disk does not change. A
 # read-only mount of a filesystem that replays its log gets it on a drive at
 # risk, where that write can destroy what is still readable.
 # Sets MNT_POINT, MNT_RO, MNT_PROTECTED, MNT_WHY, MNT_DETAIL. Returns:
 # 0 mounted, 20 refused by a check, 5 not authorized, 24 device gone, 1 failed.
-bm_mnt_mount() {
+bsr_mnt_mount() {
    local dev="$1" mode="$2" protect="$3" remount="$4" fs st opts seq disk
    MNT_POINT="" MNT_RO=0 MNT_PROTECTED=0 MNT_WHY="" MNT_DETAIL=""
-   bm_dv_scan
+   bsr_dv_scan
    [ -n "${DV[$dev|TYPE]:-}" ] || { MNT_WHY=gone; return 24; }
-   bm_facts "$dev" || { MNT_WHY=gone; return 24; }
+   bsr_facts "$dev" || { MNT_WHY=gone; return 24; }
    disk="${F[DISK]}" fs="${F[FSTYPE]}"
-   bm_diskseq "$disk"; seq="$REPLY"
-   bm_dv_state "$dev"; st="$REPLY"
+   bsr_diskseq "$disk"; seq="$REPLY"
+   bsr_dv_state "$dev"; st="$REPLY"
    case "$st" in
       locked) MNT_WHY=locked; return 20 ;;
       member) MNT_WHY=member; return 20 ;;
@@ -423,7 +423,7 @@ bm_mnt_mount() {
       swap | swap-idle) MNT_WHY=swap; return 20 ;;
       unlocked) MNT_WHY=locked; return 20 ;;
    esac
-   bm_ds_level "$disk"
+   bsr_ds_level "$disk"
    if [ "$mode" = rw ] && [ "$DS_LEVEL" = critical ]; then MNT_WHY=refused-rw; return 20; fi
 
    if [ -n "$DV_MP" ]; then
@@ -433,7 +433,7 @@ bm_mnt_mount() {
       fi
       if [ "$mode" = ro ] && [ "$DV_RO" = 0 ]; then
          if [ "$remount" != 1 ]; then MNT_POINT="$DV_MP"; MNT_WHY=already-rw; return 20; fi
-         if ! bm_unmount_all "$dev"; then
+         if ! bsr_unmount_all "$dev"; then
             MNT_DETAIL="$UD_MESSAGE"
             case "$UD_ERROR" in
                *DeviceBusy*) MNT_WHY=busy; return 3 ;;
@@ -449,11 +449,11 @@ bm_mnt_mount() {
       fi
    fi
 
-   bm_diskseq "$disk"
+   bsr_diskseq "$disk"
    [ "$REPLY" = "$seq" ] || { MNT_WHY=gone; return 24; }
-   bm_mnt_auto_protect "$mode" "$fs" && protect=1
+   bsr_mnt_auto_protect "$mode" "$fs" && protect=1
    if [ "$protect" = 1 ] && [ "$mode" = ro ]; then
-      bm_helper protect "$dev"; local hrc=$?
+      bsr_helper protect "$dev"; local hrc=$?
       case "$hrc" in
          0) MNT_PROTECTED=1 ;;
          3) MNT_WHY="protect-busy"; return 20 ;;
@@ -464,40 +464,40 @@ bm_mnt_mount() {
    fi
 
    if [ "$mode" = ro ]; then
-      bm_mnt_options "$fs"; opts="$REPLY"
+      bsr_mnt_options "$fs"; opts="$REPLY"
    else
       opts="noatime"
    fi
-   if ! bm_udisks mount -b "$dev" -o "$opts"; then
+   if ! bsr_udisks mount -b "$dev" -o "$opts"; then
       # A UDisks2 that refuses noload still mounts read-only; only with the
       # device protected is it certain that no journal gets replayed
       if [[ $UD_ERROR == *OptionNotPermitted* ]] && [ "$MNT_PROTECTED" = 1 ]; then
-         bm_mnt_options ""; opts="$REPLY"
-         bm_udisks mount -b "$dev" -o "$opts"
+         bsr_mnt_options ""; opts="$REPLY"
+         bsr_udisks mount -b "$dev" -o "$opts"
       fi
    fi
    if [ -n "$UD_ERROR" ]; then
       MNT_DETAIL="$UD_MESSAGE"
-      bm_mnt_explain "$dev" "$fs" "$UD_ERROR $UD_MESSAGE"
+      bsr_mnt_explain "$dev" "$fs" "$UD_ERROR $UD_MESSAGE"
       [ "$MNT_WHY" = not-authorized ] && return 5
       return 1
    fi
-   bm_mounts "$dev"
+   bsr_mounts "$dev"
    MNT_POINT="${M_TARGET[0]:-}"
    if [ -z "$MNT_POINT" ]; then
       MNT_WHY=unknown MNT_DETAIL="$UD_MESSAGE"
       return 1
    fi
-   bm_has_opt "${M_VFSOPT[0]}" ro && MNT_RO=1
+   bsr_has_opt "${M_VFSOPT[0]}" ro && MNT_RO=1
    # The mount table is the judge: read-only was asked, and read-only it must be
    if [ "$mode" = ro ] && [ "$MNT_RO" != 1 ]; then
       MNT_WHY=unknown MNT_DETAIL="asked for ro, mounted ${M_VFSOPT[0]}"
-      bm_udisks unmount -b "$dev" || MNT_DETAIL+="; unmount failed: $UD_MESSAGE"
+      bsr_udisks unmount -b "$dev" || MNT_DETAIL+="; unmount failed: $UD_MESSAGE"
       return 1
    fi
    if [ "$mode" = ro ]; then
-      bm_chosen_ro_add "$dev" "$disk"
-      [ "$MNT_PROTECTED" = 1 ] && bm_chosen_ro_add "$disk" "$disk"
+      bsr_chosen_ro_add "$dev" "$disk"
+      [ "$MNT_PROTECTED" = 1 ] && bsr_chosen_ro_add "$disk" "$disk"
    fi
    return 0
 }

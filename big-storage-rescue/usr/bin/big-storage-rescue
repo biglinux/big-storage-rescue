@@ -1,0 +1,14 @@
+#!/bin/bash
+#
+# big-storage-rescue - diagnose storage devices, explain why one cannot be
+# written to or removed, and rescue files from drives, also failing ones.
+#
+# Without arguments it opens the application in a graphical session and the
+# manager in a terminal. Everything else is in /usr/lib/big-storage-rescue and
+# is loaded only by the command that needs it (big-storage-rescue --help).
+
+# Normalized: /usr/lib/big-storage-rescue, not /usr/bin/../lib/big-storage-rescue
+BSR_LIB="$(readlink -f -- "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/../lib/big-storage-rescue")"
+# shellcheck source-path=SCRIPTDIR source=../lib/big-storage-rescue/cli.sh
+. "$BSR_LIB/cli.sh" || exit 1
+bsr_main "$@"

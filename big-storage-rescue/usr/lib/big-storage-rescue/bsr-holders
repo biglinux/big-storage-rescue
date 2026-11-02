@@ -1,13 +1,13 @@
 #!/bin/bash
 #
-# bigmount-holders MOUNTPOINT - privileged helper of big-mount.
+# bsr-holders MOUNTPOINT - privileged helper of Big Storage Rescue.
 #
-# Started through pkexec (polkit action org.biglinux.big-mount.inspect-processes)
+# Started through pkexec (polkit action org.biglinux.big-storage-rescue.inspect-processes)
 # when the user asks to see the programs of every user that keep a device
 # busy. It only reads: it prints `lsof -F` records for one mount point of a
 # local block device and nothing else. pkexec gives it a clean environment.
 
-[ "$#" -eq 1 ] || { echo "usage: bigmount-holders MOUNTPOINT" >&2; exit 2; }
+[ "$#" -eq 1 ] || { echo "usage: bsr-holders MOUNTPOINT" >&2; exit 2; }
 # shellcheck source=lib.sh
-. /usr/lib/big-mount/lib.sh || exit 1
-bm_privileged_holders "$1"
+. /usr/lib/big-storage-rescue/lib.sh || exit 1
+bsr_privileged_holders "$1"

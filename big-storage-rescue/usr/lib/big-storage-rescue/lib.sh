@@ -1,61 +1,60 @@
 # shellcheck shell=bash
-# shellcheck disable=SC2034  # R_*, F, D_*, DH_*, ER_*, H_*, O_*, UD_* are read by cli.sh
+# shellcheck disable=SC2034  # R_*, F, D_*, DH_*, H_*, O_*, UD_* are read by cli.sh
 #
-# big-mount library: device facts, read-only diagnosis, what keeps a device
-# busy, graceful closing of applications, safe removal, drive health and
-# Secure Erase.
+# Big Storage Rescue library: device facts, read-only diagnosis, what keeps a
+# device busy, graceful closing of applications, safe removal and drive health.
 #
-# Sourced by /usr/bin/bigmount for every mode except the boot automount. It
-# runs as the logged-in user; the only privileged entry point is
-# bm_privileged_holders (bigmount --privileged-holders, through pkexec).
+# Sourced by /usr/bin/big-storage-rescue for every command. It runs as the
+# logged-in user; what needs more goes through UDisks2, or through pkexec to
+# bsr-holders (bsr_privileged_holders) and bsr-drive-helper.
 #
 # Conventions: helpers return values in REPLY or in global arrays to avoid
 # forking a subshell per call; every external command gets its arguments as
 # separate words, never through eval or a shell string.
 
-export TEXTDOMAIN=big-mount
-# /usr/lib/big-mount -> /usr/share/locale (a source checkout uses its own)
-BM_LIB_DIR="${BM_LIB_DIR:-/usr/lib/big-mount}"
-export TEXTDOMAINDIR="${BM_LIB_DIR%/lib/big-mount}/share/locale"
+export TEXTDOMAIN=big-storage-rescue
+# /usr/lib/big-storage-rescue -> /usr/share/locale (a source checkout uses its own)
+BSR_LIB_DIR="${BSR_LIB_DIR:-/usr/lib/big-storage-rescue}"
+export TEXTDOMAINDIR="${BSR_LIB_DIR%/lib/big-storage-rescue}/share/locale"
 # Translations are data: never let a .mo file expand $(...) or variables
 shopt -s noexpand_translation 2>/dev/null
 
-BM_STATUS_FILE=/run/big-mount/status
+BSR_STATUS_FILE=/run/big-mount/status
 
 # Mount points that belong to the running system: never unmounted by us
-BM_SYSTEM_MOUNTS=" / /boot /boot/efi /efi /home /usr /var /opt /srv /tmp /root /nix "
+BSR_SYSTEM_MOUNTS=" / /boot /boot/efi /efi /home /usr /var /opt /srv /tmp /root /nix "
 
 # Session processes that must not be closed even if they hold a file
-BM_PROTECTED_COMM=" systemd plasmashell kwin_wayland kwin_x11 kwin_wayland_wr ksmserver kded6 kded5 \
+BSR_PROTECTED_COMM=" systemd plasmashell kwin_wayland kwin_x11 kwin_wayland_wr ksmserver kded6 kded5 \
  startplasma-way startplasma-x11 plasma_session Xwayland Xorg dbus-daemon dbus-broker \
  dbus-broker-lau pipewire pipewire-pulse wireplumber sddm sddm-helper gnome-shell \
  gnome-session-b polkitd polkit-kde-aut xdg-desktop-por xdg-document-po kactivitymanage \
- udisksd bigmount sudo pkexec su login "
+ udisksd bigmount big-storage-res sudo pkexec su login "
 
 # Interactive shells ignore SIGTERM; the user has to leave the folder instead
-BM_SHELL_COMM=" bash zsh fish sh dash ksh mksh tcsh csh nu elvish xonsh "
+BSR_SHELL_COMM=" bash zsh fish sh dash ksh mksh tcsh csh nu elvish xonsh "
 
-bm_warn() { printf 'bigmount: %s\n' "$*" >&2; }
+bsr_warn() { printf 'big-storage-rescue: %s\n' "$*" >&2; }
 
 # Pad or cut TEXT to WIDTH characters for terminal tables. printf counts
 # bytes: "%-18.18s" misaligns accented labels and can cut one in the middle
 # of a character. Control characters (from device data) become "?".
-bm_pad() {
+bsr_pad() {
    local s="${1//[[:cntrl:]]/?}" w="$2"
    [ "${#s}" -gt "$w" ] && s="${s:0:w-1}…"
    printf -v REPLY '%s%*s' "$s" $((w - ${#s})) ""
 }
 
 # Decode the \xHH escapes used by lsblk -P and findmnt -P
-bm_unescape() { printf -v REPLY '%b' "$1"; }
+bsr_unescape() { printf -v REPLY '%b' "$1"; }
 
 # Parse one KEY="value" line of lsblk/findmnt -P into the KV array
 declare -gA KV
-bm_parse_pairs() {
+bsr_parse_pairs() {
    local rest="$1" re='^[[:space:]]*([A-Z0-9_:%-]+)="([^"]*)"(.*)$'
    KV=()
    while [[ $rest =~ $re ]]; do
-      bm_unescape "${BASH_REMATCH[2]}"
+      bsr_unescape "${BASH_REMATCH[2]}"
       KV[${BASH_REMATCH[1]}]="$REPLY"
       rest="${BASH_REMATCH[3]}"
    done
@@ -64,7 +63,7 @@ bm_parse_pairs() {
 # Escape untrusted text (labels, file names, process names) for rich text.
 # The replacements are quoted: since bash 5.2 an unquoted & in them stands
 # for the matched text (patsub_replacement).
-bm_html() {
+bsr_html() {
    local s="$1"
    s="${s//&/"&amp;"}"
    s="${s//</"&lt;"}"
@@ -74,7 +73,7 @@ bm_html() {
 }
 
 # Human readable size in powers of 1000, like Dolphin and the disk vendors
-bm_human_size() {
+bsr_human_size() {
    local b="${1:-0}" units=(B kB MB GB TB PB) i=0 whole frac
    [[ $b =~ ^[0-9]+$ ]] || { REPLY="?"; return; }
    while [ "$b" -ge 1000000 ] && [ "$i" -lt 4 ]; do
@@ -91,17 +90,17 @@ bm_human_size() {
 # ---------------------------------------------------------------------------
 # Device facts
 
-# bm_resolve TARGET: block device behind a /dev path, a mount point or any
+# bsr_resolve TARGET: block device behind a /dev path, a mount point or any
 # path inside a mounted filesystem. Sets R_DEV (e.g. /dev/sdd1), R_PATH (the
 # path asked for, if any) and R_SUBVOL (btrfs subvolume, if any).
 # Nothing is ever derived from the name: the kernel must know the device.
-# On failure R_ERR says why (bm_resolve_message explains it):
+# On failure R_ERR says why (bsr_resolve_message explains it):
 #   empty | missing (no such device or folder) | controller (an NVMe
 #   controller such as /dev/nvme0, not its storage) | not-block (another
 #   kind of file in /dev) | not-local (a folder on a network share, tmpfs...)
 # Callers set unavailable when the node exists but the kernel has no device
-# behind it any more (bm_facts failed: unplugged, detached loop device).
-bm_resolve() {
+# behind it any more (bsr_facts failed: unplugged, detached loop device).
+bsr_resolve() {
    local target="$1" src
    R_DEV="" R_PATH="" R_SUBVOL="" R_ERR="" R_NODE=""
    if [ -z "$target" ]; then
@@ -132,9 +131,9 @@ bm_resolve() {
    R_DEV="$(readlink -f -- "$src")"
 }
 
-# One translated sentence for the R_ERR of a failed bm_resolve TARGET. For
+# One translated sentence for the R_ERR of a failed bsr_resolve TARGET. For
 # an NVMe controller the storage it holds is named (from sysfs, not guessed).
-bm_resolve_message() {
+bsr_resolve_message() {
    local target="$1" ns=() n
    case "${R_ERR:-}" in
       empty) REPLY=$"No device or folder was given." ;;
@@ -155,20 +154,20 @@ bm_resolve_message() {
 }
 
 # For the terminal commands: the explanation on stderr, prefixed like every
-# other message of bigmount
-bm_resolve_fail() {
-   bm_resolve_message "$1"
-   printf 'bigmount: %s\n' "$REPLY" >&2
+# other message of big-storage-rescue
+bsr_resolve_fail() {
+   bsr_resolve_message "$1"
+   printf 'big-storage-rescue: %s\n' "$REPLY" >&2
 }
 
-# bm_facts DEV: fills the F array with what diagnosis and dialogs need.
+# bsr_facts DEV: fills the F array with what diagnosis and dialogs need.
 # F[MOUNTS] holds the mount points separated by newlines.
 declare -gA F
-bm_facts() {
+bsr_facts() {
    local dev="$1" line disk
    F=()
    while IFS= read -r line; do
-      bm_parse_pairs "$line"
+      bsr_parse_pairs "$line"
       F[NAME]="${KV[NAME]:-}" F[KNAME]="${KV[KNAME]:-}" F[PKNAME]="${KV[PKNAME]:-}"
       F[TYPE]="${KV[TYPE]:-}" F[FSTYPE]="${KV[FSTYPE]:-}" F[FSVER]="${KV[FSVER]:-}"
       F[LABEL]="${KV[LABEL]:-}" F[UUID]="${KV[UUID]:-}" F[SIZE]="${KV[SIZE]:-}"
@@ -197,7 +196,7 @@ bm_facts() {
    done
    F[DISK]="$disk"
    while IFS= read -r line; do
-      bm_parse_pairs "$line"
+      bsr_parse_pairs "$line"
       F[MODEL]="${KV[MODEL]:-}" F[VENDOR]="${KV[VENDOR]:-}" F[TRAN]="${KV[TRAN]:-}"
       F[DISK_RO]="${KV[RO]:-0}" F[HOTPLUG]="${KV[HOTPLUG]:-0}" F[RM]="${KV[RM]:-0}"
       F[DISK_TYPE]="${KV[TYPE]:-}" F[DISK_SIZE]="${KV[SIZE]:-}"
@@ -211,9 +210,9 @@ bm_facts() {
 }
 
 # Friendly name: "Novo volume (SanDisk Portable SSD, 2 TB)"
-bm_display_name() {
+bsr_display_name() {
    local name="${F[LABEL]:-}" what=""
-   bm_human_size "${F[SIZE]:-}"
+   bsr_human_size "${F[SIZE]:-}"
    local size="$REPLY"
    [ -n "${F[VENDOR]:-}${F[MODEL]:-}" ] && what="${F[VENDOR]:+${F[VENDOR]} }${F[MODEL]:-}"
    [ -n "$name" ] || name="${F[NAME]##*/}"
@@ -221,14 +220,14 @@ bm_display_name() {
 }
 
 # Short name for titles: the label, else vendor and model, else sdX1
-bm_short_name() {
+bsr_short_name() {
    REPLY="${F[LABEL]:-}"
    [ -n "$REPLY" ] || REPLY="${F[VENDOR]:+${F[VENDOR]} }${F[MODEL]:-}"
    [ -n "$REPLY" ] || REPLY="${F[NAME]##*/}"
 }
 
 # The icon a file manager would show for this device
-bm_device_icon() {
+bsr_device_icon() {
    if [ "${F[DISK_TYPE]:-}" = rom ]; then REPLY=media-optical
    elif [ "${F[TRAN]:-}" = usb ] || [ "${F[HOTPLUG]:-0}" = 1 ] || [ "${F[RM]:-0}" = 1 ]; then REPLY=drive-removable-media
    else REPLY=drive-harddisk
@@ -236,17 +235,17 @@ bm_device_icon() {
 }
 
 # Drives that are meant to be unplugged (and powered off before that)
-bm_is_removable_drive() {
+bsr_is_removable_drive() {
    [ "${F[TRAN]:-}" = usb ] || [ "${F[TRAN]:-}" = ieee1394 ] || [ "${F[HOTPLUG]:-0}" = 1 ] || [ "${F[RM]:-0}" = 1 ]
 }
 
-# bm_mounts DEV: every mount of DEV (a device can be mounted more than once,
+# bsr_mounts DEV: every mount of DEV (a device can be mounted more than once,
 # e.g. a stale os-prober mount). Fills M_TARGET, M_FSTYPE, M_VFSOPT, M_FSOPT.
-bm_mounts() {
+bsr_mounts() {
    local line
    M_TARGET=() M_FSTYPE=() M_VFSOPT=() M_FSOPT=()
    while IFS= read -r line; do
-      bm_parse_pairs "$line"
+      bsr_parse_pairs "$line"
       M_TARGET+=("${KV[TARGET]}")
       M_FSTYPE+=("${KV[FSTYPE]}")
       M_VFSOPT+=("${KV[VFS-OPTIONS]}")
@@ -254,10 +253,10 @@ bm_mounts() {
    done < <(findmnt -P -n -o TARGET,FSTYPE,VFS-OPTIONS,FS-OPTIONS --source "$1" 2>/dev/null)
 }
 
-bm_has_opt() { [[ ",$1," == *",$2,"* ]]; }
+bsr_has_opt() { [[ ",$1," == *",$2,"* ]]; }
 
 # Value of an option such as uid=1000 in a comma separated list
-bm_opt_value() {
+bsr_opt_value() {
    local o
    REPLY=""
    IFS=, read -r -a _opts <<< "$1"
@@ -268,19 +267,19 @@ bm_opt_value() {
 }
 
 # Line of /run/big-mount/status for DEV: "STATE REASON" in REPLY
-bm_boot_status() {
+bsr_boot_status() {
    local dev state reason
    REPLY=""
-   [ -r "$BM_STATUS_FILE" ] || return 1
+   [ -r "$BSR_STATUS_FILE" ] || return 1
    while IFS=$'\t' read -r dev _ _ state reason; do
       [ "$dev" = "$1" ] && { REPLY="$state $reason"; return 0; }
-   done < "$BM_STATUS_FILE"
+   done < "$BSR_STATUS_FILE"
    return 1
 }
 
 # Recent kernel messages about a device (journal of the current boot).
 # Reading the journal may not be allowed; then nothing is reported.
-bm_kernel_messages() {
+bsr_kernel_messages() {
    local kname="$1" disk="$2"
    KMSG=()
    command -v journalctl >/dev/null || return 1
@@ -290,7 +289,7 @@ bm_kernel_messages() {
 
 # Did ntfs-3g fall back to read-only for DEV? Its journal lines show the
 # options that were asked for and the mode it actually used (same PID).
-bm_ntfs3g_fallback() {
+bsr_ntfs3g_fallback() {
    local dev="$1" line pid="" asked=""
    while IFS= read -r line; do
       [[ $line =~ \[([0-9]+)\]:\ (.*)$ ]] || continue
@@ -300,10 +299,10 @@ bm_ntfs3g_fallback() {
             [ "${BASH_REMATCH[1]}" = "$pid" ] && asked="${BASH_REMATCH[2]#Cmdline options: }" ;;
       esac
    done < <(journalctl -b -q --no-pager -o short -n 400 -t ntfs-3g -t lowntfs-3g 2>/dev/null)
-   [ -n "$pid" ] && ! bm_has_opt "$asked" ro
+   [ -n "$pid" ] && ! bsr_has_opt "$asked" ro
 }
 
-bm_kmsg_match() {
+bsr_kmsg_match() {
    local l
    for l in "${KMSG[@]}"; do
       [[ $l =~ $1 ]] && { REPLY="$l"; return 0; }
@@ -311,7 +310,7 @@ bm_kmsg_match() {
    return 1
 }
 
-bm_is_posix_fs() {
+bsr_is_posix_fs() {
    case "$1" in
       ext2 | ext3 | ext4 | btrfs | xfs | f2fs | jfs | reiserfs | nilfs2 | bcachefs) return 0 ;;
    esac
@@ -319,10 +318,10 @@ bm_is_posix_fs() {
 }
 
 # A mounted filesystem that contains an operating system (another Linux
-# install mounted by big-mount, a Windows C: drive): its root directory must
+# install mounted by big-storage-rescue, a Windows C: drive): its root directory must
 # keep its owner. The top level of a Btrfs install holds the system in
 # subvolumes such as @, so one level below is checked as well.
-bm_looks_like_os() {
+bsr_looks_like_os() {
    local mp="$1" m
    for m in "$mp"/etc/os-release "$mp"/*/etc/os-release "$mp"/usr/bin "$mp"/*/usr/bin \
       "$mp"/boot/vmlinuz* "$mp"/*/boot/vmlinuz* "$mp"/Windows/System32 "$mp"/EFI/Microsoft \
@@ -335,15 +334,15 @@ bm_looks_like_os() {
 # ---------------------------------------------------------------------------
 # Read-only diagnosis
 
-# bm_diagnose_write DEV: why can't the current user write to DEV?
-# Uses the F array (bm_facts) and sets:
+# bsr_diagnose_write DEV: why can't the current user write to DEV?
+# Uses the F array (bsr_facts) and sets:
 #   D_CAUSE  ok | not-mounted | hw-readonly | unsupported | ntfs-unsafe |
 #            fs-errors | io-errors | mounted-ro | permission | permission-other-user
 #   D_MP     mount point examined
 #   D_DETAIL technical detail for "Details" (one line, untranslated facts)
 #   D_FIX    safe automatic correction available: take-ownership | remount | ""
 #   D_WARN   warnings that do not prevent writing (filesystem errors noticed)
-bm_diagnose_write() {
+bsr_diagnose_write() {
    local dev="$1" path="${2:-}" i ro=0 fstype mounted_type vfs fso st uid wt line
    D_CAUSE="" D_MP="" D_DETAIL="" D_FIX="" D_WARN=() D_OWNER="" D_PATH=""
    fstype="${F[FSTYPE]:-}"
@@ -353,11 +352,11 @@ bm_diagnose_write() {
       return 0
    fi
 
-   bm_mounts "$dev"
+   bsr_mounts "$dev"
    if [ "${#M_TARGET[@]}" -eq 0 ]; then
       D_CAUSE=not-mounted
-      if bm_boot_status "$dev" && [[ $REPLY == failed* ]]; then
-         D_DETAIL="big-mount: ${REPLY#failed }"
+      if bsr_boot_status "$dev" && [[ $REPLY == failed* ]]; then
+         D_DETAIL="big-storage-rescue: ${REPLY#failed }"
          [[ $REPLY == *ntfs-* ]] && D_CAUSE=ntfs-unsafe
       fi
       return 0
@@ -378,13 +377,13 @@ bm_diagnose_write() {
    if [ -n "$path" ]; then
       [ -d "$path" ] || path="${path%/*}"
       while IFS= read -r line; do
-         bm_parse_pairs "$line"
+         bsr_parse_pairs "$line"
          D_MP="${KV[TARGET]}" mounted_type="${KV[FSTYPE]}" vfs="${KV[VFS-OPTIONS]}" fso="${KV[FS-OPTIONS]}"
       done < <(findmnt -P -n -o TARGET,FSTYPE,VFS-OPTIONS,FS-OPTIONS -T "$path" 2>/dev/null)
       wt="$path"
       [ "$wt" = "$D_MP" ] || D_PATH="$wt"
    fi
-   if bm_has_opt "$vfs" ro || bm_has_opt "$fso" ro; then ro=1; fi
+   if bsr_has_opt "$vfs" ro || bsr_has_opt "$fso" ro; then ro=1; fi
 
    # Facts that are worth showing whatever the outcome
    local errcount=""
@@ -417,27 +416,27 @@ bm_diagnose_write() {
             D_CAUSE=unsupported; D_DETAIL="driver=ntfs (read-only legacy driver)"; return 0 ;;
       esac
 
-      bm_kernel_messages "${F[KNAME]}" "${F[DISK]##*/}"
+      bsr_kernel_messages "${F[KNAME]}" "${F[DISK]##*/}"
 
       # D: NTFS in a state that does not allow safe writes
       if [ "$fstype" = ntfs ]; then
          D_CAUSE=ntfs-unsafe
-         if bm_boot_status "$dev" && [[ $REPLY == *ntfs-* ]]; then
-            D_DETAIL="big-mount: ${REPLY#* }"
-         elif bm_ntfs3g_fallback "$dev"; then
+         if bsr_boot_status "$dev" && [[ $REPLY == *ntfs-* ]]; then
+            D_DETAIL="big-storage-rescue: ${REPLY#* }"
+         elif bsr_ntfs3g_fallback "$dev"; then
             D_DETAIL="ntfs-3g: read-write requested, mounted read-only by the driver"
-         elif bm_kmsg_match '[Hh]ibernat|[Ff]ast [Ss]tartup|unsafe state'; then
+         elif bsr_kmsg_match '[Hh]ibernat|[Ff]ast [Ss]tartup|unsafe state'; then
             D_DETAIL="ntfs-hibernated: $REPLY"
-         elif bm_kmsg_match 'volume is dirty|[Dd]irty|chkdsk'; then
+         elif bsr_kmsg_match 'volume is dirty|[Dd]irty|chkdsk'; then
             D_DETAIL="ntfs-dirty: $REPLY"
-         elif bm_kmsg_match 'unclean|not cleanly'; then
+         elif bsr_kmsg_match 'unclean|not cleanly'; then
             D_DETAIL="ntfs-unclean: $REPLY"
          fi
          return 0
       fi
 
       # C: the kernel stopped writes after finding errors
-      if bm_kmsg_match 'remounting filesystem read-only|[Rr]emounting.*read-only|forced readonly|set read-only|[Ff]ilesystem has been shut down|EXT4-fs error|BTRFS (error|critical)|XFS.*(Corruption|metadata I/O error)|F2FS-fs.*(error|inconsistent)'; then
+      if bsr_kmsg_match 'remounting filesystem read-only|[Rr]emounting.*read-only|forced readonly|set read-only|[Ff]ilesystem has been shut down|EXT4-fs error|BTRFS (error|critical)|XFS.*(Corruption|metadata I/O error)|F2FS-fs.*(error|inconsistent)'; then
          D_CAUSE=fs-errors; D_DETAIL="$REPLY"; return 0
       fi
       if [ "${errcount:-0}" -gt 0 ]; then
@@ -445,7 +444,7 @@ bm_diagnose_write() {
       fi
 
       # F: the hardware reported I/O errors
-      if bm_kmsg_match 'I/O error|critical medium error|Buffer I/O error|reset.*USB|device descriptor read'; then
+      if bsr_kmsg_match 'I/O error|critical medium error|Buffer I/O error|reset.*USB|device descriptor read'; then
          D_CAUSE=io-errors; D_DETAIL="$REPLY"; return 0
       fi
 
@@ -466,21 +465,21 @@ bm_diagnose_write() {
       st="$(stat -c '%U:%G %a' -- "$wt" 2>/dev/null)"
       D_CAUSE=permission-folder D_OWNER="${st%%:*}"
       D_DETAIL="folder $wt $st"
-   elif bm_is_system_mount "$D_MP"; then
+   elif bsr_is_system_mount "$D_MP"; then
       # Part of the running system (/, /boot/efi, ...): not for users to write
       st="$(stat -c '%U:%G %a' -- "$D_MP" 2>/dev/null)"
       D_CAUSE=system
       D_DETAIL="system mount $D_MP $st"
-   elif bm_is_posix_fs "$fstype"; then
+   elif bsr_is_posix_fs "$fstype"; then
       st="$(stat -c '%U:%G %a' -- "$D_MP" 2>/dev/null)"
       D_CAUSE=permission
       D_DETAIL="root directory $st"
-      if ! bm_looks_like_os "$D_MP" && [[ $D_MP != /var/lib/os-prober/* ]]; then
+      if ! bsr_looks_like_os "$D_MP" && [[ $D_MP != /var/lib/os-prober/* ]]; then
          D_FIX=take-ownership
       fi
    else
       D_CAUSE=permission-other-user
-      bm_opt_value "$vfs,$fso" uid && uid="$REPLY"
+      bsr_opt_value "$vfs,$fso" uid && uid="$REPLY"
       D_DETAIL="uid=${uid:-?} (you are $EUID)"
       if [[ $D_MP == /run/media/* ]]; then
          D_FIX=remount
@@ -492,7 +491,7 @@ bm_diagnose_write() {
 # What keeps a filesystem busy
 
 # Friendly application name for a process (translated)
-bm_app_name() {
+bsr_app_name() {
    local comm="$1" proto="$2"
    case "$comm" in
       dolphin) REPLY=$"Dolphin (file manager)" ;;
@@ -529,7 +528,7 @@ bm_app_name() {
 }
 
 # How a process uses the filesystem (from lsof's FD and access fields)
-bm_access_label() {
+bsr_access_label() {
    local fd="$1" acc="$2" type="$3"
    case "$fd" in
       cwd) REPLY=$"Current folder is on the device" ;;
@@ -546,7 +545,7 @@ bm_access_label() {
    esac
 }
 
-bm_proc_state() {
+bsr_proc_state() {
    local stat rest
    REPLY="" PROC_START=""
    # The process may end at any moment: that is not an error
@@ -558,17 +557,17 @@ bm_proc_state() {
    PROC_START="${20:-}"
 }
 
-# bm_holders MOUNTPOINT [LSOF_OUTPUT_FILE]: processes using the filesystem
+# bsr_holders MOUNTPOINT [LSOF_OUTPUT_FILE]: processes using the filesystem
 # mounted on MOUNTPOINT, from `lsof -F` (structured field output). As a
 # normal user only the user's own processes are visible.
 # Fills H_PID H_UID H_USER H_COMM H_APP H_FD H_ACCESS H_PATH H_STATE H_START
 # (one entry per open file) and H_PIDS (unique pids, in order).
-bm_holders() {
+bsr_holders() {
    local mp="$1" src="${2:-}" line pid="" uid="" user="" comm="" fd="" acc="" type="" name
    local -A seen=()
    H_PID=() H_UID=() H_USER=() H_COMM=() H_APP=() H_FD=() H_ACCESS=() H_PATH=() H_STATE=() H_START=() H_PIDS=() H_ARGS=()
 
-   _bm_holder_flush() {
+   _bsr_holder_flush() {
       [ -n "$pid" ] && [ -n "$fd" ] || return 0
       local proto="" args=()
       if [ -r "/proc/$pid/cmdline" ]; then
@@ -576,10 +575,10 @@ bm_holders() {
          # kioworker <plugin path> <protocol> ...
          [[ $comm == kioworker* || $comm == kioslave* ]] && proto="${args[2]:-}"
       fi
-      bm_app_name "$comm" "$proto"; H_APP+=("$REPLY")
+      bsr_app_name "$comm" "$proto"; H_APP+=("$REPLY")
       H_PID+=("$pid") H_UID+=("$uid") H_USER+=("$user") H_COMM+=("$comm")
       H_FD+=("$fd") H_ACCESS+=("$acc") H_PATH+=("$name")
-      bm_proc_state "$pid"; H_STATE+=("$REPLY") H_START+=("$PROC_START")
+      bsr_proc_state "$pid"; H_STATE+=("$REPLY") H_START+=("$PROC_START")
       H_ARGS+=("${args[*]:0:4}")
       if [ -z "${seen[$pid]:-}" ]; then seen[$pid]=1; H_PIDS+=("$pid"); fi
       fd=""
@@ -587,35 +586,35 @@ bm_holders() {
 
    while IFS= read -r line; do
       case "${line:0:1}" in
-         p) _bm_holder_flush; pid="${line:1}" uid="" user="" comm="" ;;
+         p) _bsr_holder_flush; pid="${line:1}" uid="" user="" comm="" ;;
          u) uid="${line:1}" ;;
          L) user="${line:1}" ;;
          c) comm="${line:1}" ;;
-         f) _bm_holder_flush; fd="${line:1}" acc="" type="" name="" ;;
+         f) _bsr_holder_flush; fd="${line:1}" acc="" type="" name="" ;;
          a) acc="${line:1}"; acc="${acc// /}" ;;
          t) type="${line:1}" ;;
          n) name="${line:1}" ;;
       esac
    done < <(if [ -n "$src" ]; then cat -- "$src"; else lsof -w -F pcuLftan -- "$mp" 2>/dev/null; fi)
-   _bm_holder_flush
-   unset -f _bm_holder_flush
+   _bsr_holder_flush
+   unset -f _bsr_holder_flush
 }
 
 # Kernel-level users of a filesystem or block device that no process list
 # shows: other mounts of the device, filesystems mounted inside, swap files,
 # loop devices backed by files on it, device-mapper/RAID holders.
 # Fills O_KIND and O_WHAT (parallel arrays).
-bm_other_holders() {
+bsr_other_holders() {
    local dev="$1" kname="${1##*/}" mp t f back swapf h
    O_KIND=() O_WHAT=()
-   bm_mounts "$dev"
+   bsr_mounts "$dev"
    local targets=("${M_TARGET[@]}")
    if [ "${#targets[@]}" -gt 1 ]; then
       for t in "${targets[@]}"; do O_KIND+=(mount) O_WHAT+=("$t"); done
    fi
    for mp in "${targets[@]}"; do
       while IFS= read -r t; do
-         bm_unescape "$t"; t="$REPLY"
+         bsr_unescape "$t"; t="$REPLY"
          [ "$t" = "$mp" ] && continue
          O_KIND+=(nested) O_WHAT+=("$t")
       done < <(findmnt -n -r -o TARGET -R -- "$mp" 2>/dev/null | tail -n +2)
@@ -638,7 +637,7 @@ bm_other_holders() {
       [ -e "$h" ] || continue
       O_KIND+=(holder) O_WHAT+=("/dev/${h##*/}")
    done
-   bm_private_mounts "$dev"
+   bsr_private_mounts "$dev"
    for h in "${!P_PIDS[@]}"; do
       O_KIND+=(isolated) O_WHAT+=("${P_COMMS[h]} (PID ${P_PIDS[h]}): ${P_MPS[h]}")
    done
@@ -646,15 +645,15 @@ bm_other_holders() {
 
 # Can the user be offered to close this process? Sets REPLY to "" when yes,
 # otherwise to the reason (translated).
-bm_close_refusal() {
+bsr_close_refusal() {
    local idx="$1" pid="${H_PID[$1]}" comm="${H_COMM[$1]}" j
    if [ "${H_UID[idx]}" != "$EUID" ]; then
       REPLY=$"belongs to another user or to the system"; return 1
    fi
-   if [[ $BM_PROTECTED_COMM == *" $comm "* ]]; then
+   if [[ $BSR_PROTECTED_COMM == *" $comm "* ]]; then
       REPLY=$"part of the desktop session"; return 1
    fi
-   if [[ $BM_SHELL_COMM == *" $comm "* ]]; then
+   if [[ $BSR_SHELL_COMM == *" $comm "* ]]; then
       REPLY=$"a terminal: type 'cd' in it or close the tab"; return 1
    fi
    if [ "$pid" = "$$" ] || [ "$pid" = "$PPID" ]; then
@@ -670,16 +669,16 @@ bm_close_refusal() {
    return 0
 }
 
-# bm_close_processes PID START...: ask the given processes to exit (SIGTERM,
+# bsr_close_processes PID START...: ask the given processes to exit (SIGTERM,
 # never SIGKILL) after checking they are still the same processes. Waits up
 # to 5 seconds. Sets CLOSE_LEFT to the pids still running.
-bm_close_processes() {
+bsr_close_processes() {
    local pid start uid asked=() n
    CLOSE_LEFT=()
    while [ "$#" -ge 2 ]; do
       pid="$1" start="$2"; shift 2
       if ! [[ $pid =~ ^[0-9]+$ ]] || [ "$pid" -le 1 ]; then continue; fi
-      bm_proc_state "$pid" || continue
+      bsr_proc_state "$pid" || continue
       # The pid may have been reused by an unrelated process meanwhile
       [ "$PROC_START" = "$start" ] || continue
       uid="$(stat -c %u "/proc/$pid" 2>/dev/null)"
@@ -700,14 +699,14 @@ bm_close_processes() {
 # ---------------------------------------------------------------------------
 # Unmount and power off through UDisks2 (polkit decides about passwords)
 
-# bm_udisks CMD...: run udisksctl, keeping the D-Bus error name in UD_ERROR.
-# When BM_SLOW_HOOK names a function, it is called once if the operation is
+# bsr_udisks CMD...: run udisksctl, keeping the D-Bus error name in UD_ERROR.
+# When BSR_SLOW_HOOK names a function, it is called once if the operation is
 # still running after 2 seconds (an unmount waits for pending writes): the
 # GUI uses it to say "do not disconnect yet". No polling: wait -n returns
 # when the first of the two finishes.
-bm_udisks() {
+bsr_udisks() {
    local out rc
-   if [ -n "${BM_SLOW_HOOK:-}" ]; then
+   if [ -n "${BSR_SLOW_HOOK:-}" ]; then
       local tmp pid timer
       tmp="$(mktemp)" || return 1
       udisksctl "$@" > "$tmp" 2>&1 &
@@ -715,7 +714,7 @@ bm_udisks() {
       sleep 2 &
       timer=$!
       wait -n "$pid" "$timer"
-      if kill -0 "$pid" 2>/dev/null; then "$BM_SLOW_HOOK" "$@"; fi
+      if kill -0 "$pid" 2>/dev/null; then "$BSR_SLOW_HOOK" "$@"; fi
       kill "$timer" 2>/dev/null
       wait "$timer" 2>/dev/null
       wait "$pid"
@@ -741,10 +740,10 @@ bm_udisks() {
    return "$rc"
 }
 
-# bm_udisks_object DEV: the UDisks2 object of a block device, as UDisks2
+# bsr_udisks_object DEV: the UDisks2 object of a block device, as UDisks2
 # itself names it (REPLY), never built from the device name. Fails when
 # UDisks2 does not know the device (disconnected, or not a block device).
-bm_udisks_object() {
+bsr_udisks_object() {
    local line
    REPLY=""
    line="$(LC_ALL=C udisksctl info -b "$1" 2>/dev/null | head -n1)"
@@ -752,84 +751,84 @@ bm_udisks_object() {
    REPLY="${BASH_REMATCH[1]}"
 }
 
-# bm_is_system_mount MOUNTPOINT
-bm_is_system_mount() { [[ $BM_SYSTEM_MOUNTS == *" $1 "* ]]; }
+# bsr_is_system_mount MOUNTPOINT
+bsr_is_system_mount() { [[ $BSR_SYSTEM_MOUNTS == *" $1 "* ]]; }
 
-# bm_drive_members DISK: block devices of a drive (the disk, its partitions
+# bsr_drive_members DISK: block devices of a drive (the disk, its partitions
 # and anything stacked on them), in lsblk order. Fills DRIVE_DEVS and
 # DRIVE_FSTYPES.
-bm_drive_members() {
+bsr_drive_members() {
    local line
    DRIVE_DEVS=() DRIVE_FSTYPES=()
    while IFS= read -r line; do
-      bm_parse_pairs "$line"
+      bsr_parse_pairs "$line"
       DRIVE_DEVS+=("${KV[NAME]}") DRIVE_FSTYPES+=("${KV[FSTYPE]}")
    done < <(lsblk -P -n -p -o NAME,FSTYPE -- "$1" 2>/dev/null)
 }
 
 # Is something (dm-crypt, LVM, md) stacked on this block device?
-bm_has_holders() { compgen -G "/sys/class/block/${1##*/}/holders/*" >/dev/null; }
+bsr_has_holders() { compgen -G "/sys/class/block/${1##*/}/holders/*" >/dev/null; }
 
 # Sequence number of a disk: it changes when another device takes the name
-bm_diskseq() {
+bsr_diskseq() {
    REPLY=""
    { read -r REPLY < "/sys/block/${1##*/}/diskseq"; } 2>/dev/null
 }
 
 # Read-only by choice: a read-only mount, or writing blocked on a drive, that
-# the person asked Big-Mount for is not reported back to them as a problem.
+# the person asked Big Storage Rescue for is not reported back to them as a problem.
 # Recorded in the private runtime folder with the disk sequence number, which
-# changes when another device takes the name. bm_chosen_ro_add DEV DISK;
-# bm_chosen_ro DEV after bm_facts.
-bm_chosen_ro_add() {
+# changes when another device takes the name. bsr_chosen_ro_add DEV DISK;
+# bsr_chosen_ro DEV after bsr_facts.
+bsr_chosen_ro_add() {
    local dir="${XDG_RUNTIME_DIR:-}"
    { [ -n "$dir" ] && [ -d "$dir" ] && [ -O "$dir" ]; } || return 0
-   bm_diskseq "$2"
-   [ -n "$REPLY" ] && printf '%s %s\n' "$REPLY" "$1" >> "$dir/big-mount-read-only"
+   bsr_diskseq "$2"
+   [ -n "$REPLY" ] && printf '%s %s\n' "$REPLY" "$1" >> "$dir/big-storage-rescue-read-only"
 }
 
-bm_chosen_ro() {
-   local file="${XDG_RUNTIME_DIR:-}/big-mount-read-only"
+bsr_chosen_ro() {
+   local file="${XDG_RUNTIME_DIR:-}/big-storage-rescue-read-only"
    [ -r "$file" ] || return 1
-   bm_diskseq "${F[DISK]:-}"
+   bsr_diskseq "${F[DISK]:-}"
    [ -n "$REPLY" ] && grep -qxF -e "$REPLY $1" -e "$REPLY ${F[DISK]}" -- "$file"
 }
 
-# bm_drive_lock DISK: one removal or remount of a drive at a time. A double
+# bsr_drive_lock DISK: one removal or remount of a drive at a time. A double
 # click on the Dolphin action, or the action and a terminal command, must
 # not unmount and power off the same drive concurrently. The lock file is
 # in the private runtime folder of the user, where nobody else can plant a
-# symlink. Returns 1 when another operation holds it. bm_drive_unlock
+# symlink. Returns 1 when another operation holds it. bsr_drive_unlock
 # releases it even if a child process (a notification) inherited the fd.
-bm_drive_lock() {
+bsr_drive_lock() {
    local dir="${XDG_RUNTIME_DIR:-/run/user/$EUID}"
-   BM_LOCK_FD=""
+   BSR_LOCK_FD=""
    # Without a private folder (an unusual environment) there is no lock
    { [ -d "$dir" ] && [ -O "$dir" ]; } || return 0
-   { exec {BM_LOCK_FD}>"$dir/big-mount-drive-${1##*/}.lock"; } 2>/dev/null || { BM_LOCK_FD=""; return 0; }
-   flock -n "$BM_LOCK_FD" && return 0
-   exec {BM_LOCK_FD}>&-
-   BM_LOCK_FD=""
+   { exec {BSR_LOCK_FD}>"$dir/big-storage-rescue-drive-${1##*/}.lock"; } 2>/dev/null || { BSR_LOCK_FD=""; return 0; }
+   flock -n "$BSR_LOCK_FD" && return 0
+   exec {BSR_LOCK_FD}>&-
+   BSR_LOCK_FD=""
    return 1
 }
 
-bm_drive_unlock() {
-   [ -n "${BM_LOCK_FD:-}" ] || return 0
-   flock -u "$BM_LOCK_FD" 2>/dev/null
-   exec {BM_LOCK_FD}>&-
-   BM_LOCK_FD=""
+bsr_drive_unlock() {
+   [ -n "${BSR_LOCK_FD:-}" ] || return 0
+   flock -u "$BSR_LOCK_FD" 2>/dev/null
+   exec {BSR_LOCK_FD}>&-
+   BSR_LOCK_FD=""
 }
 
-# bm_system_use DISK: non-empty REPLY when the drive holds the running
+# bsr_system_use DISK: non-empty REPLY when the drive holds the running
 # system (a system mount point or active swap).
-bm_system_use() {
+bsr_system_use() {
    local d t sw
    REPLY=""
-   bm_drive_members "$1"
+   bsr_drive_members "$1"
    for d in "${DRIVE_DEVS[@]}"; do
-      bm_mounts "$d"
+      bsr_mounts "$d"
       for t in "${M_TARGET[@]}"; do
-         if bm_is_system_mount "$t"; then REPLY="$d → $t"; return 0; fi
+         if bsr_is_system_mount "$t"; then REPLY="$d → $t"; return 0; fi
       done
       while read -r sw _; do
          [ "$sw" = "$d" ] && { REPLY="$d → swap"; return 0; }
@@ -843,13 +842,13 @@ bm_system_use() {
 # still writes the final metadata to the device. Fills FUSE_PIDS.
 # /proc/PID/cmdline is readable for every user, so root daemons are seen.
 # /proc/PID/comm keeps 15 characters: mount.lowntfs-3g is "mount.lowntfs-3"
-BM_FUSE_COMM=" mount.ntfs-3g ntfs-3g mount.lowntfs-3 lowntfs-3g mount.ntfs mount.exfat-fus exfat-fuse mount.exfat mount.fuseblk "
-bm_fuse_daemons() {
+BSR_FUSE_COMM=" mount.ntfs-3g ntfs-3g mount.lowntfs-3 lowntfs-3g mount.ntfs mount.exfat-fus exfat-fuse mount.exfat mount.fuseblk "
+bsr_fuse_daemons() {
    local dev="$1" d comm args
    FUSE_PIDS=()
    for d in /proc/[0-9]*; do
       { read -r comm < "$d/comm"; } 2>/dev/null || continue
-      [[ $BM_FUSE_COMM == *" $comm "* ]] || continue
+      [[ $BSR_FUSE_COMM == *" $comm "* ]] || continue
       { mapfile -d '' -t args < "$d/cmdline"; } 2>/dev/null || continue
       [[ " ${args[*]} " == *" $dev "* ]] && FUSE_PIDS+=("${d#/proc/}")
    done
@@ -863,14 +862,14 @@ bm_fuse_daemons() {
 # filesystem at the same place) goes away with it; a bind mount made inside
 # the namespace, as Docker does for a volume, does not (measured on 7.2).
 # Fills P_PIDS, P_COMMS and P_MPS (one per mount).
-bm_private_mounts() {
+bsr_private_mounts() {
    local dev="$1" mm line file pid rest f i src comm skip='^$'
    local -a fields
    local -A seen=() ours=()
    P_PIDS=() P_COMMS=() P_MPS=()
    mm="$(lsblk -dnro MAJ:MIN -- "$dev" 2>/dev/null)"
    [ -n "$mm" ] || return 0
-   _bm_mi_fields() {
+   _bsr_mi_fields() {
       read -r -a fields <<< "$1"
       src=""
       for ((i = 6; i < ${#fields[@]}; i++)); do
@@ -878,7 +877,7 @@ bm_private_mounts() {
       done
    }
    while IFS= read -r line; do
-      _bm_mi_fields "$line"
+      _bsr_mi_fields "$line"
       [ "${fields[2]}" = "$mm" ] || [ "$src" = "$dev" ] || continue
       ours["${fields[3]} ${fields[4]}"]=1
       for f in "${fields[@]:6}"; do
@@ -891,13 +890,13 @@ bm_private_mounts() {
    while IFS= read -r line; do
       file="${line%%:*}" rest="${line#*:}"
       pid="${file#/proc/}" pid="${pid%%/*}"
-      _bm_mi_fields "$rest"
+      _bsr_mi_fields "$rest"
       [ "${fields[2]:-}" = "$mm" ] || [ "$src" = "$dev" ] || continue
       [ -n "${seen[${fields[0]}]:-}" ] && continue
       seen[${fields[0]}]=1
       [ -n "${ours["${fields[3]} ${fields[4]}"]:-}" ] && continue
       { read -r comm < "/proc/$pid/comm"; } 2>/dev/null || comm="?"
-      bm_unescape "${fields[4]}"
+      bsr_unescape "${fields[4]}"
       P_PIDS+=("$pid") P_COMMS+=("$comm") P_MPS+=("$REPLY")
    done < <(grep -H -s -F -e " $mm " -e " $dev " /proc/[0-9]*/mountinfo | grep -v -E -- "$skip")
 }
@@ -905,26 +904,26 @@ bm_private_mounts() {
 # After an unmount here, wait until the filesystem is really released: every
 # FUSE daemon given has exited (it writes its cache after umount returns) and
 # no private copy of the mount is left (a service that systemd stops with the
-# mount, a container). At most BM_FUSE_WAIT seconds; there is no event for
+# mount, a container). At most BSR_FUSE_WAIT seconds; there is no event for
 # the exit of a process that is not our child, so this checks every 0.1 s.
 # On failure UD_ERROR is mounted-elsewhere or still-writing.
-BM_FUSE_WAIT=60
-bm_wait_released() {
+BSR_FUSE_WAIT=60
+bsr_wait_released() {
    local dev="$1" pid n left
    shift
-   for ((n = 0; n <= BM_FUSE_WAIT * 10; n++)); do
+   for ((n = 0; n <= BSR_FUSE_WAIT * 10; n++)); do
       # Same "do not disconnect yet" notice as a slow unmount, after 2 s
-      [ "$n" -eq 20 ] && [ -n "${BM_SLOW_HOOK:-}" ] && "$BM_SLOW_HOOK"
+      [ "$n" -eq 20 ] && [ -n "${BSR_SLOW_HOOK:-}" ] && "$BSR_SLOW_HOOK"
       left=0
       if [ $((n % 10)) -eq 0 ]; then
-         bm_private_mounts "$dev"
+         bsr_private_mounts "$dev"
          [ "${#P_PIDS[@]}" -gt 0 ] && left=1
       fi
       for pid in "$@"; do
          if kill -0 "$pid" 2>/dev/null || [ -d "/proc/$pid" ]; then left=1; fi
       done
       [ "$left" -eq 0 ] && return 0
-      [ "$n" -lt $((BM_FUSE_WAIT * 10)) ] && sleep 0.1
+      [ "$n" -lt $((BSR_FUSE_WAIT * 10)) ] && sleep 0.1
    done
    if [ "${#P_PIDS[@]}" -gt 0 ]; then
       UD_ERROR=mounted-elsewhere
@@ -937,31 +936,31 @@ bm_wait_released() {
    return 1
 }
 
-# bm_unmount_all DEV: unmount every mount of one filesystem. Returns 0 when
+# bsr_unmount_all DEV: unmount every mount of one filesystem. Returns 0 when
 # none is left and every FUSE daemon of the device has finished writing,
 # 1 on failure (UD_ERROR/UD_MESSAGE describe it). The mount table is the
 # judge, not the answer of udisksctl: a mount that vanished in the meantime
 # is a success, a "success" that left the mount is a failure.
-bm_unmount_all() {
+bsr_unmount_all() {
    local dev="$1" n daemons=()
-   bm_fuse_daemons "$dev"
+   bsr_fuse_daemons "$dev"
    daemons=("${FUSE_PIDS[@]}")
    for ((n = 0; n < 8; n++)); do
-      bm_mounts "$dev"
+      bsr_mounts "$dev"
       [ "${#M_TARGET[@]}" -eq 0 ] && break
-      if ! bm_udisks unmount -b "$dev"; then
-         bm_mounts "$dev"
+      if ! bsr_udisks unmount -b "$dev"; then
+         bsr_mounts "$dev"
          [ "${#M_TARGET[@]}" -eq 0 ] && break
          return 1
       fi
    done
-   bm_mounts "$dev"
+   bsr_mounts "$dev"
    if [ "${#M_TARGET[@]}" -gt 0 ]; then
       UD_ERROR=still-mounted
       printf -v UD_MESSAGE $"%s is still mounted at %s after being unmounted" "$dev" "${M_TARGET[0]}"
       return 1
    fi
-   bm_wait_released "$dev" "${daemons[@]}"
+   bsr_wait_released "$dev" "${daemons[@]}"
 }
 
 # Services that systemd stops when this mount point goes away (BindsTo=,
@@ -969,7 +968,7 @@ bm_unmount_all() {
 # Fills DEP_UNITS, DEP_NAMES (description) and DEP_BACK (1 when systemd
 # starts the service again with the mount: WantedBy=/RequiredBy= it) for the
 # active ones.
-bm_mount_dependents() {
+bsr_mount_dependents() {
    local mp="$1" unit u key val deps wanted state desc
    DEP_UNITS=() DEP_NAMES=() DEP_BACK=()
    command -v systemctl >/dev/null || return 0
@@ -1001,23 +1000,23 @@ bm_mount_dependents() {
 
 # Make the current user owner of the root folder of a POSIX filesystem
 # (not recursive), through the UDisks2 TakeOwnership API and polkit.
-bm_take_ownership() {
+bsr_take_ownership() {
    local dev="$1"
    UD_ERROR="" UD_MESSAGE=""
-   if ! bm_udisks_object "$dev"; then
+   if ! bsr_udisks_object "$dev"; then
       UD_ERROR=no-object; return 1
    fi
-   bm_gdbus "$REPLY" org.freedesktop.UDisks2.Filesystem.TakeOwnership "{'recursive': <false>}"
+   bsr_gdbus "$REPLY" org.freedesktop.UDisks2.Filesystem.TakeOwnership "{'recursive': <false>}"
 }
 
-# bm_gdbus OBJECT METHOD ARGS...: call a UDisks2 method that udisksctl does
-# not offer, keeping the D-Bus error name in UD_ERROR (as bm_udisks does).
-# Methods that wait for the hardware set BM_GDBUS_TIMEOUT (seconds).
-bm_gdbus() {
+# bsr_gdbus OBJECT METHOD ARGS...: call a UDisks2 method that udisksctl does
+# not offer, keeping the D-Bus error name in UD_ERROR (as bsr_udisks does).
+# Methods that wait for the hardware set BSR_GDBUS_TIMEOUT (seconds).
+bsr_gdbus() {
    local obj="$1" method="$2" out
    shift 2
    UD_ERROR="" UD_MESSAGE=""
-   out="$(gdbus call --system --timeout "${BM_GDBUS_TIMEOUT:-120}" --dest org.freedesktop.UDisks2 \
+   out="$(gdbus call --system --timeout "${BSR_GDBUS_TIMEOUT:-120}" --dest org.freedesktop.UDisks2 \
       --object-path "$obj" --method "$method" "$@" 2>&1)" && return 0
    UD_MESSAGE="$out" UD_ERROR=unknown
    [[ $out =~ GDBus\.Error:([A-Za-z0-9_.]+) ]] && UD_ERROR="${BASH_REMATCH[1]}"
@@ -1025,33 +1024,31 @@ bm_gdbus() {
 }
 
 # ---------------------------------------------------------------------------
-# Drive health and Secure Erase
+# Drive health
 #
 # A failing SSD can stop answering (ATA timeouts, link resets) and then lock
 # itself in a protection mode in which it acknowledges every write and keeps
 # none: an installer cannot create partitions, and an erased partition table
-# comes back. The kernel log shows the first part. The ATA Secure Erase of
-# the drive itself can bring such a drive back. It goes through UDisks2,
-# whose polkit action always asks for the administrator password, and it
-# only runs when the user asks for it and types the name of the drive.
+# comes back. The kernel log shows the first part. Only what the kernel, udev
+# and UDisks2 already know is read here: never the drive itself.
 
 # Kernel messages of a drive that stopped answering: a command timed out and
 # the link was reset (SATA), or the controller aborted a command (NVMe)
-BM_RE_TIMEOUT='failed command: |qc timeout|COMRESET failed|I/O (tag )?[0-9]+ .*timeout'
-BM_RE_SLOWLINK='limiting SATA link speed'
-BM_RE_MEDIUM='critical medium error|Medium Error|Unrecovered read error'
+BSR_RE_TIMEOUT='failed command: |qc timeout|COMRESET failed|I/O (tag )?[0-9]+ .*timeout'
+BSR_RE_SLOWLINK='limiting SATA link speed'
+BSR_RE_MEDIUM='critical medium error|Medium Error|Unrecovered read error'
 # How many resets of a USB port count as a problem: one or two are normal
 # while a drive spins up or a program asks it for SMART data
-BM_USB_RESETS_ALERT=3
+BSR_USB_RESETS_ALERT=3
 
-# Findings of the last bm_drive_health (bm_diag_doc reads them)
+# Findings of the last bsr_drive_health (bsr_diag_doc reads them)
 DH_FIND=() DH_DISK=""
 
 # The port of a disk in kernel messages (REPLY, empty if none): ata1 for
 # "ata1.00: failed command", nvme0 for "nvme nvme0: I/O 12 QID 3 timeout",
 # 1-9.1 for "usb 1-9.1: reset high-speed USB device".
 # Timeouts are reported on the port, never with the name of the disk.
-bm_drive_port() {
+bsr_drive_port() {
    local p
    REPLY=""
    p="$(readlink -f -- "/sys/block/${1##*/}" 2>/dev/null)"
@@ -1064,9 +1061,9 @@ bm_drive_port() {
    fi
 }
 
-# bm_drive_kmsg NAME_RE PORT: kernel messages of this boot about a disk,
+# bsr_drive_kmsg NAME_RE PORT: kernel messages of this boot about a disk,
 # its partitions or its port (DKMSG). Fails when this user cannot read them.
-bm_drive_kmsg() {
+bsr_drive_kmsg() {
    local re="$1"
    DKMSG=()
    [ -n "$2" ] && re+="|${2//./\\.}"
@@ -1075,10 +1072,10 @@ bm_drive_kmsg() {
    mapfile -t DKMSG < <(journalctl -k -b -q --no-pager -o cat -n 400 --grep "\\b(${re})\\b" 2>/dev/null)
 }
 
-# bm_udev_props DEV: the udev properties of a device (UP). ata_id publishes
+# bsr_udev_props DEV: the udev properties of a device (UP). ata_id publishes
 # the ATA security state there, readable by every user.
 declare -gA UP
-bm_udev_props() {
+bsr_udev_props() {
    local k v
    UP=()
    while IFS='=' read -r k v; do
@@ -1086,18 +1083,18 @@ bm_udev_props() {
    done < <(udevadm info --query=property --name="$1" 2>/dev/null)
 }
 
-# bm_udisks_drive DISK: the UDisks2 drive object of a disk (REPLY), as
+# bsr_udisks_drive DISK: the UDisks2 drive object of a disk (REPLY), as
 # UDisks2 names it
-bm_udisks_drive() {
+bsr_udisks_drive() {
    local out
-   bm_udisks_object "$1" || return 1
+   bsr_udisks_object "$1" || return 1
    out="$(busctl --system get-property org.freedesktop.UDisks2 "$REPLY" org.freedesktop.UDisks2.Block Drive 2>/dev/null)"
    REPLY=""
    [[ $out =~ ^o\ \"(/org/freedesktop/UDisks2/drives/[A-Za-z0-9_]+)\"$ ]] || return 1
    REPLY="${BASH_REMATCH[1]}"
 }
 
-# bm_drive_health DISK: what the drive and the kernel reported since the
+# bsr_drive_health DISK: what the drive and the kernel reported since the
 # computer was started. Read-only, as the user. Sets:
 #   DH_FIND       findings, most serious first: smart-failing timeouts
 #                 io-errors slow-link usb-resets
@@ -1109,9 +1106,6 @@ bm_udisks_drive() {
 #                 itself, an SSD replaces a few of them in normal use
 #   DH_PORT       ata1, nvme0... or ""
 #   DH_ATA        1 for an ATA drive on an ATA/SATA port (not behind USB)
-#   DH_SEC        ATA security: "" not supported | off | enabled (password set)
-#   DH_FROZEN     1 when its security commands are locked until a sleep
-#   DH_ERASE_MIN  minutes the drive announces for an erase (0: unknown)
 # What UDisks2 keeps of SMART without a password (internal ATA and NVMe drives;
 # nothing through USB). "" when not known:
 #   DH_HOURS      hours powered on       DH_TEMP     temperature now, °C
@@ -1121,26 +1115,26 @@ bm_udisks_drive() {
 #   DH_NVME_USED  NVMe life used, %      DH_NVME_MEDIA  NVMe media errors
 #   DH_NVME_HOT   NVMe warning temperature, °C
 declare -gA DH_COUNT
-bm_drive_health() {
+bsr_drive_health() {
    local disk="$1" kn="${1##*/}" l k n io_re off_re usb_re="" smart=() obj
    DH_DISK="$disk" DH_FIND=() DH_COUNT=() DH_LINES=() DH_KLOG=0 DH_SMART="" DH_BAD=0
-   DH_ATA=0 DH_SEC="" DH_FROZEN=0 DH_ERASE_MIN=0
+   DH_ATA=0
    DH_HOURS="" DH_TEMP="" DH_ATTR_FAIL="" DH_ATTR_PAST="" DH_NVME_WARN="" DH_NVME_USED="" DH_NVME_MEDIA="" DH_NVME_HOT=""
-   bm_drive_port "$disk"; DH_PORT="$REPLY"
+   bsr_drive_port "$disk"; DH_PORT="$REPLY"
    # "I/O error, dev sda, sector 73448" and "Buffer I/O error on dev sda1"
-   io_re="I/O error(,| on) dev ${kn}(p?[0-9]+)?(,|$)|$BM_RE_MEDIUM"
+   io_re="I/O error(,| on) dev ${kn}(p?[0-9]+)?(,|$)|$BSR_RE_MEDIUM"
    off_re="offline error, dev ${kn}(,|$)"
    # "usb 1-9.1: reset": exact port, so that 1-9.1.2 behind it does not count
    if [[ $DH_PORT == [0-9]* ]]; then
       usb_re="usb ${DH_PORT//./\\.}: (reset .*USB device|USB disconnect)"
    fi
-   if bm_drive_kmsg "${kn}(p?[0-9]+)?" "$DH_PORT"; then
+   if bsr_drive_kmsg "${kn}(p?[0-9]+)?" "$DH_PORT"; then
       DH_KLOG=1
       for l in "${DKMSG[@]}"; do
-         if [[ $l =~ $BM_RE_TIMEOUT ]] || [[ $l =~ $off_re ]]; then k=timeouts
+         if [[ $l =~ $BSR_RE_TIMEOUT ]] || [[ $l =~ $off_re ]]; then k=timeouts
          elif [[ $l =~ $io_re ]]; then k=io-errors
          elif [ -n "$usb_re" ] && [[ $l =~ $usb_re ]]; then k=usb-resets
-         elif [[ $l =~ $BM_RE_SLOWLINK ]]; then k=slow-link
+         elif [[ $l =~ $BSR_RE_SLOWLINK ]]; then k=slow-link
          else continue
          fi
          DH_COUNT[$k]=$((${DH_COUNT[$k]:-0} + 1))
@@ -1148,18 +1142,11 @@ bm_drive_health() {
       done
    fi
 
-   bm_udev_props "$disk"
-   # A SATA drive in a USB enclosure also has ID_ATA, but its bridge may not
-   # pass security commands through safely: only ID_BUS=ata counts
+   bsr_udev_props "$disk"
+   # A SATA drive in a USB enclosure also has ID_ATA, but UDisks2 reads SMART
+   # of the drive only on an ATA port: only ID_BUS=ata counts
    [ "${UP[ID_ATA]:-0}" = 1 ] && [ "${UP[ID_BUS]:-}" = ata ] && DH_ATA=1
-   if [ "${UP[ID_ATA_FEATURE_SET_SECURITY]:-0}" = 1 ]; then
-      DH_SEC=off
-      [ "${UP[ID_ATA_FEATURE_SET_SECURITY_ENABLED]:-0}" = 1 ] && DH_SEC=enabled
-      [ "${UP[ID_ATA_FEATURE_SET_SECURITY_FROZEN]:-0}" = 1 ] && DH_FROZEN=1
-      DH_ERASE_MIN="${UP[ID_ATA_FEATURE_SET_SECURITY_ERASE_UNIT_MIN]:-0}"
-      [[ $DH_ERASE_MIN =~ ^[0-9]+$ ]] || DH_ERASE_MIN=0
-   fi
-   if [ "$DH_ATA" = 1 ] && bm_udisks_drive "$disk"; then
+   if [ "$DH_ATA" = 1 ] && bsr_udisks_drive "$disk"; then
       mapfile -t smart < <(busctl --system get-property org.freedesktop.UDisks2 "$REPLY" org.freedesktop.UDisks2.Drive.Ata \
          SmartSupported SmartEnabled SmartFailing SmartNumBadSectors SmartPowerOnSeconds SmartTemperature \
          SmartNumAttributesFailing SmartNumAttributesFailedInThePast 2>/dev/null)
@@ -1178,21 +1165,21 @@ bm_drive_health() {
          n="${smart[7]:-}"; n="${n#i }"
          [[ $n =~ ^[0-9]+$ ]] && DH_ATTR_PAST="$n"
       fi
-   elif [[ $kn == nvme* ]] && bm_udisks_drive "$disk"; then
-      bm_drive_health_nvme "$REPLY"
+   elif [[ $kn == nvme* ]] && bsr_udisks_drive "$disk"; then
+      bsr_drive_health_nvme "$REPLY"
    fi
 
    [ "$DH_SMART" = failing ] && DH_FIND+=(smart-failing)
    for k in timeouts io-errors slow-link; do
       [ -n "${DH_COUNT[$k]:-}" ] && DH_FIND+=("$k")
    done
-   [ "${DH_COUNT[usb-resets]:-0}" -ge "$BM_USB_RESETS_ALERT" ] && DH_FIND+=(usb-resets)
+   [ "${DH_COUNT[usb-resets]:-0}" -ge "$BSR_USB_RESETS_ALERT" ] && DH_FIND+=(usb-resets)
    return 0
 }
 
-# bm_drive_health_nvme OBJECT: the health log of an NVMe drive, as UDisks2
+# bsr_drive_health_nvme OBJECT: the health log of an NVMe drive, as UDisks2
 # keeps it (read without a password; UDisks2 refreshes it by itself)
-bm_drive_health_nvme() {
+bsr_drive_health_nvme() {
    local obj="$1" props=() line n w
    local nv=org.freedesktop.UDisks2.NVMe.Controller
    mapfile -t props < <(busctl --system get-property org.freedesktop.UDisks2 "$obj" "$nv" \
@@ -1218,159 +1205,20 @@ bm_drive_health_nvme() {
    return 0
 }
 
-# bm_erase_check DISK: may DISK be erased with its ATA Secure Erase? Needs F
-# (bm_facts DISK) and bm_drive_health DISK. On refusal ER_WHY says why:
-#   not-disk | no-seq | system (ER_DETAIL: what) | removable | not-ata | unsupported | password
-# The confirmation is bound to the disk sequence number: without one, another
-# drive that takes the same name could not be told apart.
-bm_erase_check() {
-   ER_WHY="" ER_DETAIL=""
-   bm_diskseq "$1"
-   if [ "${F[TYPE]:-}" != disk ] || [ "${F[NAME]:-}" != "${F[DISK]:-}" ]; then
-      ER_WHY=not-disk
-   elif [ -z "$REPLY" ]; then
-      ER_WHY=no-seq
-   elif bm_system_use "$1"; then
-      ER_WHY=system ER_DETAIL="$REPLY"
-   elif bm_is_removable_drive; then
-      ER_WHY=removable
-   elif [ "$DH_ATA" != 1 ]; then
-      ER_WHY=not-ata
-   elif [ -z "$DH_SEC" ]; then
-      ER_WHY=unsupported
-   elif [ "$DH_SEC" = enabled ]; then
-      ER_WHY=password
-   fi
-   [ -z "$ER_WHY" ]
-}
-
-# The partition table written after an erase, as installers expect it on
-# this computer: GPT when it started in UEFI mode, MBR (dos) otherwise
-bm_erase_table() {
-   if [ -d /sys/firmware/efi ]; then REPLY=gpt; else REPLY=dos; fi
-}
-
-# bm_erase_unfreeze DISK: most firmwares lock ("freeze") the security
-# commands of every drive when the computer starts, and sleeping once
-# unlocks them. As root, rtcwake wakes the computer up by itself; a user
-# goes through logind and wakes it with the power button. udev reads the
-# security state again (ata_id) on a change event, which Block.Rescan asks
-# for. Returns 0 when the drive is no longer frozen.
-bm_erase_unfreeze() {
-   local disk="$1" blk="" n
-   if [ "$EUID" -eq 0 ] && command -v rtcwake >/dev/null; then
-      rtcwake -m mem -s 20 >/dev/null 2>&1 || return 1
-   else
-      systemctl suspend >/dev/null 2>&1 || return 1
-   fi
-   bm_udisks_object "$disk" && blk="$REPLY"
-   # sleep counts awake time only: about 3 minutes after the computer wakes
-   for ((n = 0; n < 60; n++)); do
-      sleep 3
-      [ -n "$blk" ] && bm_gdbus "$blk" org.freedesktop.UDisks2.Block.Rescan "{}"
-      udevadm settle --timeout=10 >/dev/null 2>&1
-      bm_udev_props "$disk"
-      [ "${UP[ID_ATA_FEATURE_SET_SECURITY_FROZEN]:-1}" = 0 ] && return 0
-   done
-   return 1
-}
-
-# bm_erase_run DISK SEQ TABLE: erase the drive with its own ATA Secure Erase
-# (UDisks2 Drive.Ata.SecurityEraseUnit: it refuses a drive that is mounted
-# or in use, and removes its temporary password if the erase fails), then
-# check that the drive really did it and keeps what is written again:
-#   1. its old partition table must be gone after the erase;
-#   2. a new, empty partition table (TABLE: dos or gpt) is written through
-#      UDisks2, and must be read back from the drive with a new identifier.
-# SEQ is the disk sequence number seen when the user confirmed: another
-# drive that took the name in the meantime is never touched.
-# Returns 0 erased and verified, 1 error (ER_REASON), 3 still mounted or in
-# use, 5 not authorized, 11 frozen, 12 the drive did not do what it was told
-# (ER_STAGE: erase-ignored | table-lost | unverified).
-bm_is_block() { [ -b "$1" ]; }
-
-bm_erase_run() {
-   local disk="$1" seq="$2" ptable="$3" d i b member dobj blk old t u min
-   ER_REASON="" ER_STAGE=""
-   bm_diskseq "$disk"
-   if [ "$REPLY" != "$seq" ] || ! bm_is_block "$disk"; then
-      ER_REASON=$"The drive was disconnected or replaced. Nothing was erased."
-      return 1
-   fi
-   bm_drive_members "$disk"
-   for i in "${!DRIVE_DEVS[@]}"; do
-      d="${DRIVE_DEVS[i]}"
-      bm_mounts "$d"
-      if [ "${#M_TARGET[@]}" -gt 0 ]; then
-         printf -v ER_REASON $"%s is mounted at %s" "$d" "${M_TARGET[0]}"; return 3
-      fi
-      if bm_has_holders "$d"; then
-         printf -v ER_REASON $"%s is in use (encryption, LVM or RAID)" "$d"; return 3
-      fi
-      # A filesystem over several devices is mounted from only one of them:
-      # btrfs and bcachefs list every member in sysfs; a ZFS member is
-      # refused while the ZFS module is loaded
-      member=0
-      compgen -G "/sys/fs/btrfs/*/devices/${d##*/}" >/dev/null && member=1
-      for b in /sys/fs/bcachefs/*/dev-*/block; do
-         [ -e "$b" ] || continue
-         t="$(readlink -f -- "$b")"
-         [ "${t##*/}" = "${d##*/}" ] && member=1
-      done
-      [ "${DRIVE_FSTYPES[i]:-}" = zfs_member ] && [ -d /sys/module/zfs ] && member=1
-      if [ "$member" = 1 ]; then
-         printf -v ER_REASON $"%s belongs to a filesystem that spans several drives" "$d"; return 3
-      fi
-   done
-   bm_udev_props "$disk"
-   [ "${UP[ID_ATA_FEATURE_SET_SECURITY_FROZEN]:-0}" = 1 ] && return 11
-   if ! bm_udisks_drive "$disk"; then
-      ER_REASON=$"UDisks2 does not know this drive."; return 1
-   fi
-   dobj="$REPLY"
-   bm_udisks_object "$disk"; blk="$REPLY"
-   old="$(lsblk -dn -o PTUUID -- "$disk" 2>/dev/null)"
-   # The call returns when the drive is done: allow twice its own estimate
-   min="${UP[ID_ATA_FEATURE_SET_SECURITY_ERASE_UNIT_MIN]:-0}"
-   { [[ $min =~ ^[0-9]+$ ]] && [ "$min" -gt 0 ]; } || min=60
-   if ! BM_GDBUS_TIMEOUT=$((min * 120 + 300)) bm_gdbus "$dobj" \
-      org.freedesktop.UDisks2.Drive.Ata.SecurityEraseUnit "{'enhanced': <false>}"; then
-      [[ $UD_ERROR == *NotAuthorized* ]] && return 5
-      [[ $UD_MESSAGE == *[Ff]rozen* ]] && return 11
-      ER_REASON="${UD_MESSAGE##*: }"
-      return 1
-   fi
-   udevadm settle --timeout=30 >/dev/null 2>&1
-   # UDisks2 has the drive read again after the erase: nothing may be left
-   if [ -n "$(lsblk -dn -o PTTYPE -- "$disk" 2>/dev/null)" ]; then
-      ER_STAGE=erase-ignored; return 12
-   fi
-   if ! bm_gdbus "$blk" org.freedesktop.UDisks2.Block.Format "'$ptable'" "{}"; then
-      ER_STAGE=unverified ER_REASON="${UD_MESSAGE##*: }"; return 12
-   fi
-   bm_gdbus "$blk" org.freedesktop.UDisks2.Block.Rescan "{}"
-   udevadm settle --timeout=30 >/dev/null 2>&1
-   read -r t u < <(lsblk -dn -o PTTYPE,PTUUID -- "$disk" 2>/dev/null)
-   if [ "${t:-}" != "$ptable" ] || [ -z "${u:-}" ] || [ "$u" = "$old" ]; then
-      ER_STAGE=table-lost; return 12
-   fi
-   return 0
-}
-
 # ---------------------------------------------------------------------------
 # Privileged inspection (root, through pkexec): processes of every user
-# holding a mount point. Prints lsof field output for bm_holders.
-bm_privileged_holders() {
+# holding a mount point. Prints lsof field output for bsr_holders.
+bsr_privileged_holders() {
    local mp="$1"
-   [ "$EUID" -eq 0 ] || { bm_warn "must run as root"; return 1; }
-   [[ $mp == /* ]] || { bm_warn "not an absolute path"; return 1; }
+   [ "$EUID" -eq 0 ] || { bsr_warn "must run as root"; return 1; }
+   [[ $mp == /* ]] || { bsr_warn "not an absolute path"; return 1; }
    # Only an exact, block-device backed mount point is accepted
    local src
    src="$(findmnt -n -o SOURCE --mountpoint "$mp" 2>/dev/null | head -n1)"
    src="${src%%\[*}"
-   [[ $src == /dev/* ]] || { bm_warn "not a mount point of a local device"; return 1; }
+   [[ $src == /dev/* ]] || { bsr_warn "not a mount point of a local device"; return 1; }
    # The running system is never removed: no reason to list all its processes
-   bm_is_system_mount "$mp" && { bm_warn "refused: a mount of the running system"; return 1; }
+   bsr_is_system_mount "$mp" && { bsr_warn "refused: a mount of the running system"; return 1; }
    lsof -w -F pcuLftan -- "$mp" 2>/dev/null
    return 0
 }

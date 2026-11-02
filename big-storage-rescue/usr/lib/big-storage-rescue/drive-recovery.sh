@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 # shellcheck disable=SC2034,SC2153  # MP_* are read by callers; JC, JS, PROC_START come from drive-copy.sh and lib.sh
 #
-# big-mount drive manager: what to do when the files cannot be reached.
+# Big Storage Rescue drive manager: what to do when the files cannot be reached.
 # Every tool is optional and only ever writes to another place:
 #   image       GNU ddrescue: a copy of the whole device, with a map file, so
 #               that it resumes and never reads a good area twice
@@ -14,9 +14,9 @@
 # what a list found EXISTS on the volume; what a search found are CANDIDATES,
 # rebuilt from content, without names; only what was copied is RECOVERED.
 
-# bm_rec_map_parse FILE: what a ddrescue map says. MP_RESCUED, MP_BAD (sectors
+# bsr_rec_map_parse FILE: what a ddrescue map says. MP_RESCUED, MP_BAD (sectors
 # given up on), MP_TODO (not tried yet or to be retried), all in bytes.
-bm_rec_map_parse() {
+bsr_rec_map_parse() {
    local pos size st seen=0 line
    MP_RESCUED=0 MP_BAD=0 MP_TODO=0
    [ -r "$1" ] || return 1
@@ -34,24 +34,24 @@ bm_rec_map_parse() {
    [ "$seen" = 1 ]
 }
 
-bm_rec_image_start() {
+bsr_rec_image_start() {
    local id="$1" dir
-   bm_job_dir "$id" || return 1
+   bsr_job_dir "$id" || return 1
    dir="$REPLY"
-   bm_self
-   setsid -f "$REPLY" --drive __run "$id" </dev/null >>"$dir/supervisor.log" 2>&1 || return 1
+   bsr_self
+   setsid -f "$REPLY" --cli __run "$id" </dev/null >>"$dir/supervisor.log" 2>&1 || return 1
    return 0
 }
 
-# bm_rec_check_dest FOLDER SOURCE_DEVICE: can results be written there? Sets
+# bsr_rec_check_dest FOLDER SOURCE_DEVICE: can results be written there? Sets
 # REC_ERR. Same words as the copy: the name of a partition is not enough.
-bm_rec_check_dest() {
+bsr_rec_check_dest() {
    local d="$1" src="$2" probe rc
    REC_ERR=""
    if [[ $d == *$'\n'* ]]; then REC_ERR=bad-path; return 1; fi
    probe="$d"
    while [ ! -e "$probe" ] && [ "$probe" != / ]; do probe="${probe%/*}"; probe="${probe:-/}"; done
-   bm_cp_fs "$probe"; rc=$?
+   bsr_cp_fs "$probe"; rc=$?
    [ "$rc" -eq 124 ] && { REC_ERR="dest-stuck"; return 1; }
    [ "$rc" -eq 0 ] || { REC_ERR="dest-missing"; return 1; }
    [ "$FI_RO" = 1 ] && { REC_ERR="dest-ro"; return 1; }
@@ -59,38 +59,38 @@ bm_rec_check_dest() {
       [ "$?" -eq 124 ] && REC_ERR="dest-stuck" || REC_ERR="dest-denied"
       return 1
    }
-   if [[ $src == /dev/* && $FI_SOURCE == /dev/* ]] && bm_cp_disks_share "$src" "$FI_SOURCE"; then
+   if [[ $src == /dev/* && $FI_SOURCE == /dev/* ]] && bsr_cp_disks_share "$src" "$FI_SOURCE"; then
       REC_ERR=same-disk
       return 1
    fi
    return 0
 }
 
-# bm_rec_refusal JSON KEY: a refusal, for a person or as data. Returns its code.
-bm_rec_refusal() {
+# bsr_rec_refusal JSON KEY: a refusal, for a person or as data. Returns its code.
+bsr_rec_refusal() {
    local json="$1" key="$2" text rc
-   bm_cp_err_text "$key"; text="$REPLY"
-   bm_cp_err_rc "$key"; rc="$REPLY"
+   bsr_cp_err_text "$key"; text="$REPLY"
+   bsr_cp_err_rc "$key"; rc="$REPLY"
    if [ "$json" = 1 ]; then
-      printf '{%s,%s,%s,"warnings":[]}\n' "$(bm_jo_inner error "$key" error_text "$text")" "$(bm_jb ok 0)" "$(bm_jn exit "$rc")"
+      printf '{%s,%s,%s,"warnings":[]}\n' "$(bsr_jo_inner error "$key" error_text "$text")" "$(bsr_jb ok 0)" "$(bsr_jn exit "$rc")"
    else
       printf '%s\n' "$text" >&2
    fi
    return "$rc"
 }
 
-# bm_rec_preflight KEY...: what a dry run answers (REC_* set by the caller)
-bm_rec_warnings_json() {
+# bsr_rec_preflight KEY...: what a dry run answers (REC_* set by the caller)
+bsr_rec_warnings_json() {
    local w first=1 out=""
    for w in "$@"; do
-      bm_rec_warn_text "$w"
+      bsr_rec_warn_text "$w"
       [ "$first" = 1 ] && first=0 || out+=","
-      out+="$(bm_jo key "$w" text "$REPLY")"
+      out+="$(bsr_jo key "$w" text "$REPLY")"
    done
    printf '%s' "$out"
 }
 
-bm_rec_warn_text() {
+bsr_rec_warn_text() {
    case "$1" in
       image-resume) REPLY=$"This image already exists. It continues where it stopped, reading only what is still missing." ;;
       carve-names) REPLY=$"Files found by content lose their original names and folders." ;;
@@ -102,35 +102,34 @@ bm_rec_warn_text() {
 }
 
 # The supervisor of an image: runs the helper, publishes what the map says
-bm_rec_image_supervise() {
+bsr_rec_image_supervise() {
    local id="$1" dir pid t0 now rc ctl
-   bm_job_dir "$id" || return 1
+   bsr_job_dir "$id" || return 1
    dir="$REPLY"
-   exec 7>"$dir/lock"
-   flock -n 7 || return 10
-   bm_job_conf_load "$dir"
+   bsr_job_lock "$dir" || return 10
+   bsr_job_conf_load "$dir"
    : > "$dir/control"
    rm -f -- "$dir/stop"
    JS=([STATE]=running [PID]="$$" [BYTES_TOTAL]="${JC[SIZE]}" [FILES_DONE]=0 [FILES_TOTAL]=0 [TOTAL_ESTIMATE]=0)
-   bm_proc_state "$$"; JS[PID_START]="$PROC_START"
+   bsr_proc_state "$$"; JS[PID_START]="$PROC_START"
    printf -v t0 '%(%s)T' -1
-   bm_job_state_save "$dir"
+   bsr_job_state_save "$dir"
    trap ': > "$dir/stop"; printf "cancel\n" > "$dir/control"' TERM
    # The device name may have changed: the disk is known by its serial or UUID
-   bm_rec_image_device
+   bsr_rec_image_device
    local dev="$REPLY"
    if [ -z "$dev" ]; then
       JS[STATE]=needs-attention JS[REASON]=source-gone
-      bm_job_state_save "$dir"; bm_job_report_write "$dir"
+      bsr_job_state_save "$dir"; bsr_job_report_write "$dir"
       return 0
    fi
-   bm_helper image "$dev" "${JC[DEST]}" "${JC[MAP]}" "${JC[RETRIES]}" "$dir/stop" >> "$dir/ddrescue.out" 2>&1 &
+   bsr_helper image "$dev" "${JC[DEST]}" "${JC[MAP]}" "${JC[RETRIES]}" "$dir/stop" >> "$dir/ddrescue.out" 2>&1 &
    pid=$!
    while kill -0 "$pid" 2>/dev/null; do
       sleep 2
       printf -v now '%(%s)T' -1
       JS[ELAPSED]=$((now - t0))
-      if bm_rec_map_parse "${JC[MAP]}"; then
+      if bsr_rec_map_parse "${JC[MAP]}"; then
          JS[RATE_NOW]=$(((MP_RESCUED - ${JS[BYTES_NOW]:-0}) / 2))
          [ "${JS[RATE_NOW]}" -lt 0 ] && JS[RATE_NOW]=0
          JS[BYTES_NOW]="$MP_RESCUED" JS[BAD_BYTES]="$MP_BAD" JS[BYTES_DONE]="$MP_RESCUED"
@@ -144,12 +143,12 @@ bm_rec_image_supervise() {
          JS[STATE]=stopping
          : > "$dir/stop"
       fi
-      bm_job_state_save "$dir"
+      bsr_job_state_save "$dir"
    done
    wait "$pid"; rc=$?
    ctl=""
    { read -r ctl < "$dir/control"; } 2>/dev/null
-   bm_rec_map_parse "${JC[MAP]}" && JS[BYTES_NOW]="$MP_RESCUED" JS[BYTES_DONE]="$MP_RESCUED" JS[BAD_BYTES]="$MP_BAD"
+   bsr_rec_map_parse "${JC[MAP]}" && JS[BYTES_NOW]="$MP_RESCUED" JS[BYTES_DONE]="$MP_RESCUED" JS[BAD_BYTES]="$MP_BAD"
    printf -v "JS[FINISHED]" '%(%s)T' -1
    case "$rc" in
       126 | 127) JS[STATE]=failed JS[REASON]=not-authorized ;;
@@ -163,27 +162,27 @@ bm_rec_image_supervise() {
          fi
          ;;
    esac
-   bm_job_state_save "$dir"
-   bm_job_report_write "$dir"
+   bsr_job_state_save "$dir"
+   bsr_job_report_write "$dir"
 }
 
 # The current device of an image job: the disk with the serial it had, and on it
 # the same partition (PART: "1" of sdb1, "p2" of nvme0n1p2, empty for the
 # disk). Without a serial, the name it had. Either way with the same size.
-bm_rec_image_device() {
+bsr_rec_image_device() {
    local d dev="${JC[DEVICE]}"
    REPLY=""
-   bm_dv_scan
+   bsr_dv_scan
    if [ -n "${JC[SERIAL]:-}" ]; then
       dev=""
       for d in "${DV_ORDER[@]}"; do
          if [ "${DV[$d|SERIAL]:-}" = "${JC[SERIAL]}" ] && [ "${DV[$d|TYPE]}" = disk ]; then dev="$d${JC[PART]:-}"; break; fi
       done
    fi
-   [ -n "$dev" ] && bm_is_block "$dev" && [ "${DV[$dev|SIZE]:-}" = "${JC[SIZE]}" ] && REPLY="$dev"
+   [ -n "$dev" ] && bsr_is_block "$dev" && [ "${DV[$dev|SIZE]:-}" = "${JC[SIZE]}" ] && REPLY="$dev"
 }
 
-bm_rec_image_cmd() {
+bsr_rec_image_cmd() {
    local src="" img="" map="" retries=0 dry=0 nowait=0 json=0 id dir now expect="" then_carve="" cats=""
    while [ "$#" -gt 0 ]; do
       case "$1" in
@@ -197,7 +196,7 @@ bm_rec_image_cmd() {
          --dry-run) dry=1 ;;
          --no-wait) nowait=1 ;;
          --json) json=1 ;;
-         *) bm_drive_badarg "$1"; return 2 ;;
+         *) bsr_drive_badarg "$1"; return 2 ;;
       esac
       shift
    done
@@ -205,76 +204,76 @@ bm_rec_image_cmd() {
       printf '%s\n' $"Both --source DEVICE and --image FILE are needed." >&2
       return 2
    fi
-   [[ $retries =~ ^[0-5]$ ]] || { bm_drive_badarg "--retries $retries"; return 2; }
-   [ -z "$cats" ] || bm_rec_categories_valid "$cats" || { bm_drive_badarg "--categories $cats"; return 2; }
+   [[ $retries =~ ^[0-5]$ ]] || { bsr_drive_badarg "--retries $retries"; return 2; }
+   [ -z "$cats" ] || bsr_rec_categories_valid "$cats" || { bsr_drive_badarg "--categories $cats"; return 2; }
    if ! command -v ddrescue >/dev/null; then
-      bm_rec_refusal "$json" no-ddrescue
+      bsr_rec_refusal "$json" no-ddrescue
       return
    fi
-   bm_resolve "$src" || { bm_resolve_fail "$src"; return 24; }
+   bsr_resolve "$src" || { bsr_resolve_fail "$src"; return 24; }
    src="$R_DEV"
-   bm_dv_scan
+   bsr_dv_scan
    local size="${DV[$src|SIZE]:-0}"
-   [ "$size" -gt 0 ] 2>/dev/null || { R_ERR=unavailable; bm_resolve_fail "$src"; return 24; }
+   [ "$size" -gt 0 ] 2>/dev/null || { R_ERR=unavailable; bsr_resolve_fail "$src"; return 24; }
    local disk="$src"
-   bm_dv_disks_of "$src" && disk="${DV_DISKS[0]}"
+   bsr_dv_disks_of "$src" && disk="${DV_DISKS[0]}"
    # The window names the disk it showed: another one under that name is refused
    if [ -n "$expect" ]; then
-      bm_diskseq "$disk"
-      [ "$REPLY" = "$expect" ] || { bm_rec_refusal "$json" source-replaced; return; }
+      bsr_diskseq "$disk"
+      [ "$REPLY" = "$expect" ] || { bsr_rec_refusal "$json" source-replaced; return; }
    fi
-   bm_drive_abs "$img"; img="$(readlink -m -- "$REPLY")"
-   [ -n "$map" ] && { bm_drive_abs "$map"; map="$(readlink -m -- "$REPLY")"; }
+   bsr_drive_abs "$img"; img="$(readlink -m -- "$REPLY")"
+   [ -n "$map" ] && { bsr_drive_abs "$map"; map="$(readlink -m -- "$REPLY")"; }
    [ -n "$map" ] || map="$img.map"
-   if [[ $map == *$'\n'* ]]; then bm_rec_refusal "$json" bad-path; return; fi
+   if [[ $map == *$'\n'* ]]; then bsr_rec_refusal "$json" bad-path; return; fi
    # Never on the disk being read. The name of a partition is not enough
-   if ! bm_rec_check_dest "$img" "$src"; then
+   if ! bsr_rec_check_dest "$img" "$src"; then
       [ "$REC_ERR" = same-disk ] && REC_ERR=image-same-disk
-      bm_rec_refusal "$json" "$REC_ERR"
+      bsr_rec_refusal "$json" "$REC_ERR"
       return
    fi
    # A map says what was already read of ONE disk. Continuing it from another
    # one would mix two disks in one image, silently
-   bm_rec_source_id "$src" "$disk"; local source_id="$REPLY"
+   bsr_rec_source_id "$src" "$disk"; local source_id="$REPLY"
    if [ -f "$img.source" ] && [ "$(cat -- "$img.source")" != "$source_id" ]; then
-      bm_rec_refusal "$json" image-other-disk
+      bsr_rec_refusal "$json" image-other-disk
       return
    fi
    # Only an image started here is continued: ddrescue writes over any other file
    if { [ -e "$img" ] || [ -L "$img" ]; } && { [ ! -f "$img.source" ] || [ ! -f "$map" ]; }; then
-      bm_rec_refusal "$json" image-exists
+      bsr_rec_refusal "$json" image-exists
       return
    fi
-   bm_cp_avail "${img%/*}"
-   [ -d "${img%/*}" ] || { bm_rec_probe "$img"; bm_cp_avail "$REPLY"; }
+   bsr_cp_avail "${img%/*}"
+   [ -d "${img%/*}" ] || { bsr_rec_probe "$img"; bsr_cp_avail "$REPLY"; }
    local have=0 avail="$REPLY" warns=()
    [ -f "$img" ] && { have="$(stat -c %s -- "$img")"; warns+=(image-resume); }
    if [[ $avail =~ ^[0-9]+$ ]] && [ $((avail + have)) -lt "$size" ]; then
       if [ "$json" = 1 ]; then
-         bm_rec_refusal 1 no-space >/dev/null
-         bm_cp_err_text no-space
-         printf '{%s,%s,%s,"warnings":[]}\n' "$(bm_jo_inner error no-space error_text "$REPLY")" "$(bm_jb ok 0)" "$(bm_jn exit 21 avail "$avail" total_bytes "$size")"
+         bsr_rec_refusal 1 no-space >/dev/null
+         bsr_cp_err_text no-space
+         printf '{%s,%s,%s,"warnings":[]}\n' "$(bsr_jo_inner error no-space error_text "$REPLY")" "$(bsr_jb ok 0)" "$(bsr_jn exit 21 avail "$avail" total_bytes "$size")"
          return 21
       fi
-      bm_human_size "$size"; local need="$REPLY"
+      bsr_human_size "$size"; local need="$REPLY"
       printf $"The image needs %s of free space at the destination."'\n' "$need" >&2
       return 21
    fi
-   bm_ds_level "$disk"
+   bsr_ds_level "$disk"
    case "$DS_LEVEL" in critical | attention) warns+=(source-risk) ;; esac
    if [ "$dry" = 1 ]; then
       if [ "$json" = 1 ]; then
-         printf '{%s,%s,%s,"warnings":[%s]}\n' "$(bm_jo_inner error "" error_text "" source "$src" destination "$img" level "$DS_LEVEL")" \
-            "$(bm_jb ok 1)" "$(bm_jn exit 0 avail "$avail" total_bytes "$size" total_files 0)" "$(bm_rec_warnings_json "${warns[@]}")"
+         printf '{%s,%s,%s,"warnings":[%s]}\n' "$(bsr_jo_inner error "" error_text "" source "$src" destination "$img" level "$DS_LEVEL")" \
+            "$(bsr_jb ok 1)" "$(bsr_jn exit 0 avail "$avail" total_bytes "$size" total_files 0)" "$(bsr_rec_warnings_json "${warns[@]}")"
          return 0
       fi
-      printf 'dry-run: pkexec bigmount-drive-helper image %q %q %q %s\n' "$src" "$img" "$map" "$retries"
+      printf 'dry-run: pkexec bsr-drive-helper image %q %q %q %s\n' "$src" "$img" "$map" "$retries"
       return 0
    fi
    mkdir -p -- "${img%/*}" || return 1
    printf '%s\n' "$source_id" > "$img.source"
-   bm_job_id; id="$REPLY"
-   dir="$BM_JOBS/$id"
+   bsr_job_id; id="$REPLY"
+   dir="$BSR_JOBS/$id"
    (umask 077; mkdir -p -- "$dir") || return 1
    printf -v now '%(%s)T' -1
    JC=([ID]="$id" [KIND]=image [SOURCE]="$src" [DEVICE]="$src" [DEST]="$img" [MAP]="$map" [RETRIES]="$retries"
@@ -283,28 +282,28 @@ bm_rec_image_cmd() {
    # Found again by serial only when the source is the disk or one of its
    # partitions; a volume stacked on it (LUKS, LVM) keeps its name
    [[ $src == "$disk"* ]] && JC[SERIAL]="${DV[$disk|SERIAL]:-}" JC[PART]="${src#"$disk"}"
-   bm_job_conf_save "$dir" || { rm -rf -- "$dir"; return 1; }
+   bsr_job_conf_save "$dir" || { rm -rf -- "$dir"; return 1; }
    JS=([STATE]=pending [PID]="" [BYTES_TOTAL]="$size")
-   bm_job_state_save "$dir"
-   bm_rec_image_start "$id" || return 1
-   if [ "$json" = 1 ]; then bm_jo id "$id" dir "$dir"; printf '\n'; return 0; fi
+   bsr_job_state_save "$dir"
+   bsr_rec_image_start "$id" || return 1
+   if [ "$json" = 1 ]; then bsr_jo id "$id" dir "$dir"; printf '\n'; return 0; fi
    printf $"Copy started: %s"'\n' "$id"
    if [ "$nowait" = 1 ]; then
-      printf $"To follow it: bigmount --drive status %s --watch"'\n' "$id"
+      printf $"To follow it: big-storage-rescue --cli status %s --watch"'\n' "$id"
       return 0
    fi
-   bm_job_watch "$id" 1
+   bsr_job_watch "$id" 1
 }
 
 # What identifies a source of an image: the disk, or failing that its size
-bm_rec_source_id() {
+bsr_rec_source_id() {
    if [ -n "${DV[$2|SERIAL]:-}" ]; then REPLY="serial:${DV[$2|SERIAL]}:${DV[$1|SIZE]:-0}"
    else REPLY="size:${1##*/}:${DV[$1|SIZE]:-0}"
    fi
 }
 
 # The nearest part of a path that exists (REPLY)
-bm_rec_probe() {
+bsr_rec_probe() {
    REPLY="$1"
    while [ ! -e "$REPLY" ] && [ "$REPLY" != / ]; do REPLY="${REPLY%/*}"; REPLY="${REPLY:-/}"; done
 }
@@ -312,13 +311,13 @@ bm_rec_probe() {
 # ---------------------------------------------------------------------------
 # Types of file. One table for the list and for the results.
 
-BM_REC_CATEGORIES="photos videos documents audio archives"
+BSR_REC_CATEGORIES="photos videos documents audio archives"
 
-bm_rec_categories_valid() {
+bsr_rec_categories_valid() {
    local c
    [ "$1" = all ] && return 0
    for c in ${1//,/ }; do
-      [[ " $BM_REC_CATEGORIES " == *" $c "* ]] || return 1
+      [[ " $BSR_REC_CATEGORIES " == *" $c "* ]] || return 1
    done
    [ -n "${1//,/}" ]
 }
@@ -326,7 +325,7 @@ bm_rec_categories_valid() {
 # PhotoRec does not know "photos": it knows families of signatures. Some are
 # wider than the words: riff is AVI, WAV and WebP, zip is also DOCX and ODT, mov
 # is also MP4 and M4A. What that means is told before the search starts.
-bm_rec_families() {
+bsr_rec_families() {
    case "$1" in
       photos) REPLY="jpg png gif bmp tif orf" ;;
       videos) REPLY="mov mkv mpg riff asf flv" ;;
@@ -337,7 +336,7 @@ bm_rec_families() {
    esac
 }
 
-bm_rec_category_label() {
+bsr_rec_category_label() {
    case "$1" in
       photos) REPLY=$"Photos" ;;
       videos) REPLY=$"Videos" ;;
@@ -350,7 +349,7 @@ bm_rec_category_label() {
 }
 
 # What the search by content can and cannot tell apart, in plain words
-bm_rec_category_note() {
+bsr_rec_category_note() {
    case "$1" in
       photos) REPLY=$"HEIC and WebP photos are found only when searching all types." ;;
       videos) REPLY=$"WAV audio can appear among the results: it has the same signature as AVI." ;;
@@ -366,7 +365,7 @@ bm_rec_category_note() {
 # from an old disk may not be valid in this locale. The output is the index:
 #    size<TAB>mtime<TAB>category<TAB>path<NUL>
 # shellcheck disable=SC2016  # awk code
-BM_REC_AWK='
+BSR_REC_AWK='
 BEGIN {
    RS = "\0"; ORS = "\0"
    n = split("jpg jpeg jpe png gif bmp tif tiff webp heic heif avif raw cr2 cr3 nef arw dng orf rw2 raf svg", a, " ")
@@ -414,7 +413,7 @@ END { report() }
 '
 
 # Reads what awk last reported: JS[SCANNED], JS[FILES_DONE], JS[BYTES_DONE]
-bm_rec_progress_read() {
+bsr_rec_progress_read() {
    local k n _b total=0
    [ -r "$1" ] || return 0
    while read -r k n _b; do
@@ -431,60 +430,59 @@ bm_rec_progress_read() {
 # ---------------------------------------------------------------------------
 # The list of what exists: a walk over the names. It reads folders, never files.
 
-bm_rec_scan_supervise() {
+bsr_rec_scan_supervise() {
    local id="$1" dir pid ctl rc tick=0 last=-1 still=0 end=finish now t0
-   bm_job_dir "$id" || return 1
+   bsr_job_dir "$id" || return 1
    dir="$REPLY"
-   exec 7>"$dir/lock"
-   flock -n 7 || return 10
-   bm_job_conf_load "$dir"
+   bsr_job_lock "$dir" || return 10
+   bsr_job_conf_load "$dir"
    : > "$dir/control"
    JS=([STATE]=analyzing [PID]="$$" [FILES_DONE]=0 [BYTES_DONE]=0 [BYTES_NOW]=0 [SCANNED]=0 [BYTES_TOTAL]=0 [FILES_TOTAL]=0)
-   bm_proc_state "$$"; JS[PID_START]="$PROC_START"
+   bsr_proc_state "$$"; JS[PID_START]="$PROC_START"
    printf -v t0 '%(%s)T' -1
-   bm_job_state_save "$dir"
+   bsr_job_state_save "$dir"
    trap 'printf "cancel\n" > "$dir/control"' TERM
-   if ! bm_cp_is_mounted "${JC[SRC_MP]}"; then
+   if ! bsr_cp_is_mounted "${JC[SRC_MP]}"; then
       JS[STATE]=needs-attention JS[REASON]=source-gone
-      bm_job_state_save "$dir"; bm_job_report_write "$dir"
+      bsr_job_state_save "$dir"; bsr_job_report_write "$dir"
       return 0
    fi
    rm -f -- "$dir/index" "$dir/index.part"
    : > "$dir/scan.progress"
    {
       ionice -c 2 -n 6 nice -n 5 find "${JC[SOURCE]}" -xdev -type f -printf '%s\t%T@\t%P\0' 2> "$dir/scan.err" |
-         LC_ALL=C awk -v filter="${JC[CATEGORIES]:-all}" -v progress="$dir/scan.progress" -v dates=yes "$BM_REC_AWK" > "$dir/index.part"
+         LC_ALL=C awk -v filter="${JC[CATEGORIES]:-all}" -v progress="$dir/scan.progress" -v dates=yes "$BSR_REC_AWK" > "$dir/index.part"
       exit "${PIPESTATUS[0]}"
    } &
    pid=$!
    while kill -0 "$pid" 2>/dev/null; do
-      sleep "$BM_TICK"
+      sleep "$BSR_TICK"
       tick=$((tick + 1))
-      bm_rec_progress_read "$dir/scan.progress"
+      bsr_rec_progress_read "$dir/scan.progress"
       printf -v now '%(%s)T' -1
       JS[ELAPSED]=$((now - t0))
       JS[BYTES_NOW]="${JS[BYTES_DONE]:-0}"
-      if [ "${JS[SCANNED]:-0}" = "$last" ]; then still=$((still + BM_TICK)); else still=0; fi
+      if [ "${JS[SCANNED]:-0}" = "$last" ]; then still=$((still + BSR_TICK)); else still=0; fi
       last="${JS[SCANNED]:-0}"
       JS[STUCK_SECONDS]="$still"
       ctl=""
       { read -r ctl < "$dir/control"; } 2>/dev/null
       if [ "$ctl" = cancel ]; then
          end=cancel
-      elif [ $((tick % 5)) -eq 0 ] && ! bm_cp_is_mounted "${JC[SRC_MP]}"; then
+      elif [ $((tick % 5)) -eq 0 ] && ! bsr_cp_is_mounted "${JC[SRC_MP]}"; then
          end=source-gone
       fi
       if [ "$end" != finish ]; then
          JS[STATE]=stopping
-         bm_job_state_save "$dir"
+         bsr_job_state_save "$dir"
          pkill -TERM -P "$pid" 2>/dev/null
          kill -TERM "$pid" 2>/dev/null
          break
       fi
-      bm_job_state_save "$dir"
+      bsr_job_state_save "$dir"
    done
    wait "$pid"; rc=$?
-   bm_rec_progress_read "$dir/scan.progress"
+   bsr_rec_progress_read "$dir/scan.progress"
    JS[BYTES_NOW]="${JS[BYTES_DONE]:-0}" JS[STUCK_SECONDS]=0
    # Whatever was listed until here is real and stays usable
    mv -f -- "$dir/index.part" "$dir/index"
@@ -500,11 +498,11 @@ bm_rec_scan_supervise() {
          fi
          ;;
    esac
-   bm_job_state_save "$dir"
-   bm_job_report_write "$dir"
+   bsr_job_state_save "$dir"
+   bsr_job_report_write "$dir"
 }
 
-bm_rec_scan_cmd() {
+bsr_rec_scan_cmd() {
    local src="" cats=all json=0 dry=0 nowait=0 id dir now hint=""
    while [ "$#" -gt 0 ]; do
       case "$1" in
@@ -514,43 +512,43 @@ bm_rec_scan_cmd() {
          --json) json=1 ;;
          --dry-run) dry=1 ;;
          --no-wait) nowait=1 ;;
-         *) bm_drive_badarg "$1"; return 2 ;;
+         *) bsr_drive_badarg "$1"; return 2 ;;
       esac
       shift
    done
    [ -n "$src" ] || { printf '%s\n' $"Both --source and --destination are needed." >&2; return 2; }
-   bm_rec_categories_valid "$cats" || { bm_drive_badarg "--categories $cats"; return 2; }
-   bm_drive_abs "$src"; src="$REPLY"
+   bsr_rec_categories_valid "$cats" || { bsr_drive_badarg "--categories $cats"; return 2; }
+   bsr_drive_abs "$src"; src="$REPLY"
    src="$(timeout 10 readlink -e -- "$src")"
-   if [ -z "$src" ] || ! timeout 10 test -d "$src"; then bm_rec_refusal "$json" source-missing; return; fi
-   bm_cp_fs "$src" || { bm_rec_refusal "$json" source-missing; return; }
+   if [ -z "$src" ] || ! timeout 10 test -d "$src"; then bsr_rec_refusal "$json" source-missing; return; fi
+   bsr_cp_fs "$src" || { bsr_rec_refusal "$json" source-missing; return; }
    local mp="$FI_TARGET" dev="$FI_SOURCE" level=unknown warns=()
-   if [[ $dev == /dev/* ]] && bm_dv_scan && bm_dv_disks_of "$dev"; then
-      bm_ds_level "${DV_DISKS[0]}"; level="$DS_LEVEL"
+   if [[ $dev == /dev/* ]] && bsr_dv_scan && bsr_dv_disks_of "$dev"; then
+      bsr_ds_level "${DV_DISKS[0]}"; level="$DS_LEVEL"
    fi
    case "$level" in critical | attention) warns+=(scan-reads) ;; esac
    if [ "$dry" = 1 ]; then
       if [ "$json" = 1 ]; then
-         printf '{%s,%s,%s,"warnings":[%s]}\n' "$(bm_jo_inner error "" error_text "" source "$src" destination "" level "$level")" \
-            "$(bm_jb ok 1)" "$(bm_jn exit 0)" "$(bm_rec_warnings_json "${warns[@]}")"
+         printf '{%s,%s,%s,"warnings":[%s]}\n' "$(bsr_jo_inner error "" error_text "" source "$src" destination "" level "$level")" \
+            "$(bsr_jb ok 1)" "$(bsr_jn exit 0)" "$(bsr_rec_warnings_json "${warns[@]}")"
       else
          printf 'dry-run: find %q -xdev -type f\n' "$src"
       fi
       return 0
    fi
-   bm_job_id; id="$REPLY"
-   dir="$BM_JOBS/$id"
+   bsr_job_id; id="$REPLY"
+   dir="$BSR_JOBS/$id"
    (umask 077; mkdir -p -- "$dir") || return 1
    printf -v now '%(%s)T' -1
    JC=([ID]="$id" [KIND]=scan [SOURCE]="$src" [DEST]="" [SRC_MP]="$mp" [CATEGORIES]="$cats" [CREATED]="$now" [NAME]="${src##*/}" [LEVEL]="$level" [COPY_TO]="$hint")
-   bm_job_conf_save "$dir" || { rm -rf -- "$dir"; return 1; }
+   bsr_job_conf_save "$dir" || { rm -rf -- "$dir"; return 1; }
    JS=([STATE]=pending [PID]="")
-   bm_job_state_save "$dir"
-   bm_rec_image_start "$id" || return 1
-   if [ "$json" = 1 ]; then bm_jo id "$id" dir "$dir"; printf '\n'; return 0; fi
+   bsr_job_state_save "$dir"
+   bsr_rec_image_start "$id" || return 1
+   if [ "$json" = 1 ]; then bsr_jo id "$id" dir "$dir"; printf '\n'; return 0; fi
    printf $"Search started: %s"'\n' "$id"
    [ "$nowait" = 1 ] && return 0
-   bm_job_watch "$id" 1
+   bsr_job_watch "$id" 1
 }
 
 # ---------------------------------------------------------------------------
@@ -560,7 +558,7 @@ bm_rec_scan_cmd() {
 
 # The screen TestDisk draws, as lines: a move to another row is a line break
 # shellcheck disable=SC2016  # awk code
-BM_REC_SCREEN_AWK='
+BSR_REC_SCREEN_AWK='
 {
    line = $0; out = ""
    while (match(line, /\033\[[0-9;?]*[A-Za-z]|\033[()][A-Z0-9]|\033[=>]/)) {
@@ -580,7 +578,7 @@ BM_REC_SCREEN_AWK='
 
 # Lines such as "1 P Linux  0 32 33  4 52 48  65536 [LABEL]" (PT_*). The same
 # partition is drawn many times by the analysis: once here.
-bm_rec_parse_partitions() {
+bsr_rec_parse_partitions() {
    local re='^[[:space:]]*([0-9]+[[:space:]]+[PLED*][[:space:]]+)?([A-Za-z][^[:cntrl:]]*[^[:space:]])[[:space:]]+([0-9]+)[[:space:]]+([0-9]+)[[:space:]]+([0-9]+)[[:space:]]+([0-9]+)[[:space:]]+([0-9]+)[[:space:]]+([0-9]+)[[:space:]]+([0-9]+)([[:space:]]+\[(.*)\])?[[:space:]]*$'
    # GPT: start, end and size in sectors. The header "CHS 522 255 63" has the
    # same shape, so a row counts only when end - start + 1 is its size
@@ -602,26 +600,26 @@ bm_rec_parse_partitions() {
       [ -n "${seen[$key]:-}" ] && continue
       seen[$key]=1
       PT_TYPE+=("$type") PT_START+=("$start") PT_SECTORS+=("$sectors") PT_LABEL+=("$label")
-   done < <(LC_ALL=C awk "$BM_REC_SCREEN_AWK")
+   done < <(LC_ALL=C awk "$BSR_REC_SCREEN_AWK")
 }
 
-bm_rec_partitions() {
+bsr_rec_partitions() {
    local target="" a out="" rc json=0 search=0 table=i386
    for a in "$@"; do
       case "$a" in
          --json) json=1 ;;
          --search) search=1 ;;
-         -*) bm_drive_badarg "$a"; return 2 ;;
+         -*) bsr_drive_badarg "$a"; return 2 ;;
          *) target="$a" ;;
       esac
    done
-   [ -n "$target" ] || { bm_drive_usage >&2; return 2; }
+   [ -n "$target" ] || { bsr_drive_usage >&2; return 2; }
    if ! command -v testdisk >/dev/null; then
-      [ "$json" = 1 ] && { bm_rec_refusal 1 no-testdisk; return; }
+      [ "$json" = 1 ] && { bsr_rec_refusal 1 no-testdisk; return; }
       printf '%s\n' $"TestDisk is not installed (package testdisk)." >&2
       return 25
    fi
-   bm_drive_abs "$target"; target="$REPLY"
+   bsr_drive_abs "$target"; target="$REPLY"
    # TestDisk runs in the background so that a SIGTERM (Stop in the window)
    # ends it: a device is read by the root helper, which stops when the stop
    # file appears in this private folder. setsid: as in the helper
@@ -636,12 +634,12 @@ bm_rec_partitions() {
          args=(setsid testdisk /nolog /list "$target")
       fi
    else
-      bm_resolve "$target" || { bm_resolve_fail "$target"; return 24; }
-      args=(bm_helper partitions "$R_DEV")
+      bsr_resolve "$target" || { bsr_resolve_fail "$target"; return 24; }
+      args=(bsr_helper partitions "$R_DEV")
       if [ "$search" = 1 ]; then
-         bm_dv_scan
+         bsr_dv_scan
          local disk="$R_DEV"
-         bm_dv_disks_of "$R_DEV" && disk="${DV_DISKS[0]}"
+         bsr_dv_disks_of "$R_DEV" && disk="${DV_DISKS[0]}"
          [ "${DV[$disk|PTTYPE]:-}" = gpt ] && table=gpt
       fi
    fi
@@ -665,14 +663,14 @@ bm_rec_partitions() {
    out="$(cat -- "$here/out")"
    rm -rf -- "$here"
    if [ "$cancelled" = 1 ]; then
-      if [ "$json" = 1 ]; then bm_rec_refusal 1 cancelled; return; fi
+      if [ "$json" = 1 ]; then bsr_rec_refusal 1 cancelled; return; fi
       printf '%s\n' $"Stopped. Nothing was changed on the disk." >&2
       return 23
    fi
    if [ "$direct" = 0 ]; then
       case "$rc" in
          126 | 127)
-            if [ "$json" = 1 ]; then bm_rec_refusal 1 not-authorized; return; fi
+            if [ "$json" = 1 ]; then bsr_rec_refusal 1 not-authorized; return; fi
             printf '%s\n' $"Permission was not granted." >&2
             return 5
             ;;
@@ -682,14 +680,14 @@ bm_rec_partitions() {
       printf '%s\n' "$out"
       return "$rc"
    fi
-   bm_rec_parse_partitions <<< "$out"
+   bsr_rec_parse_partitions <<< "$out"
    local i rows="" first=1
    for i in "${!PT_TYPE[@]}"; do
       [ "$first" = 1 ] && first=0 || rows+=","
-      rows+="{$(bm_jo_inner type "${PT_TYPE[i]}" start "${PT_START[i]}" label "${PT_LABEL[i]}"),$(bm_jn sectors "${PT_SECTORS[i]}" size "$((PT_SECTORS[i] * 512))")}"
+      rows+="{$(bsr_jo_inner type "${PT_TYPE[i]}" start "${PT_START[i]}" label "${PT_LABEL[i]}"),$(bsr_jn sectors "${PT_SECTORS[i]}" size "$((PT_SECTORS[i] * 512))")}"
    done
-   printf '{%s,%s,%s,"found":[%s]}\n' "$(bm_jo_inner target "$target" mode "$([ "$search" = 1 ] && echo search || echo list)")" \
-      "$(bm_jb ok "$([ "$rc" -eq 0 ] && echo 1)")" "$(bm_jn exit "$rc")" "$rows"
+   printf '{%s,%s,%s,"found":[%s]}\n' "$(bsr_jo_inner target "$target" mode "$([ "$search" = 1 ] && echo search || echo list)")" \
+      "$(bsr_jb ok "$([ "$rc" -eq 0 ] && echo 1)")" "$(bsr_jn exit "$rc")" "$rows"
    return "$rc"
 }
 
@@ -698,9 +696,9 @@ bm_rec_partitions() {
 # how many files it found. A physical disk is imaged first, because carving
 # reads every sector, the last thing a failing disk should go through twice.
 
-# bm_rec_carve_commands LIST: the /cmd of PhotoRec (REPLY). In this order: all
+# bsr_rec_carve_commands LIST: the /cmd of PhotoRec (REPLY). In this order: all
 # of it is parsed by PhotoRec, and an unknown name would make it refuse to run.
-bm_rec_carve_commands() {
+bsr_rec_carve_commands() {
    local c f used=" " out=""
    if [ "$1" = all ] || [ -z "$1" ]; then
       # "dovecot" matches blocks of zeros: an empty area would give thousands of
@@ -713,7 +711,7 @@ bm_rec_carve_commands() {
       return 0
    fi
    for c in ${1//,/ }; do
-      bm_rec_families "$c"
+      bsr_rec_families "$c"
       for f in $REPLY; do
          [[ $used == *" $f "* ]] && continue
          used+="$f "
@@ -725,11 +723,11 @@ bm_rec_carve_commands() {
 
 # Index of what is in the result folders. Dates are those of the recovery, so
 # they are not offered as if they were the dates of the files.
-bm_rec_carve_index() {
+bsr_rec_carve_index() {
    local dir="$1" dest="$2"
    : > "$dir/index.count"
    find "$dest" -xdev -mindepth 2 -maxdepth 2 -path "$dest/recup_dir.*" -type f ! -name report.xml -printf '%s\t%T@\t%P\0' 2>/dev/null |
-      LC_ALL=C awk -v filter=all -v progress="$dir/index.count" -v dates=no "$BM_REC_AWK" > "$dir/index.tmp"
+      LC_ALL=C awk -v filter=all -v progress="$dir/index.count" -v dates=no "$BSR_REC_AWK" > "$dir/index.tmp"
    mv -f -- "$dir/index.tmp" "$dir/index"
    local k n b total=0 bytes=0
    while read -r k n b; do
@@ -741,30 +739,29 @@ bm_rec_carve_index() {
    JS[FILES_DONE]="$total" JS[BYTES_DONE]="$bytes"
 }
 
-bm_rec_carve_supervise() {
+bsr_rec_carve_supervise() {
    local id="$1" dir pid rc end=finish ctl now t0 tick=0 line pass="" sector="" total="" found=""
-   bm_job_dir "$id" || return 1
+   bsr_job_dir "$id" || return 1
    dir="$REPLY"
-   exec 7>"$dir/lock"
-   flock -n 7 || return 10
-   bm_job_conf_load "$dir"
+   bsr_job_lock "$dir" || return 10
+   bsr_job_conf_load "$dir"
    : > "$dir/control"
    JS=([STATE]=running [PID]="$$" [FILES_DONE]=0 [BYTES_DONE]=0 [BYTES_NOW]=0 [BYTES_TOTAL]=0 [PASS]=0 [TOTAL_ESTIMATE]=1)
-   bm_proc_state "$$"; JS[PID_START]="$PROC_START"
+   bsr_proc_state "$$"; JS[PID_START]="$PROC_START"
    printf -v t0 '%(%s)T' -1
-   bm_job_state_save "$dir"
+   bsr_job_state_save "$dir"
    trap 'printf "cancel\n" > "$dir/control"' TERM
    if [ ! -r "${JC[SOURCE]}" ]; then
       JS[STATE]=needs-attention JS[REASON]=source-gone
-      bm_job_state_save "$dir"; bm_job_report_write "$dir"
+      bsr_job_state_save "$dir"; bsr_job_report_write "$dir"
       return 0
    fi
    if ! mkdir -p -- "${JC[DEST]}"; then
       JS[STATE]=needs-attention JS[REASON]=dest-gone
-      bm_job_state_save "$dir"; bm_job_report_write "$dir"
+      bsr_job_state_save "$dir"; bsr_job_report_write "$dir"
       return 0
    fi
-   bm_rec_carve_commands "${JC[CATEGORIES]:-all}"
+   bsr_rec_carve_commands "${JC[CATEGORIES]:-all}"
    # >> because the file is emptied below, while PhotoRec is writing to it
    : > "$dir/photorec.out"
    ( cd "$dir" && TERM=xterm LC_ALL=C exec ionice -c 2 -n 6 nice -n 5 photorec /nolog /d "${JC[DEST]}/recup_dir" /cmd "${JC[SOURCE]}" "$REPLY" ) >> "$dir/photorec.out" 2>&1 &
@@ -772,7 +769,7 @@ bm_rec_carve_supervise() {
    local re='Pass ([0-9]+) - Reading sector +([0-9]+)/([0-9]+), +([0-9]+) files? found'
    local eta='Estimated time to completion ([0-9]+)h([0-9]+)m([0-9]+)'
    while kill -0 "$pid" 2>/dev/null; do
-      sleep "$BM_TICK"
+      sleep "$BSR_TICK"
       tick=$((tick + 1))
       printf -v now '%(%s)T' -1
       JS[ELAPSED]=$((now - t0))
@@ -793,24 +790,24 @@ bm_rec_carve_supervise() {
       [ "$ctl" = cancel ] && end=cancel
       # PhotoRec fills the disk and stops without saying why in a way we can read
       if [ $((tick % 10)) -eq 0 ]; then
-         bm_cp_avail "${JC[DEST]}"
+         bsr_cp_avail "${JC[DEST]}"
          [[ $REPLY =~ ^[0-9]+$ ]] && [ "$REPLY" -lt 52428800 ] && end=no-space
       fi
       if [ "$end" != finish ]; then
          JS[STATE]=stopping
-         bm_job_state_save "$dir"
+         bsr_job_state_save "$dir"
          pkill -TERM -P "$pid" 2>/dev/null
          kill -TERM "$pid" 2>/dev/null
          break
       fi
-      bm_job_state_save "$dir"
+      bsr_job_state_save "$dir"
    done
    wait "$pid"; rc=$?
    # It answers 0 to a command it did not understand
    grep -qai 'syntax error' "$dir/photorec.out" && rc=2
    printf -v "JS[FINISHED]" '%(%s)T' -1
    JS[ETA]=""
-   bm_rec_carve_index "$dir" "${JC[DEST]}"
+   bsr_rec_carve_index "$dir" "${JC[DEST]}"
    JS[BYTES_NOW]="${JS[BYTES_DONE]:-0}"
    JS[BYTES_TOTAL]=0 JS[TOTAL_ESTIMATE]=0
    case "$end" in
@@ -823,13 +820,13 @@ bm_rec_carve_supervise() {
          fi
          ;;
    esac
-   bm_job_state_save "$dir"
-   bm_job_report_write "$dir"
+   bsr_job_state_save "$dir"
+   bsr_job_report_write "$dir"
 }
 
 # PhotoRec on an image, or on a device the user can already read (a loop device
 # of theirs). In a terminal, without options, its own interface as always.
-bm_rec_carve() {
+bsr_rec_carve() {
    local src="" dest="" json=0 dry=0 nowait=0 cats=all given=0 id dir now
    while [ "$#" -gt 0 ]; do
       case "$1" in
@@ -839,7 +836,7 @@ bm_rec_carve() {
          --json) json=1 ;;
          --dry-run) dry=1 ;;
          --no-wait) nowait=1 ;;
-         *) bm_drive_badarg "$1"; return 2 ;;
+         *) bsr_drive_badarg "$1"; return 2 ;;
       esac
       shift
    done
@@ -847,37 +844,37 @@ bm_rec_carve() {
       printf '%s\n' $"Both --source and --destination are needed." >&2
       return 2
    fi
-   bm_rec_categories_valid "$cats" || { bm_drive_badarg "--categories $cats"; return 2; }
+   bsr_rec_categories_valid "$cats" || { bsr_drive_badarg "--categories $cats"; return 2; }
    if ! command -v photorec >/dev/null; then
-      [ "$json" = 1 ] && { bm_rec_refusal 1 no-photorec; return; }
+      [ "$json" = 1 ] && { bsr_rec_refusal 1 no-photorec; return; }
       printf '%s\n' $"PhotoRec is not installed (package testdisk)." >&2
       return 25
    fi
-   bm_drive_abs "$src"; src="$(readlink -m -- "$REPLY")"
-   bm_drive_abs "$dest"; dest="$(readlink -m -- "$REPLY")"
+   bsr_drive_abs "$src"; src="$(readlink -m -- "$REPLY")"
+   bsr_drive_abs "$dest"; dest="$(readlink -m -- "$REPLY")"
    if [ ! -r "$src" ]; then
-      if [ "$json" = 1 ]; then bm_rec_refusal 1 not-readable; return; fi
-      printf '%s\n' $"This device cannot be read by your user. Make a disk image first (bigmount --drive image), and search in the image: it also spares the disk." >&2
+      if [ "$json" = 1 ]; then bsr_rec_refusal 1 not-readable; return; fi
+      printf '%s\n' $"This device cannot be read by your user. Make a disk image first (big-storage-rescue --cli image), and search in the image: it also spares the disk." >&2
       return 20
    fi
    # Results never go to where they are being searched for
-   case "$dest/" in "$src"/*) bm_rec_refusal "$json" dest-inside-source; return ;; esac
-   bm_dv_scan
+   case "$dest/" in "$src"/*) bsr_rec_refusal "$json" dest-inside-source; return ;; esac
+   bsr_dv_scan
    local src_dev=""
    [ -b "$src" ] && src_dev="$src"
-   if ! bm_rec_check_dest "$dest" "$src_dev"; then
-      bm_rec_refusal "$json" "$REC_ERR"
+   if ! bsr_rec_check_dest "$dest" "$src_dev"; then
+      bsr_rec_refusal "$json" "$REC_ERR"
       return
    fi
-   bm_rec_probe "$dest"
-   bm_cp_avail "$REPLY"; local avail="$REPLY"
+   bsr_rec_probe "$dest"
+   bsr_cp_avail "$REPLY"; local avail="$REPLY"
    if [ "$dry" = 1 ]; then
       if [ "$json" = 1 ]; then
-         printf '{%s,%s,%s,"warnings":[%s]}\n' "$(bm_jo_inner error "" error_text "" source "$src" destination "$dest" level "")" \
-            "$(bm_jb ok 1)" "$(bm_jn exit 0 avail "$avail" total_bytes 0 total_files 0)" "$(bm_rec_warnings_json carve-names)"
+         printf '{%s,%s,%s,"warnings":[%s]}\n' "$(bsr_jo_inner error "" error_text "" source "$src" destination "$dest" level "")" \
+            "$(bsr_jb ok 1)" "$(bsr_jn exit 0 avail "$avail" total_bytes 0 total_files 0)" "$(bsr_rec_warnings_json carve-names)"
          return 0
       fi
-      bm_rec_carve_commands "$cats"
+      bsr_rec_carve_commands "$cats"
       printf 'dry-run: photorec /nolog /d %q /cmd %q %s\n' "$dest/recup_dir" "$src" "$REPLY"
       return 0
    fi
@@ -889,31 +886,31 @@ bm_rec_carve() {
       printf $"%s files found by content in %s. Their original names and folders could not be kept."'\n' "$n" "$dest"
       return "$rc"
    fi
-   bm_job_id; id="$REPLY"
-   dir="$BM_JOBS/$id"
+   bsr_job_id; id="$REPLY"
+   dir="$BSR_JOBS/$id"
    (umask 077; mkdir -p -- "$dir") || return 1
    printf -v now '%(%s)T' -1
    JC=([ID]="$id" [KIND]=carve [SOURCE]="$src" [DEST]="$dest" [CATEGORIES]="$cats" [CREATED]="$now" [NAME]="${src##*/}" [VERIFY]=basic)
-   bm_job_conf_save "$dir" || { rm -rf -- "$dir"; return 1; }
+   bsr_job_conf_save "$dir" || { rm -rf -- "$dir"; return 1; }
    JS=([STATE]=pending [PID]="")
-   bm_job_state_save "$dir"
-   bm_rec_image_start "$id" || return 1
+   bsr_job_state_save "$dir"
+   bsr_rec_image_start "$id" || return 1
    if [ "$nowait" = 1 ]; then
-      if [ "$json" = 1 ]; then bm_jo id "$id" dir "$dir"; printf '\n'; return 0; fi
+      if [ "$json" = 1 ]; then bsr_jo id "$id" dir "$dir"; printf '\n'; return 0; fi
       printf $"Search started: %s"'\n' "$id"
       return 0
    fi
    # Scripts wait for the result, as this command always did
    if [ "$json" = 1 ]; then
       while :; do
-         bm_job_conf_load "$dir"
-         bm_job_state_load "$dir"
+         bsr_job_conf_load "$dir"
+         bsr_job_state_load "$dir"
          case "${JS[STATE]}" in pending | analyzing | running | stopping) sleep 1 ;; *) break ;; esac
       done
    else
-      bm_job_watch "$id" 1 >/dev/null
-      bm_job_conf_load "$dir"
-      bm_job_state_load "$dir"
+      bsr_job_watch "$id" 1 >/dev/null
+      bsr_job_conf_load "$dir"
+      bsr_job_state_load "$dir"
    fi
    local ok=0 rc2=0
    case "${JS[STATE]}" in
@@ -923,15 +920,15 @@ bm_rec_carve() {
       *) rc2=1 ;;
    esac
    if [ "$json" = 1 ]; then
-      printf '{%s,%s,%s}\n' "$(bm_jo_inner id "$id" destination "$dest" state "${JS[STATE]}")" "$(bm_jn recovered "${JS[FILES_DONE]:-0}" exit "$rc2")" "$(bm_jb ok "$ok")"
+      printf '{%s,%s,%s}\n' "$(bsr_jo_inner id "$id" destination "$dest" state "${JS[STATE]}")" "$(bsr_jn recovered "${JS[FILES_DONE]:-0}" exit "$rc2")" "$(bsr_jb ok "$ok")"
    else
       printf $"%s files found by content in %s. Their original names and folders could not be kept."'\n' "${JS[FILES_DONE]:-0}" "$dest"
    fi
    return "$rc2"
 }
 
-# bm_rec_status_text: the terminal view of a list or a search (state loaded)
-bm_rec_status_text() {
+# bsr_rec_status_text: the terminal view of a list or a search (state loaded)
+bsr_rec_status_text() {
    printf '%-22s %s\n' $"Source:" "${JC[SOURCE]//[[:cntrl:]]/?}"
    if [ "${JC[KIND]}" = scan ]; then
       printf '%-22s %s\n' $"Files listed:" "${JS[FILES_DONE]:-0}"
@@ -940,53 +937,53 @@ bm_rec_status_text() {
       printf '%-22s %s\n' $"Destination:" "${JC[DEST]//[[:cntrl:]]/?}"
       printf '%-22s %s\n' $"Candidates found:" "${JS[FILES_DONE]:-0}"
       if [ "${JS[BYTES_TOTAL]:-0}" -gt 0 ]; then
-         bm_human_size "${JS[BYTES_NOW]:-0}"; local a="$REPLY"
-         bm_human_size "${JS[BYTES_TOTAL]}"
+         bsr_human_size "${JS[BYTES_NOW]:-0}"; local a="$REPLY"
+         bsr_human_size "${JS[BYTES_TOTAL]}"
          printf '%-22s %s / %s\n' $"Read:" "$a" "$REPLY"
       fi
    fi
-   bm_fmt_time "${JS[ELAPSED]:-0}"; printf '%-22s %s\n' $"Elapsed:" "$REPLY"
-   bm_job_reason_text "${JS[REASON]:-}"
+   bsr_fmt_time "${JS[ELAPSED]:-0}"; printf '%-22s %s\n' $"Elapsed:" "$REPLY"
+   bsr_job_reason_text "${JS[REASON]:-}"
    [ -n "$REPLY" ] && printf '%s\n' "$REPLY"
    return 0
 }
 
-# bm_rec_report_text DIR: the rest of the report of a list or a search
-bm_rec_report_text() {
+# bsr_rec_report_text DIR: the rest of the report of a list or a search
+bsr_rec_report_text() {
    local dir="$1"
    if [ "${JC[KIND]}" = scan ]; then
-      bm_doc_kv $"Files listed" "${JS[FILES_DONE]:-0}"
-      bm_doc_kv $"Files examined" "${JS[SCANNED]:-0}"
-      bm_doc_p $"These files exist on the volume. Files that were deleted are not on this list."
+      bsr_doc_kv $"Files listed" "${JS[FILES_DONE]:-0}"
+      bsr_doc_kv $"Files examined" "${JS[SCANNED]:-0}"
+      bsr_doc_p $"These files exist on the volume. Files that were deleted are not on this list."
    else
-      bm_doc_kv $"Destination" "${JC[DEST]}"
-      bm_doc_kv $"Candidates found" "${JS[FILES_DONE]:-0}"
-      bm_doc_p $"Found by content: their original names and folders could not be kept, and some may be incomplete. Open them to check."
+      bsr_doc_kv $"Destination" "${JC[DEST]}"
+      bsr_doc_kv $"Candidates found" "${JS[FILES_DONE]:-0}"
+      bsr_doc_p $"Found by content: their original names and folders could not be kept, and some may be incomplete. Open them to check."
    fi
-   bm_fmt_time "${JS[ELAPSED]:-0}"; bm_doc_kv $"Elapsed" "$REPLY"
-   bm_ui_show info ""
+   bsr_fmt_time "${JS[ELAPSED]:-0}"; bsr_doc_kv $"Elapsed" "$REPLY"
+   bsr_ui_show info ""
    if [ -s "$dir/scan.err" ]; then
       printf '\n%s\n' $"Could not be read:"
-      head -n 50 -- "$dir/scan.err" | bm_printable_lines
+      head -n 50 -- "$dir/scan.err" | bsr_printable_lines
    fi
 }
 
-# bigmount --drive results ID --json: where the list of what was found is, and
+# big-storage-rescue --cli results ID --json: where the list of what was found is, and
 # what its columns can be trusted for. The file is NUL-separated records of
 #    size<TAB>mtime<TAB>category<TAB>path
-bm_rec_results() {
+bsr_rec_results() {
    local id="" json=0 a dir
    for a in "$@"; do
       case "$a" in
          --json) json=1 ;;
-         -*) bm_drive_badarg "$a"; return 2 ;;
+         -*) bsr_drive_badarg "$a"; return 2 ;;
          *) id="$a" ;;
       esac
    done
-   bm_job_dir "$id" || { printf $"There is no job '%s'."'\n' "$id" >&2; return 1; }
+   bsr_job_dir "$id" || { printf $"There is no job '%s'."'\n' "$id" >&2; return 1; }
    dir="$REPLY"
-   bm_job_conf_load "$dir"
-   bm_job_state_load "$dir"
+   bsr_job_conf_load "$dir"
+   bsr_job_state_load "$dir"
    local kind="${JC[KIND]:-copy}" root="${JC[SOURCE]:-}" names=1 dates=1 index="" cats="" first=1 k n b
    case "$kind" in
       scan) ;;
@@ -999,61 +996,61 @@ bm_rec_results() {
          case "$k" in
             scanned | bytes | "") continue ;;
          esac
-         bm_rec_category_label "$k"
+         bsr_rec_category_label "$k"
          [ "$first" = 1 ] && first=0 || cats+=","
-         cats+="{$(bm_jo_inner id "$k" label "$REPLY"),$(bm_jn files "$n" bytes "${b:-0}")}"
+         cats+="{$(bsr_jo_inner id "$k" label "$REPLY"),$(bsr_jn files "$n" bytes "${b:-0}")}"
       done < "$dir/index.count"
    fi
    if [ "$json" = 1 ]; then
       printf '{%s,%s,%s,"categories":[%s]}\n' \
-         "$(bm_jo_inner id "$id" kind "$kind" result_kind "$([ "$kind" = scan ] && echo existing-files || echo carved-candidates)" root "$root" index "$index" state "${JS[STATE]:-}")" \
-         "$(bm_jb names_kept "$names" dates_kept "$dates" ready "$([ -n "$index" ] && echo 1)")" \
-         "$(bm_jn files "${JS[FILES_DONE]:-0}" level "")" "$cats"
+         "$(bsr_jo_inner id "$id" kind "$kind" result_kind "$([ "$kind" = scan ] && echo existing-files || echo carved-candidates)" root "$root" index "$index" state "${JS[STATE]:-}")" \
+         "$(bsr_jb names_kept "$names" dates_kept "$dates" ready "$([ -n "$index" ] && echo 1)")" \
+         "$(bsr_jn files "${JS[FILES_DONE]:-0}" level "")" "$cats"
    else
       printf '%s\n' "${index:-$"The list is not ready yet."}"
    fi
 }
 
 # ---------------------------------------------------------------------------
-# bigmount --drive methods TARGET --json: what can be done with this source and
+# big-storage-rescue --cli methods TARGET --json: what can be done with this source and
 # what is advised. The window shows this; it does not work it out by itself.
 
-bm_rec_method_json() { # ID AVAILABLE WHY NEEDS_PASSWORD FINDS
+bsr_rec_method_json() { # ID AVAILABLE WHY NEEDS_PASSWORD FINDS
    local why_text=""
-   if [ -n "$3" ]; then bm_cp_err_text "$3"; why_text="$REPLY"; fi
-   printf '{%s,%s}' "$(bm_jo_inner id "$1" why "$3" why_text "$why_text" finds "$5")" "$(bm_jb available "$2" password "$4")"
+   if [ -n "$3" ]; then bsr_cp_err_text "$3"; why_text="$REPLY"; fi
+   printf '{%s,%s}' "$(bsr_jo_inner id "$1" why "$3" why_text "$why_text" finds "$5")" "$(bsr_jb available "$2" password "$4")"
 }
 
-bm_rec_methods() {
+bsr_rec_methods() {
    local target="" json=0 a
    for a in "$@"; do
       case "$a" in
          --json) json=1 ;;
-         -*) bm_drive_badarg "$a"; return 2 ;;
+         -*) bsr_drive_badarg "$a"; return 2 ;;
          *) target="$a" ;;
       esac
    done
-   [ -n "$target" ] || { bm_drive_usage >&2; return 2; }
+   [ -n "$target" ] || { bsr_drive_usage >&2; return 2; }
    [ "$json" = 1 ] || { printf '%s\n' $"This command only answers with --json." >&2; return 2; }
-   bm_drive_abs "$target"; target="$REPLY"
+   bsr_drive_abs "$target"; target="$REPLY"
    local kind volume="" dev="" disk="" level=na st="" mp="" size=0 trim=0 fs=""
    if [ -f "$target" ]; then
       kind=image
       size="$(stat -c %s -- "$target")"
    else
-      bm_resolve "$target" || { bm_resolve_fail "$target"; return 24; }
+      bsr_resolve "$target" || { bsr_resolve_fail "$target"; return 24; }
       dev="$R_DEV"
-      bm_dv_scan || return 1
+      bsr_dv_scan || return 1
       disk="$dev"
-      bm_dv_disks_of "$dev" && disk="${DV_DISKS[0]}"
-      bm_ds_level "$disk"; level="$DS_LEVEL"
-      bm_dv_has_trim "$disk" && trim=1
+      bsr_dv_disks_of "$dev" && disk="${DV_DISKS[0]}"
+      bsr_ds_level "$disk"; level="$DS_LEVEL"
+      bsr_dv_has_trim "$disk" && trim=1
       size="${DV[$dev|SIZE]:-0}"
       if [ "$dev" = "$disk" ] && [ -z "${DV[$dev|FSTYPE]:-}" ]; then
          kind=disk
       else
          kind=volume volume="$dev"
-         bm_dv_state "$dev"; st="$REPLY" mp="$DV_MP"
+         bsr_dv_state "$dev"; st="$REPLY" mp="$DV_MP"
          fs="${DV[$dev|FSTYPE]:-}"
       fi
    fi
@@ -1070,7 +1067,7 @@ bm_rec_methods() {
          case "$st" in
             mounted-rw | mounted-ro | system) fs_ok=1 ;;
             unmounted)
-               if bm_dv_fs_supported "$fs"; then fs_ok=1; else fs_why=no-driver; fi
+               if bsr_dv_fs_supported "$fs"; then fs_ok=1; else fs_why=no-driver; fi
                ;;
             locked | unlocked) fs_why=locked ;;
             member) fs_why=member ;;
@@ -1084,11 +1081,11 @@ bm_rec_methods() {
    local rows=() w
    if [ "$fs_ok" = 1 ]; then
       if [ "$has_rsync" = 1 ]; then w=""; else w=no-rsync; fi
-      rows+=("$(bm_rec_method_json copy "$([ -z "$w" ] && echo 1)" "$w" 0 existing)")
-      rows+=("$(bm_rec_method_json quick "$([ -z "$w" ] && echo 1)" "$w" 0 existing)")
+      rows+=("$(bsr_rec_method_json copy "$([ -z "$w" ] && echo 1)" "$w" 0 existing)")
+      rows+=("$(bsr_rec_method_json quick "$([ -z "$w" ] && echo 1)" "$w" 0 existing)")
    else
-      rows+=("$(bm_rec_method_json copy 0 "$fs_why" 0 existing)")
-      rows+=("$(bm_rec_method_json quick 0 "$fs_why" 0 existing)")
+      rows+=("$(bsr_rec_method_json copy 0 "$fs_why" 0 existing)")
+      rows+=("$(bsr_rec_method_json quick 0 "$fs_why" 0 existing)")
    fi
    local deep_image=0
    if [ "$kind" = image ] || [ "$can_read" = 1 ]; then
@@ -1100,14 +1097,14 @@ bm_rec_methods() {
       else w=""
       fi
    fi
-   rows+=("$(bm_rec_method_json deep "$([ -z "$w" ] && echo 1)" "$w" "$deep_image" carved)")
+   rows+=("$(bsr_rec_method_json deep "$([ -z "$w" ] && echo 1)" "$w" "$deep_image" carved)")
    if [ "$kind" = image ]; then w=image-file
    elif [ "$has_dd" = 1 ]; then w=""
    else w=no-ddrescue
    fi
-   rows+=("$(bm_rec_method_json image "$([ -z "$w" ] && echo 1)" "$w" 1 image)")
+   rows+=("$(bsr_rec_method_json image "$([ -z "$w" ] && echo 1)" "$w" 1 image)")
    if [ "$has_td" = 1 ]; then w=""; else w=no-testdisk; fi
-   rows+=("$(bm_rec_method_json partitions "$([ -z "$w" ] && echo 1)" "$w" "$([ "$kind" != image ] && echo 1)" partitions)")
+   rows+=("$(bsr_rec_method_json partitions "$([ -z "$w" ] && echo 1)" "$w" "$([ "$kind" != image ] && echo 1)" partitions)")
 
    # What is advised. Never starts anything: it is the first option on the screen
    local rec why_rec
@@ -1141,28 +1138,28 @@ bm_rec_methods() {
    esac
    local notes=() cats="" first=1 c
    [ "$trim" = 1 ] && notes+=(trim)
-   for c in $BM_REC_CATEGORIES; do
-      bm_rec_category_label "$c"; local l="$REPLY"
-      bm_rec_category_note "$c"
+   for c in $BSR_REC_CATEGORIES; do
+      bsr_rec_category_label "$c"; local l="$REPLY"
+      bsr_rec_category_note "$c"
       [ "$first" = 1 ] && first=0 || cats+=","
-      cats+="$(bm_jo id "$c" label "$l" deep_note "$REPLY")"
+      cats+="$(bsr_jo id "$c" label "$l" deep_note "$REPLY")"
    done
    local IFS=,
    printf '{%s,%s,%s,"methods":[%s],"notes":[%s],"categories":[%s]}\n' \
-      "$(bm_jo_inner target "$target" source_kind "$kind" device "$dev" volume "$volume" disk "$disk" level "$level" state "$st" mountpoint "$mp" fstype "$fs" recommended "$rec" recommended_why "$why_rec")" \
-      "$(bm_jn size "$size")" "$(bm_jb trim "$trim" can_read "$can_read" deep_needs_image "$deep_image")" \
-      "${rows[*]}" "$(bm_rec_warnings_json "${notes[@]}")" "$cats"
+      "$(bsr_jo_inner target "$target" source_kind "$kind" device "$dev" volume "$volume" disk "$disk" level "$level" state "$st" mountpoint "$mp" fstype "$fs" recommended "$rec" recommended_why "$why_rec")" \
+      "$(bsr_jn size "$size")" "$(bsr_jb trim "$trim" can_read "$can_read" deep_needs_image "$deep_image")" \
+      "${rows[*]}" "$(bsr_rec_warnings_json "${notes[@]}")" "$cats"
 }
 
-bm_rec_cmd() {
+bsr_rec_cmd() {
    local cmd="$1"
    shift
    case "$cmd" in
-      image) bm_rec_image_cmd "$@" ;;
-      partitions) bm_rec_partitions "$@" ;;
-      carve) bm_rec_carve "$@" ;;
-      scan) bm_rec_scan_cmd "$@" ;;
-      results) bm_rec_results "$@" ;;
-      methods) bm_rec_methods "$@" ;;
+      image) bsr_rec_image_cmd "$@" ;;
+      partitions) bsr_rec_partitions "$@" ;;
+      carve) bsr_rec_carve "$@" ;;
+      scan) bsr_rec_scan_cmd "$@" ;;
+      results) bsr_rec_results "$@" ;;
+      methods) bsr_rec_methods "$@" ;;
    esac
 }

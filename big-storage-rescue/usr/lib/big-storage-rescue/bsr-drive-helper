@@ -1,9 +1,9 @@
 #!/bin/bash
 # shellcheck disable=SC2015  # "check && check || die" on purpose: die does not return
 #
-# bigmount-drive-helper - privileged helper of the big-mount drive manager.
+# bsr-drive-helper - privileged helper of the Big Storage Rescue drive manager.
 #
-# Started through pkexec (polkit action org.biglinux.big-mount.drive-helper).
+# Started through pkexec (polkit action org.biglinux.big-storage-rescue.drive-helper).
 # It does five small things and nothing else, with its arguments treated as
 # untrusted:
 #
@@ -22,15 +22,15 @@
 # arguments, 3 another volume of the drive is mounted with writing enabled,
 # 4 refused: the running system, 25 tool missing.
 
-BM_LIB="/usr/lib/big-mount"
+BSR_LIB="/usr/lib/big-storage-rescue"
 export PATH=/usr/bin:/bin:/usr/sbin:/sbin
 
-die() { printf 'bigmount-drive-helper: %s\n' "$1" >&2; exit "${2:-2}"; }
+die() { printf 'bsr-drive-helper: %s\n' "$1" >&2; exit "${2:-2}"; }
 
-[ "$#" -ge 2 ] || die "usage: bigmount-drive-helper protect|unprotect|smart|image DEV ..."
+[ "$#" -ge 2 ] || die "usage: bsr-drive-helper protect|unprotect|smart|image DEV ..."
 [ "$EUID" -eq 0 ] || die "must run as root" 1
 # shellcheck source=lib.sh
-. "$BM_LIB/lib.sh" || exit 1
+. "$BSR_LIB/lib.sh" || exit 1
 
 verb="$1" dev="$2"
 [[ $dev =~ ^/dev/[A-Za-z0-9._/:+-]+$ ]] && [[ $dev != *..* ]] || die "not a device name"
@@ -59,7 +59,7 @@ user_path() {
 refuse_system() {
    local d
    for d in "${disks[@]}"; do
-      bm_system_use "$d" && die "refused: $d holds the running system ($REPLY)" 4
+      bsr_system_use "$d" && die "refused: $d holds the running system ($REPLY)" 4
    done
 }
 
@@ -70,11 +70,11 @@ case "$verb" in
       # Blocking a disk also blocks its other partitions: never under a
       # volume that is writing
       for d in "${disks[@]}"; do
-         bm_drive_members "$d"
+         bsr_drive_members "$d"
          for m in "${DRIVE_DEVS[@]}"; do
-            bm_mounts "$m"
+            bsr_mounts "$m"
             for i in "${!M_TARGET[@]}"; do
-               bm_has_opt "${M_VFSOPT[i]}" ro || die "$m is mounted with writing enabled at ${M_TARGET[i]}" 3
+               bsr_has_opt "${M_VFSOPT[i]}" ro || die "$m is mounted with writing enabled at ${M_TARGET[i]}" 3
             done
          done
       done
@@ -182,7 +182,7 @@ case "$verb" in
       # ddrescue renames and creates files next to its map (MAP.bak, kept in case
       # a save is cut): it works on a copy in a folder of root, and that copy goes
       # to the user's map through what was opened above
-      work="$(mktemp -d /run/big-mount-image.XXXXXXXX)" || die "no working folder" 1
+      work="$(mktemp -d /run/big-storage-rescue-image.XXXXXXXX)" || die "no working folder" 1
       trap 'rm -rf -- "$work"' EXIT
       # A whole map: it ends with a line break, has the status line and ends with a block
       whole_map() {
@@ -216,7 +216,7 @@ case "$verb" in
       done
       wait "$pid"; rc=$?
       if ! mirror; then
-         printf 'bigmount-drive-helper: the map could not be saved to %s\n' "$map" >&2
+         printf 'bsr-drive-helper: the map could not be saved to %s\n' "$map" >&2
          [ "$rc" -ne 0 ] || rc=1
       fi
       exit "$rc"
