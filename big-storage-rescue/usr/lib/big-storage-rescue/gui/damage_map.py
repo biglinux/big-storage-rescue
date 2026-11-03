@@ -16,6 +16,9 @@ from .common import _, human_size
 
 COLUMNS = 64
 GAP = 1
+# At most this many pixels a cell: the height is known as soon as the map is,
+# and the cells only get smaller in a narrow window
+CELL_MAX = 10
 # Read, could not be read, to be retried, not read yet: the libadwaita palette,
 # light and dark
 PALETTE = {
@@ -32,7 +35,6 @@ class DamageMap(Gtk.Box):
         self.area = Gtk.DrawingArea(hexpand=True, accessible_role=Gtk.AccessibleRole.IMG)
         self.area.set_content_height(80)
         self.area.set_draw_func(self._draw)
-        self.area.connect("resize", self._resized)
         self.append(self.area)
         self.summary = w.label("", css=("caption",))
         self.append(self.summary)
@@ -73,19 +75,11 @@ class DamageMap(Gtk.Box):
             "left": human_size(amounts["/"] + amounts["?"])}
         self.summary.set_text(text)
         self.area.update_property([Gtk.AccessibleProperty.LABEL], [_("Map of the disk") + ". " + text])
-        self._resized(self.area, self.area.get_width(), self.area.get_height())
+        self.area.set_content_height(math.ceil(len(self.cells) / COLUMNS) * (CELL_MAX + GAP))
         self.area.queue_draw()
 
     def _cell(self, width):
-        return max(2.0, (width - GAP * (COLUMNS - 1)) / COLUMNS)
-
-    def _resized(self, area, width, _height):
-        if width <= 0 or not self.cells:
-            return
-        rows = math.ceil(len(self.cells) / COLUMNS)
-        need = int(rows * (self._cell(width) + GAP))
-        if area.get_content_height() != need:
-            area.set_content_height(need)
+        return max(2.0, min(CELL_MAX, (width - GAP * (COLUMNS - 1)) / COLUMNS))
 
     def _rgba(self, cr, key):
         color = PALETTE[Adw.StyleManager.get_default().get_dark()][key]

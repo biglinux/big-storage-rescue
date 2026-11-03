@@ -24,7 +24,7 @@ depends=('bash' 'util-linux' 'udisks2' 'glib2' 'polkit' 'lsof' 'rsync'
          'smartmontools' 'diffutils' 'python' 'python-gobject' 'gtk4'
          'libadwaita>=1:1.5' 'pango' 'gdk-pixbuf2' 'hicolor-icon-theme'
          'libnotify')
-optdepends=('ddrescue: disk images of a failing drive, before a deep analysis'
+optdepends=('ddrescue: disk images of a failing drive, and saving what can be read of files a copy left out'
             'testdisk: find lost partitions, search files by content (PhotoRec)'
             'dolphin: the Storage device actions of the right-click menu'
             'big-mount: mounts the internal partitions at boot')

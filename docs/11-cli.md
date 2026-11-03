@@ -25,7 +25,8 @@ big-storage-rescue --doctor | --version | --help
 `unmount`, `safe-remove`, `busy`, `close-apps`, `protect`, `unprotect`, `unlock`,
 `destinations`, `copy`, `jobs`, `status [--watch]`, `pause`, `cancel`, `resume [--retry-deferred]`,
 `report [--anonymize] [--output FILE [--replace]]`, `methods`, `image`, `partitions [--search]`,
-`scan`, `carve`, `results`. `big-storage-rescue --cli --help` describes each.
+`scan`, `carve`, `results`, `check-files`, `salvage [--retries N]`, `map [--bins N]`,
+`manifest [--output FILE]`. `big-storage-rescue --cli --help` describes each.
 
 - `--json` on every command: one JSON object on standard output. This is what
   the application uses, so it is complete and stable. Device data and file
