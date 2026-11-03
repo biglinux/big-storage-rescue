@@ -911,8 +911,10 @@ try:
     for line in open("/proc/net/if_inet6"):
         h = line.split()[0]
         mine.add(ipaddress.ip_address(":".join(h[i:i + 4] for i in range(0, 32, 4))))
+except FileNotFoundError:
+    pass  # IPv6 turned off: no address of this computer is missing
 except (OSError, ValueError):
-    pass
+    sys.exit(1)
 try:
     found = {ipaddress.ip_address(i[4][0].split("%")[0]) for i in socket.getaddrinfo(sys.argv[1], None)}
 except (OSError, ValueError, UnicodeError):

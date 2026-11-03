@@ -138,8 +138,9 @@ chmod 000 "$OLD/20261102-110000-cc33/events.log"
 "$B" --migrate-state > /dev/null
 check "a job found later that fails to copy: the mark goes, so the next starts try again" test ! -e "$XDG_STATE_HOME/big-storage-rescue/migrated-from-big-mount"
 chmod 644 "$OLD/20261102-110000-cc33/events.log"
-"$B" --cli jobs --dry-run > /dev/null 2>&1
-check "a --dry-run brings nothing over" test ! -e "$NEW/20261102-110000-cc33"
+"$B" --cli salvage 20261102-110000-cc33 --dry-run > /dev/null 2> "$WORK/dry.err"; rc=$?
+check "a --dry-run brings nothing over (exit 1: the job is not here yet)" bash -c '[ "$1" = 1 ] && [ ! -e "$2" ]' _ "$rc" "$NEW/20261102-110000-cc33"
+check "  ... and says how to see it" grep -q -- "--migrate-state" "$WORK/dry.err"
 "$B" --cli jobs --json > /dev/null
 check "  ... the next start does" test -e "$NEW/20261102-110000-cc33/job.conf"
 
