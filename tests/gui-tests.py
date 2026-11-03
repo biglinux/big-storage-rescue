@@ -11,6 +11,7 @@ Usage: python3 tests/gui-tests.py [-v] [--shots DIR]
 """
 
 import copy
+import math
 import os
 import pathlib
 import shutil
@@ -35,6 +36,7 @@ from gui_support import (Adw, CALLBACK_ERRORS, FIX, GB, Gtk, LIB, REPO, WORK, ba
 app = make_app()
 
 import dialog as shell_dialog  # noqa: E402
+from gui import damage_map  # noqa: E402
 from gui import dialogs as shell_dialogs  # noqa: E402
 from gui.application import notifier_entry, notifier_on, parse, set_notifier, welcome_at_start  # noqa: E402
 from gui.common import ISSUES, WEBSITE, human_duration, human_size, human_time, save_setting  # noqa: E402
@@ -1333,6 +1335,18 @@ class Jobs(Base):
         self.see("Could not be read: 32", page)
         label = page.damage_map.area.get_property("accessible-role")
         self.assertEqual(label, Gtk.AccessibleRole.IMG)
+
+    def test_a_narrow_map_keeps_its_marks(self):
+        dm = damage_map.DamageMap()
+        self.assertEqual(dm._grid(64 * 11 - 1), (64, 10))
+        # A phone-wide window: fewer columns, never a cell too small for its cross
+        columns, size = dm._grid(300)
+        self.assertLess(columns, 64)
+        self.assertGreaterEqual(size, damage_map.CELL_MIN)
+        # The height follows the columns, so no row is cut off
+        dm.set_map({"size": 1, "cells": "-" * 1024, "read": "0" * 1024})
+        dm._on_resize(None, 300, 0)
+        self.assertGreaterEqual(dm.area.get_content_height(), math.ceil(1024 / columns) * (size + damage_map.GAP))
 
     def test_a_copy_has_no_map(self):
         page = self.open()

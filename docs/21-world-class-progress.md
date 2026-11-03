@@ -39,6 +39,12 @@ development machine.
   - it reopens the file through `/proc/self/fd`, removes on refusal what it created, and runs the helper again with the descriptors open.
 
   Root no longer opens a user path by name.
+
+  The inner verb that this step runs, `__image-opened`, needs the mark the step
+  puts in its environment (`BSR_IMAGE_OPENED=1`). pkexec passes only a fixed list
+  of variables, so `pkexec bsr-drive-helper __image-opened …`, through the
+  action of the other verbs, which keeps the password a while, is refused.
+  Found by the review of the pull request.
 - **Map checks.** A map is refused above 64 MiB, or if any line is not map grammar.
 - **Disk sequence number.** protect, unprotect and image take it and check it right before acting. Exit code 5 means "replaced".
 - **Map saved more often.** ddrescue now saves the map every 5 s, for images.
@@ -113,15 +119,17 @@ Colour is never the only sign:
 - a cell read in part is filled in part;
 - a summary says the same in words, also to a screen reader (`AccessibleRole.IMG` with a label).
 
+In a narrow window the grid takes fewer columns, so a cell is never too small for its mark.
+
 In the terminal it is a 64-column grid.
 
 ## Integrity of what a search found (`d66ae05`)
 
 `integrity.py` looks at structure only:
 - JPEG markers and end;
-- PNG chunks with CRC, computed in 1 MiB pieces;
+- PNG chunks with CRC, computed in 1 MiB pieces, IHDR first and image data before the end;
 - GIF and PDF end markers;
-- the central directory of a zip (docx, xlsx, odt, epub, …);
+- the central directory of a zip (docx, xlsx, odt, epub, …), and for a zip64 the record that describes it;
 - the chain of boxes of an MP4 or MOV, which must reach the end and contain `moov`;
 - the declared size of RIFF (WAV, AVI, WebP), BMP and SQLite.
 

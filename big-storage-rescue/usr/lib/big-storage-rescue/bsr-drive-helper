@@ -81,7 +81,8 @@ same_disk() {
 # path only (O_PATH: a device or a FIFO is never really opened), must be a
 # regular file with one name, the user's (or new: created with O_EXCL and
 # given to the user), and is then opened through that path. COMMAND runs
-# with the descriptors open, their numbers added at the end.
+# with the descriptors open, their numbers added at the end, and with
+# BSR_IMAGE_OPENED=1 (pkexec never passes that on: only this step sets it).
 BSR_OPEN_OWN='
 import os, stat, sys
 uid = int(sys.argv[1]); sep = sys.argv.index("--")
@@ -132,6 +133,7 @@ for name in names:
         open_one(name)
     except OSError as e:
         fail(name + ": " + (e.strerror or "cannot open"))
+os.environ["BSR_IMAGE_OPENED"] = "1"
 os.execv(cmd[0], cmd + [str(f) for f in fds])
 '
 
@@ -238,7 +240,11 @@ case "$verb" in
       ;;
    __image-opened)
       # Reached only through the step above, which leaves the descriptors of
-      # the three files open; each is checked again here all the same
+      # the three files open; each is checked again here all the same. pkexec
+      # gives a clean environment, so the mark of that step cannot come with
+      # "pkexec bsr-drive-helper __image-opened": the action of every other
+      # verb, which keeps the password a while, never reaches an image
+      [ "${BSR_IMAGE_OPENED:-}" = 1 ] || die "internal"
       [ "$#" -eq 9 ] || die "internal"
       file="$3" map="$4" retries="$5" stop="$6"
       [[ $retries =~ ^[0-9]+$ ]] && [ "$retries" -le 5 ] || die "bad retries"

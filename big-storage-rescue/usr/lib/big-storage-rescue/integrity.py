@@ -71,15 +71,22 @@ def check_png(f, size):
         return "damaged"
     if size > PNG_WALK_MAX:
         return "unknown"
-    pos = 8
+    pos, seen = 8, set()
     while True:
         f.seek(pos)
         head = f.read(8)
         if len(head) < 8:
             return "truncated"
         length, kind = struct.unpack(">I4s", head)
-        if length > size:
-            return "truncated" if pos + 12 > size or not kind.isalpha() else "damaged"
+        # A chunk name is four letters, and a length never above 2^31 - 1:
+        # anything else is not a chunk
+        if not kind.isalpha() or length > 0x7FFFFFFF:
+            return "damaged"
+        # IHDR comes first, and the image data before the end
+        if (pos == 8) != (kind == b"IHDR"):
+            return "damaged"
+        if pos + 12 + length > size:
+            return "truncated"
         # The CRC is computed in pieces: a length read from the file never
         # decides how much memory is taken
         crc, left = zlib.crc32(kind), length
@@ -94,7 +101,8 @@ def check_png(f, size):
         if crc != struct.unpack(">I", stored)[0]:
             return "damaged"
         if kind == b"IEND":
-            return "complete"
+            return "complete" if b"IDAT" in seen else "damaged"
+        seen.add(kind)
         pos += 12 + length
 
 
@@ -123,9 +131,21 @@ def check_zip(f, size):
     if at < 0 or len(tail) - at < 22:
         return "truncated"
     cd_size, cd_offset = struct.unpack("<II", tail[at + 12:at + 20])
-    if cd_offset == 0xFFFFFFFF:  # zip64: the directory is described elsewhere
-        return "complete"
     start = size - len(tail) + at
+    if 0xFFFFFFFF in (cd_size, cd_offset):
+        # zip64: the directory is described by a record that a locator, just
+        # before the end record, points to
+        loc = tail[at - 20:at] if at >= 20 else b""
+        if len(loc) < 20 or loc[:4] != b"PK\x06\x07":
+            return "damaged"
+        start = struct.unpack("<Q", loc[8:16])[0]
+        if start + 56 > size - 20 - (len(tail) - at):
+            return "damaged"
+        f.seek(start)
+        record = f.read(56)
+        if len(record) < 56 or record[:4] != b"PK\x06\x06":
+            return "damaged"
+        cd_size, cd_offset = struct.unpack("<QQ", record[40:56])
     return "complete" if cd_offset + cd_size <= start else "damaged"
 
 

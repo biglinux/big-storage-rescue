@@ -863,6 +863,8 @@ opened "$OD/real/f.img" "$OD/real/f.img" "$OD/real/f.map.bak" >/dev/null; check 
 opened "$OD/real/../real/g.img" "$OD/real/g.map" "$OD/real/g.map.bak" >/dev/null; check "a path with ..: refused" test "$?" != 0
 check "the helper refuses to image the running system" bash -c 'sed -n "/^   image)/,/^      ;;/p" "$1" | grep -q "^      refuse_system"' _ "$L/bsr-drive-helper"
 check "  ... and checks again, with the files open" bash -c 'sed -n "/^   __image-opened)/,/^      ;;/p" "$1" | grep -q "^      refuse_system"' _ "$L/bsr-drive-helper"
+check "the step hands its mark to what it runs" eq "$(python3 -I -c "$BSR_OPEN_OWN" "$(id -u)" "$OD/real/h.img" "$OD/real/h.map" "$OD/real/h.map.bak" -- /bin/sh -c 'echo "$BSR_IMAGE_OPENED"')" 1
+check "  ... and the inner verb refuses to run without it (pkexec through the action of the other verbs)" bash -c 'sed -n "/^   __image-opened)/,/^      ;;/p" "$1" | grep -A1 "^      # verb, which keeps" | grep -q "^      \[ \"\${BSR_IMAGE_OPENED:-}\" = 1 \] || die"' _ "$L/bsr-drive-helper"
 check "  ... no file of the user is opened by name as root any more" bash -c '! grep -qE "exec \{FD\}[<>]" "$1"' _ "$L/bsr-drive-helper"
 
 begin "files found by content: whole, cut short or damaged, from their structure (integrity.py)"
@@ -884,6 +886,17 @@ put("f8.mp4", mp4); put("f9.mp4", mp4[:-100]); put("f10.mp4", box(b"ftyp", b"iso
 put("f11.pdf", b"%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF\n"); put("f12.pdf", b"%PDF-1.4\n1 0 obj\n<<>>\n")
 wav = b"RIFF" + struct.pack("<I", 36 + 100) + b"WAVEfmt " + b"\x00" * 24 + b"data" + struct.pack("<I", 100) + b"\x00" * 100
 put("f13.wav", wav); put("f14.wav", wav[:80]); put("f15.xyz", b"whatever")
+big = b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", 1, 1, 8, 2, 0, 0, 0)) + chunk(b"IDAT", b"\x07" * 500) + chunk(b"IEND", b"")
+put("f17.png", big[:200]); put("f18.png", png[:33] + chunk(b"IEND", b""))
+def zip64(data, rec_off=None):
+    at = data.rfind(b"PK\x05\x06")
+    n = struct.unpack("<H", data[at + 10:at + 12])[0]
+    cd_size, cd_off = struct.unpack("<II", data[at + 12:at + 20])
+    body = data[:at]
+    rec = b"PK\x06\x06" + struct.pack("<QHHIIQQQQ", 44, 45, 45, 0, 0, n, n, cd_size, cd_off)
+    loc = b"PK\x06\x07" + struct.pack("<IQI", 0, len(body) if rec_off is None else rec_off, 1)
+    return body + rec + loc + b"PK\x05\x06" + struct.pack("<HHHHIIH", 0, 0, 0xFFFF, 0xFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0)
+put("f19.zip", zip64(z.getvalue())); put("f20.zip", zip64(z.getvalue(), rec_off=0))
 PY
 ln -s /etc/passwd "$IG/recup_dir.1/f16.jpg"
 idx="$WORK/found.index"
@@ -893,20 +906,22 @@ python3 -I "$L/integrity.py" "$IG" < "$idx" > "$WORK/found.out" 2> "$WORK/found.
 st() { tr '\0' '\n' < "$WORK/found.out" | awk -F'\t' -v f="recup_dir.1/$1" '$2 == f { print $1 }'; }
 check "a whole JPEG, and one cut short" eq "$(st f1.jpg) $(st f2.jpg)" "complete truncated"
 check "a whole PNG, one cut short, one with a bad chunk (CRC)" eq "$(st f3.png) $(st f4.png) $(st f5.png)" "complete truncated damaged"
+check "  ... one cut short inside a long chunk, and one without image data" eq "$(st f17.png) $(st f18.png)" "truncated damaged"
+check "a zip64 whose directory is where its record says, and one whose record is not there" eq "$(st f19.zip) $(st f20.zip)" "complete damaged"
 check "a whole document (zip inside), and one without its directory" eq "$(st f6.docx) $(st f7.docx)" "complete truncated"
 check "a whole video, one cut short, one without its index (moov)" eq "$(st f8.mp4) $(st f9.mp4) $(st f10.mp4)" "complete truncated damaged"
 check "a whole PDF and one cut short; a whole WAV and one cut short" eq "$(st f11.pdf) $(st f12.pdf) $(st f13.wav) $(st f14.wav)" "complete truncated complete truncated"
 check "a format it does not know, and a link (never followed): not checked" eq "$(st f15.xyz) $(st f16.jpg)" "unknown unknown"
 check "  ... a path outside the folder is never opened, only answered for (one answer per record, in order)" \
-   bash -c '[ "$(tr "\0" "\n" < "$1" | tail -n 1)" = "unknown	../etc/passwd" ] && [ "$(tr -cd "\0" < "$1" | wc -c)" = 17 ]' _ "$WORK/found.out"
-check "the counts" eq "$(cat "$WORK/found.err")" "complete 6 truncated 6 damaged 2 unknown 3"
+   bash -c '[ "$(tr "\0" "\n" < "$1" | tail -n 1)" = "unknown	../etc/passwd" ] && [ "$(tr -cd "\0" < "$1" | wc -c)" = 21 ]' _ "$WORK/found.out"
+check "the counts" eq "$(cat "$WORK/found.err")" "complete 7 truncated 7 damaged 4 unknown 3"
 mkdir -p "$BSR_JOBS/20261103-120000-ffff"; cp "$idx" "$BSR_JOBS/20261103-120000-ffff/index"
-printf '%s\n' KIND=carve "DEST=$IG" SOURCE=/dev/null > "$BSR_JOBS/20261103-120000-ffff/job.conf"; printf 'STATE=completed\nFILES_DONE=16\n' > "$BSR_JOBS/20261103-120000-ffff/state.env"
+printf '%s\n' KIND=carve "DEST=$IG" SOURCE=/dev/null > "$BSR_JOBS/20261103-120000-ffff/job.conf"; printf 'STATE=completed\nFILES_DONE=20\n' > "$BSR_JOBS/20261103-120000-ffff/state.env"
 out="$(run_b --drive check-files 20261103-120000-ffff --json)"
-check "--cli check-files: the counts as JSON" eq "$out" '{"complete":6,"truncated":6,"damaged":2,"unknown":3}'
+check "--cli check-files: the counts as JSON" eq "$out" '{"complete":7,"truncated":7,"damaged":4,"unknown":3}'
 res="$(run_b --drive results 20261103-120000-ffff --json)"
-check "  ... and the results say where the verdicts are" bash -c '[[ $1 == *"\"integrity\":\"$2/integrity\""* && $1 == *"\"truncated\":6"* ]]' _ "$res" "$BSR_JOBS/20261103-120000-ffff"
-check "  ... the report says what whole means" bash -c '[[ $1 == *"Look whole"*"6"* && $1 == *"does not prove every byte"* ]]' _ "$(run_b --drive report 20261103-120000-ffff 2>&1)"
+check "  ... and the results say where the verdicts are" bash -c '[[ $1 == *"\"integrity\":\"$2/integrity\""* && $1 == *"\"truncated\":7"* ]]' _ "$res" "$BSR_JOBS/20261103-120000-ffff"
+check "  ... the report says what whole means" bash -c '[[ $1 == *"Look whole"*"7"* && $1 == *"does not prove every byte"* ]]' _ "$(run_b --drive report 20261103-120000-ffff 2>&1)"
 
 begin "a manifest: SHA-256 of what was written, checked later with sha256sum -c"
 MD="$WORK/mdest"; mkdir -p "$MD/sub" "$BSR_JOBS/20261103-130000-aaaa" "$BSR_JOBS/20261103-130000-bbbb"

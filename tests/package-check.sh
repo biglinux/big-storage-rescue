@@ -133,7 +133,7 @@ check "install script restarts nothing by itself" bash -c '! grep -vE "^\s*(#|ec
 check "no configuration file of its own (backup= empty)" grep -qx "backup=" <<< "$pkginfo"
 check "it neither replaces nor conflicts with big-mount" \
     bash -c 'source pkgbuild/PKGBUILD 2>/dev/null; [[ " ${replaces[*]:-} ${conflicts[*]:-} ${provides[*]:-} " != *big-mount* ]]'
-for d in udisks2 util-linux polkit lsof rsync smartmontools python python-gobject gtk4 libadwaita libnotify; do check "depends on $d" grep -qw "$d" <<< "$(grep ^depends= <<< "$pkginfo")"; done
+for d in udisks2 util-linux polkit lsof rsync smartmontools python python-gobject python-cairo gtk4 libadwaita libnotify; do check "depends on $d" grep -qw "$d" <<< "$(grep ^depends= <<< "$pkginfo")"; done
 check "  ... libadwaita 1.5 with its epoch (1:), or any version would do" grep -q "libadwaita>=1:1.5" <<< "$(grep ^depends= <<< "$pkginfo")"
 check "  ... and nothing of the automount (ntfs-3g, big-mount)" bash -c '[[ $1 != *ntfs-3g* && $1 != *big-mount* ]]' _ "$(grep ^depends= <<< "$pkginfo")"
 check "the specialized tools are optional" bash -c 'source pkgbuild/PKGBUILD 2>/dev/null; [[ " ${optdepends[*]} " == *"ddrescue:"* && " ${optdepends[*]} " == *"testdisk:"* && " ${depends[*]} " != *ddrescue* && " ${depends[*]} " != *testdisk* ]]' 

@@ -6,7 +6,7 @@ commit goes to `/usr/lib/big-storage-rescue/version` for `--version`.
 
 | Field | Value | Why |
 | --- | --- | --- |
-| `depends` | bash, util-linux, udisks2, glib2, polkit, lsof, rsync, smartmontools, diffutils, python, python-gobject, gtk4, `libadwaita>=1:1.5`, pango, gdk-pixbuf2, hicolor-icon-theme, libnotify | each is called or imported by the code (checked with `grep` of every tool name, see 01, and with `namcap`) |
+| `depends` | bash, util-linux, udisks2, glib2, polkit, lsof, rsync, smartmontools, diffutils, python, python-gobject, python-cairo, gtk4, `libadwaita>=1:1.5`, pango, gdk-pixbuf2, hicolor-icon-theme, libnotify | each is called or imported by the code (checked with `grep` of every tool name, see 01, and with `namcap`) |
 | `optdepends` | ddrescue, testdisk, dolphin, big-mount | images; lost partitions and PhotoRec; the right-click actions; mounting at boot |
 | `provides` / `conflicts` / `replaces` | none | it is a new package beside big-mount, not a replacement |
 | `backup` | none | no file in `/etc` |

@@ -209,7 +209,7 @@ pacman installs these with the package:
 | `rsync` | every copy of files |
 | `smartmontools` | the health of a drive (`smartctl`) |
 | `diffutils` | keeping the map of a disk image safe (`cmp`) |
-| `python`, `python-gobject`, `gtk4`, `libadwaita` ≥ 1.5, `pango`, `gdk-pixbuf2`, `hicolor-icon-theme` | the application and its dialogs |
+| `python`, `python-gobject`, `python-cairo`, `gtk4`, `libadwaita` ≥ 1.5, `pango`, `gdk-pixbuf2`, `hicolor-icon-theme` | the application and its dialogs |
 | `libnotify` | notifications (`notify-send`) |
 
 Optional, used when present:

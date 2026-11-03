@@ -16,9 +16,10 @@ from .common import _, human_size
 
 COLUMNS = 64
 GAP = 1
-# At most this many pixels a cell: the height is known as soon as the map is,
-# and the cells only get smaller in a narrow window
+# At most this many pixels a cell; in a narrow window the grid takes fewer
+# columns before a cell gets smaller than CELL_MIN, so its cross or dot stays
 CELL_MAX = 10
+CELL_MIN = 6
 # Read, could not be read, to be retried, not read yet: the libadwaita palette,
 # light and dark
 PALETTE = {
@@ -32,9 +33,11 @@ class DamageMap(Gtk.Box):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.cells = ""
         self.read = ""
+        self.width = 0
         self.area = Gtk.DrawingArea(hexpand=True, accessible_role=Gtk.AccessibleRole.IMG)
         self.area.set_content_height(80)
         self.area.set_draw_func(self._draw)
+        self.area.connect("resize", self._on_resize)
         self.append(self.area)
         self.summary = w.label("", css=("caption",))
         self.append(self.summary)
@@ -75,11 +78,25 @@ class DamageMap(Gtk.Box):
             "left": human_size(amounts["/"] + amounts["?"])}
         self.summary.set_text(text)
         self.area.update_property([Gtk.AccessibleProperty.LABEL], [_("Map of the disk") + ". " + text])
-        self.area.set_content_height(math.ceil(len(self.cells) / COLUMNS) * (CELL_MAX + GAP))
+        self._fit_height()
         self.area.queue_draw()
 
-    def _cell(self, width):
-        return max(2.0, min(CELL_MAX, (width - GAP * (COLUMNS - 1)) / COLUMNS))
+    def _on_resize(self, _area, width, _height):
+        if width != self.width:
+            self.width = width
+            self._fit_height()
+
+    def _fit_height(self):
+        """The height follows the grid: before the first allocation, as wide as it can be."""
+        columns, size = self._grid(self.width) if self.width else (COLUMNS, CELL_MAX)
+        height = math.ceil(len(self.cells) / columns) * (size + GAP) if self.cells else 80
+        if self.area.get_content_height() != math.ceil(height):
+            self.area.set_content_height(math.ceil(height))
+
+    def _grid(self, width):
+        """Columns and cell size for WIDTH pixels."""
+        columns = max(1, min(COLUMNS, int((width + GAP) // (CELL_MIN + GAP))))
+        return columns, max(2.0, min(CELL_MAX, (width - GAP * (columns - 1)) / columns))
 
     def _rgba(self, cr, key):
         color = PALETTE[Adw.StyleManager.get_default().get_dark()][key]
@@ -88,10 +105,10 @@ class DamageMap(Gtk.Box):
     def _draw(self, _area, cr, width, _height):
         if not self.cells:
             return
-        size = self._cell(width)
+        columns, size = self._grid(width)
         for i, status in enumerate(self.cells):
-            x = (i % COLUMNS) * (size + GAP)
-            y = (i // COLUMNS) * (size + GAP)
+            x = (i % columns) * (size + GAP)
+            y = (i // columns) * (size + GAP)
             self._paint(cr, x, y, size, status, self.read[i] if i < len(self.read) else "0")
 
     def _paint(self, cr, x, y, size, status, read):
@@ -103,18 +120,18 @@ class DamageMap(Gtk.Box):
             cr.rectangle(x, y, size, size)
             cr.fill()
             return
-        # Read in part: filled from the bottom, as much as was read
-        tenths = "0123456789A".find(read)
-        if tenths > 0:
+        # Read in part: filled from the bottom, as much as was read; the rest
+        # takes the colour of what it is
+        part = size * max(0, "0123456789A".find(read)) / 10
+        if part:
             self._rgba(cr, "+")
-            part = size * tenths / 10
             cr.rectangle(x, y + size - part, size, part)
             cr.fill()
         if status in ("-", "/"):
             self._rgba(cr, status)
-            cr.rectangle(x, y, size, size)
+            cr.rectangle(x, y, size, size - part)
             cr.fill()
-            if size >= 6:
+            if size >= CELL_MIN:
                 self._rgba(cr, "mark")
                 cr.set_line_width(max(1.0, size / 8))
                 if status == "-":
