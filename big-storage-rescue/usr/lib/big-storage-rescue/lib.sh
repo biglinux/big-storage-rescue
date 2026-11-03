@@ -875,9 +875,8 @@ _bsr_path_disks() {
          # //host/share or host:/path; a share of this computer can be on any of its disks
          if [[ $src == //* ]]; then host="${src#//}"; host="${host%%/*}"; else host="${src%%:/*}"; fi
          host="${host#[}"; host="${host%]}"
-         { read -r m < /proc/sys/kernel/hostname; } 2>/dev/null
-         case "${host,,}" in localhost | localhost.* | 127.* | ::1 | 0.0.0.0 | "${m,,}" | "") return 1 ;; esac
-         return 0
+         bsr_share_is_remote "$host"
+         return
          ;;
    esac
    [[ $src == /dev/* ]] || return 1
@@ -892,6 +891,42 @@ _bsr_path_disks() {
       done
    fi
    return 0
+}
+
+# bsr_share_is_remote HOST: a share is served by another computer. Every
+# address the name has is compared with the addresses of this one (a share
+# through 192.168.1.10 can be served from here); a name that does not
+# resolve, or addresses that cannot be read, count as this computer
+BSR_SHARE_HOST_PY='
+import ipaddress, socket, sys
+mine, a = set(), None
+try:
+    for line in open("/proc/net/fib_trie"):
+        f = line.split()
+        if f[:1] == ["|--"]: a = f[1]
+        elif "/32 host LOCAL" in line and a: mine.add(ipaddress.ip_address(a))
+except (OSError, ValueError):
+    sys.exit(1)
+try:
+    for line in open("/proc/net/if_inet6"):
+        h = line.split()[0]
+        mine.add(ipaddress.ip_address(":".join(h[i:i + 4] for i in range(0, 32, 4))))
+except (OSError, ValueError):
+    pass
+try:
+    found = {ipaddress.ip_address(i[4][0].split("%")[0]) for i in socket.getaddrinfo(sys.argv[1], None)}
+except (OSError, ValueError, UnicodeError):
+    sys.exit(1)
+def here(x):
+    return x.is_loopback or x.is_unspecified or x in mine or (x.version == 6 and x.ipv4_mapped in mine)
+sys.exit(0 if found and not any(here(x) for x in found) else 1)
+'
+bsr_share_is_remote() {
+   local mine
+   [ -n "$1" ] || return 1
+   { read -r mine < /proc/sys/kernel/hostname; } 2>/dev/null
+   [ "${1,,}" != "${mine,,}" ] || return 1
+   timeout 10 python3 -I -c "$BSR_SHARE_HOST_PY" "$1" 2>/dev/null
 }
 
 _bsr_dev_disks() {

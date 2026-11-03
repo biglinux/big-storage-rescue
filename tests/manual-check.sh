@@ -29,7 +29,12 @@ say() { printf '\n\033[36m== %s\033[0m\n%s\n' "$1" "$2"; }
 after_boot() {
     : > "$OUT"
     local units ok=yes
-    units="$(systemctl list-unit-files --no-legend 'big-storage-rescue*' 2>/dev/null)"
+    # Every unit, then a filter: with a pattern that matches nothing, systemctl fails too
+    if units="$(systemctl list-unit-files --no-legend 2>&1)"; then
+        units="$(grep '^big-storage-rescue' <<< "$units")"
+    else
+        units="systemctl failed: $units"
+    fi
     [ -z "$units" ] || ok=NO
     say "Boot units of this package (must be none)" "${units:-none}"
     printf '%-4s %s\n' "$ok" "big-storage-rescue has no boot unit" >> "$OUT"

@@ -122,6 +122,27 @@ chmod 644 "$OLD/20261102-090000-aa11/events.log"
 check "  ... brought over on the next start" grep -qx 'KIND=copy' "$NEW/20261102-090000-aa11/job.conf"
 check "  ... and done for good then" test -e "$XDG_STATE_HOME/big-storage-rescue/migrated-from-big-mount"
 
+begin "an unreadable job.conf is tried again, and so is a job found later"
+rm -rf "$XDG_STATE_HOME/big-storage-rescue"
+old_job 20261102-100000-bb22 copy completed
+chmod 000 "$OLD/20261102-100000-bb22/job.conf"
+"$B" --migrate-state > "$WORK/run4"; rc=$?
+check "exit 1, and said why" bash -c '[ "$1" = 1 ] && grep -q "20261102-100000-bb22" "$2" && grep -q "job.conf cannot be read" "$3"' _ "$rc" "$WORK/run4" "$XDG_STATE_HOME/big-storage-rescue/migration.log"
+check "  ... not done for good: no mark" test ! -e "$XDG_STATE_HOME/big-storage-rescue/migrated-from-big-mount"
+chmod 644 "$OLD/20261102-100000-bb22/job.conf"
+"$B" --cli jobs --json > /dev/null
+check "  ... brought over on the next start" test -e "$NEW/20261102-100000-bb22/job.conf"
+check "  ... and done for good then" test -e "$XDG_STATE_HOME/big-storage-rescue/migrated-from-big-mount"
+old_job 20261102-110000-cc33 copy completed
+chmod 000 "$OLD/20261102-110000-cc33/events.log"
+"$B" --migrate-state > /dev/null
+check "a job found later that fails to copy: the mark goes, so the next starts try again" test ! -e "$XDG_STATE_HOME/big-storage-rescue/migrated-from-big-mount"
+chmod 644 "$OLD/20261102-110000-cc33/events.log"
+"$B" --cli jobs --dry-run > /dev/null 2>&1
+check "a --dry-run brings nothing over" test ! -e "$NEW/20261102-110000-cc33"
+"$B" --cli jobs --json > /dev/null
+check "  ... the next start does" test -e "$NEW/20261102-110000-cc33/job.conf"
+
 begin "the lock of the migration is let go"
 rm -f "$XDG_STATE_HOME/big-storage-rescue/migrated-from-big-mount"
 out="$(BSR_LIB_DIR="$REPO/big-storage-rescue/usr/lib/big-storage-rescue"

@@ -49,6 +49,10 @@ from its filesystem, whatever it is:
 - a Btrfs: every device it spans, not only the one `findmnt` names;
 - a loop device: on to the disks of the file behind it;
 - memory (tmpfs) or a share of another computer (NFS, SMB): no disk here.
+  Every address of the share's name is compared with the addresses of this
+  computer (`/proc/net/fib_trie`, `/proc/net/if_inet6`), so a share mounted
+  through one of its own addresses is not taken for another computer's; a
+  name that does not resolve is refused.
 
 A folder whose disk cannot be told is refused: an overlay, FUSE without a
 device, a share served by this computer. The helper checks before opening the

@@ -1005,7 +1005,12 @@ pd() { # FINDMNT_LINE: "rc disks..." for a folder there
 }
 check "LVM over two disks: both" eq "$(pd 'SOURCE="/dev/mapper/vg-lv" FSTYPE="ext4"')" "0 /dev/sdy /dev/sdx"
 check "memory: no disk" eq "$(pd 'SOURCE="tmpfs" FSTYPE="tmpfs"')" "0 "
-check "a share of another computer: no disk here" eq "$(pd 'SOURCE="nas:/vol/fotos" FSTYPE="nfs4"')" "0 "
+check "a share of another computer: no disk here" eq "$(pd 'SOURCE="192.0.2.10:/vol/fotos" FSTYPE="nfs4"')" "0 "
+check "  ... a name that does not resolve: it cannot be told" eq "$(pd 'SOURCE="//nas.invalid/fotos" FSTYPE="cifs"')" "1 "
+myip="$(awk '/\|--/ {a=$2} /32 host LOCAL/ && a !~ /^127\./ {print a; exit}' /proc/net/fib_trie 2>/dev/null)"
+if [ -n "$myip" ]; then
+    check "  ... through an address of this computer ($myip): it cannot be told" eq "$(pd "SOURCE=\"//$myip/fotos\" FSTYPE=\"cifs\"")" "1 "
+fi
 check "  ... of this computer: it cannot be told" eq "$(pd 'SOURCE="//localhost/fotos" FSTYPE="cifs"')" "1 "
 check "  ... by its address too" eq "$(pd 'SOURCE="127.0.0.1:/srv" FSTYPE="nfs"')" "1 "
 check "FUSE without a device: it cannot be told" eq "$(pd 'SOURCE="remote:" FSTYPE="fuse.rclone"')" "1 "

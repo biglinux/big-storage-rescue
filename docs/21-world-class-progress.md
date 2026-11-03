@@ -97,6 +97,19 @@ Each finding was checked against the code first. Fixed:
   - the README on manifests, pausing searches, root's lifetime,
     `--allow-rw-source` and SSH.
 
+Its review on ruscher PR #3 found six more, all fixed:
+- a share mounted through one of this computer's own addresses (not only
+  `localhost`) was taken for another computer's; every address of the name
+  is now compared with this computer's, and a name that does not resolve is
+  refused;
+- a job whose `job.conf` cannot be read is tried again, not dropped as
+  invalid;
+- when `--migrate-state` finds a job that must be tried again after the
+  migration was marked done, the mark goes;
+- no automatic migration on a `--dry-run`;
+- the README example makes a manifest for the salvage job too (its own ID);
+- `manual-check.sh` no longer passes when `systemctl` fails.
+
 Validated: every suite (docs/15), and `tests/drive-integration.sh image
 protect` as root on loop devices, the first real run of the helper's image
 path: 36 passed, among them a folder on a loop device over a file of the disk

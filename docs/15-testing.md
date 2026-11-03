@@ -89,9 +89,9 @@ The fixes of the CodeRabbit review of biglinux PR #1 (docs/21).
 
 | Suite | Before (`60a30c8`) | After |
 | --- | --- | --- |
-| lib-tests | 267 | **276 passed** (which disks hold a folder; the erase check really looks) |
+| lib-tests | 267 | **278 passed** (which disks hold a folder, shares through this computer's addresses; the erase check really looks) |
 | drive-tests | 386 | **393 passed** (the engine's own block check, image refusals, the helper) |
-| migrate-tests | 41 | **46 passed** (a failed job is tried again; the lock is let go) |
+| migrate-tests | 41 | **53 passed** (a failed or unreadable job is tried again; the lock is let go; no migration on a dry run) |
 | i18n-tests | 37 | **37 passed** |
 | package-check | 108 | **112 passed** (`bsr-image-helper`; no two polkit actions share a program) |
 | gui-tests | 174 | **174 passed** |

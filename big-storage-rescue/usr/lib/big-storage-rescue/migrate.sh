@@ -84,6 +84,10 @@ bsr_migrate_job() {
    new="$MG_NEW_JOBS/$id" tmp="$MG_NEW_JOBS/.migrating-$id"
    MG_WHY=""
    if [ -e "$new" ]; then MG_RESULT=exists; return 0; fi
+   # Unreadable now (its permissions), maybe not later: tried again
+   if [ -f "$old/job.conf" ] && [ ! -L "$old/job.conf" ] && [ ! -r "$old/job.conf" ]; then
+      MG_RESULT=failed MG_WHY=$"job.conf cannot be read"; return 0
+   fi
    if ! bsr_migrate_job_valid "$old"; then MG_RESULT=invalid MG_WHY="$REPLY"; return 0; fi
    if bsr_migrate_job_active "$old"; then MG_RESULT=active; return 0; fi
    if [ "$dry" = 1 ]; then MG_RESULT=moved; return 0; fi
@@ -168,6 +172,9 @@ bsr_migrate_run() {
    # or one that failed to copy is tried again
    if [ "$dry" = 0 ] && [ "$n_active" -eq 0 ] && [ "$n_retry" -eq 0 ] && [ ! -e "$MG_DONE" ]; then
       { printf '# %s\n' "$(date -Is)"; [ "${#lines[@]}" -gt 0 ] && printf '%s\n' "${lines[@]}"; } > "$MG_DONE"
+   elif [ "$dry" = 0 ] && [ $((n_active + n_retry)) -gt 0 ]; then
+      # Found by --migrate-state after the mark was written: the next starts try again
+      rm -f -- "$MG_DONE"
    fi
    MG_LINES=("${lines[@]}") MG_MOVED="$n_moved"
    [ "$dry" = 0 ] && exec {MG_LOCK_FD}>&-

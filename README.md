@@ -508,12 +508,14 @@ big-storage-rescue --cli copy --source /run/media/me/OLD/Photos \
                               --destination /run/media/me/BACKUP --no-wait
 big-storage-rescue --cli status ID --watch
 
-# 4. Save what can be read of the files the copy left out
+# 4. Save what can be read of the files the copy left out: a job of its own,
+#    with its own ID (SALVAGE_ID)
 big-storage-rescue --cli salvage ID --dry-run
 big-storage-rescue --cli salvage ID
 
-# 5. Record what was rescued, and check it later
+# 5. Record what was rescued, one manifest per job, and check it later
 big-storage-rescue --cli manifest ID
+big-storage-rescue --cli manifest SALVAGE_ID
 cd /run/media/me/BACKUP && sha256sum -c ~/.local/state/big-storage-rescue/jobs/ID/manifest.sha256
 ```
 
