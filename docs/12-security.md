@@ -9,7 +9,7 @@ run as root. What needs more goes through:
 | --- | --- | --- |
 | UDisks2 (D-Bus, `udisksctl`, `gdbus`) | polkit, UDisks2's own actions | mount, unmount, unlock, lock, power off |
 | `pkexec /usr/lib/big-storage-rescue/bsr-holders MOUNTPOINT` | `org.biglinux.big-storage-rescue.inspect-processes` (`auth_admin_keep`) | `lsof` of every user, one mount point of a local block device, never the running system |
-| `pkexec /usr/lib/big-storage-rescue/bsr-drive-helper VERB DEV …` | `org.biglinux.big-storage-rescue.drive-helper` (`auth_admin_keep`) | `protect`/`unprotect` (blockdev), `smart`, `partitions` (TestDisk, read-only commands), `image` (ddrescue) |
+| `pkexec /usr/lib/big-storage-rescue/bsr-drive-helper VERB DEV …` | `org.biglinux.big-storage-rescue.drive-helper` (`auth_admin_keep`) | `protect`/`unprotect` (blockdev), `smart` (`smartctl -H -A -i -l selftest`: reads, never starts a test), `partitions` (TestDisk, read-only commands), `image` (ddrescue) |
 
 No daemon, no setuid file, no systemd unit, nothing permanent. Both helpers
 get a clean environment from pkexec and treat every argument as untrusted:
@@ -64,6 +64,7 @@ reports. Nothing tries to get around encryption.
 ## Files
 
 Job folders are mode 700, temporary files are created with `mktemp` in the
-private runtime folder, reports anonymize serial numbers, UUIDs, labels, the
+private runtime folder (also the kept history of earlier starts of each
+internal drive, 18-system-and-history-checks.md), reports anonymize serial numbers, UUIDs, labels, the
 home folder and the user name on request (`--anonymize`), and an existing
 report is replaced only with `--replace`, after the new one is complete.

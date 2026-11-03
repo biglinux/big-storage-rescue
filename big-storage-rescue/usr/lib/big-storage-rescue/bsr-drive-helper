@@ -9,7 +9,7 @@
 #
 #   protect DEV     block writing on a device and everything it sits on
 #   unprotect DEV   allow writing again
-#   smart DEV       print `smartctl -H -A -i` (read-only, never starts a test)
+#   smart DEV       print `smartctl -H -A -i -l selftest` (read-only, never starts a test)
 #   partitions DEV STOPFILE [search i386|gpt]
 #                   print what `testdisk /list` finds, or what its analysis of
 #                   the disk finds, until STOPFILE appears. Fixed commands:
@@ -90,10 +90,10 @@ case "$verb" in
       command -v smartctl >/dev/null || exit 25
       # Whole disks only, whatever partition was named
       [ "${#disks[@]}" -eq 1 ] || die "not a single drive"
-      out="$(timeout 180 smartctl -H -A -i -- "${disks[0]}" 2>&1)"
+      out="$(timeout 180 smartctl -H -A -i -l selftest -- "${disks[0]}" 2>&1)"
       if [[ $out != *"SMART"*"Attributes"* && $out != *"SMART/Health Information"* ]]; then
          # USB bridges usually need the SAT pass-through named
-         out="$(timeout 180 smartctl -d sat -H -A -i -- "${disks[0]}" 2>&1)"
+         out="$(timeout 180 smartctl -d sat -H -A -i -l selftest -- "${disks[0]}" 2>&1)"
       fi
       printf '%s\n' "$out"
       [[ $out == *"overall-health"* || $out == *"SMART Health Status"* || $out == *"SMART/Health Information"* ]]

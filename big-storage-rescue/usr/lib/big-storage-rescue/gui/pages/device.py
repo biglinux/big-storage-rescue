@@ -179,6 +179,17 @@ class HealthView(Gtk.Box):
                 notes.add_row(w.row(note.get("text", ""), icon_name="dialog-information-symbolic"))
             self.append(notes)
 
+        system = (self.diag or {}).get("system") or []
+        if system:
+            # Only the drive the computer started from is asked about its free
+            # space; os-prober leftovers can be on any drive
+            desc = _("Checked only on the drive the computer started from.") if self.diag.get("holds_system") else ""
+            group = w.Group(_("The running system"), desc)
+            for item in system:
+                icon = "dialog-error-symbolic" if item.get("level") == "critical" else "dialog-warning-symbolic"
+                group.add_row(w.row(item.get("text", ""), item.get("help", ""), icon_name=icon))
+            self.append(group)
+
         if self.diag and self.diag.get("advice"):
             advice = w.Group(_("What to do"))
             for text in self.diag["advice"]:
@@ -291,6 +302,15 @@ class HealthView(Gtk.Box):
                       ngettext("%d recent message about this drive", "%d recent messages about this drive", len(lines)) % len(lines), activatable=True)
             r.add_suffix(w.icon("go-next-symbolic"))
             r.connect("activated", lambda *_a: w.TextDialog(_("Messages from the system log"), "\n".join(lines)).present(self.window))
+            group.add_row(r)
+        earlier = (self.diag or {}).get("kernel_earlier") or []
+        if earlier:
+            r = w.row(_("Messages from earlier starts"),
+                      ngettext("%d error message about this drive before this start of the computer",
+                               "%d error messages about this drive before this start of the computer", len(earlier)) % len(earlier),
+                      activatable=True)
+            r.add_suffix(w.icon("go-next-symbolic"))
+            r.connect("activated", lambda *_a: w.TextDialog(_("Messages from earlier starts"), "\n".join(earlier)).present(self.window))
             group.add_row(r)
         tech = w.row(_("Technical details"), activatable=True)
         tech.add_suffix(w.icon("go-next-symbolic"))

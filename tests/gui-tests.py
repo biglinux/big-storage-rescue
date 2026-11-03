@@ -720,6 +720,25 @@ class Health(Base):
         self.assertIsNone(health.diag)
         self.assertNotIn("Advice for the Seagate", text(self.win))
 
+    def test_the_running_system_and_earlier_starts_when_the_engine_finds_them(self):
+        fix("diagnose", {"device": seagate(), "advice": [], "kernel": [], "volumes": [], "tools": {"smartctl": True},
+                         "kernel_earlier": ["nov 01 10:20:00 pc kernel: ata1.00: error: { UNC }"], "holds_system": True,
+                         "system": [{"key": "space-full", "level": "critical", "text": "The system is out of space on /: only 1 GB free of 100 GB.",
+                                     "help": "Free space: empty the trash."}]})
+        self.open()
+        self.see("The running system")
+        self.see("Checked only on the drive the computer started from.")
+        self.see("The system is out of space on /")
+        self.see("Free space: empty the trash.")
+        self.see("Messages from earlier starts")
+
+    def test_nothing_about_the_running_system_when_nothing_was_found(self):
+        self.open()
+        self.assertTrue(pump(lambda: self.win.device_page.health.diag is not None, 3))
+        pump(timeout=0.2)
+        self.assertNotIn("The running system", text(self.win))
+        self.assertNotIn("Messages from earlier starts", text(self.win))
+
     def test_missing_smartctl_is_explained(self):
         fix("diagnose", {"device": seagate(), "advice": [], "kernel": [], "volumes": [], "tools": {"smartctl": False}})
         self.open()

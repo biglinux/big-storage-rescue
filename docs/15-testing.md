@@ -4,7 +4,7 @@
 
 | Suite | What | Needs | In CI |
 | --- | --- | --- | --- |
-| `tests/lib-tests.sh` | read-only causes, process policy, unmount decisions, escaping, drive health, `--version`/`--doctor`, absence of Secure Erase | bash | yes |
+| `tests/lib-tests.sh` | read-only causes, process policy, unmount decisions, escaping, drive health, earlier starts and filesystem counters, the running system, `--version`/`--doctor`, absence of Secure Erase | bash | yes |
 | `tests/drive-tests.sh` | drive manager with fixtures (NVMe, LUKS, LVM, Btrfs, SD, eMMC, loop), JSON, refusals, exit codes, real scan and copy jobs on scratch files, forbidden commands | bash, rsync | yes |
 | `tests/migrate-tests.sh` | state of Big-Mount 2.x, including a real paused copy resumed here | bash, rsync, /dev/shm | yes |
 | `tests/i18n-tests.sh` | catalog complete and current, placeholders, generated files, language at run time | gettext | yes |
@@ -54,3 +54,18 @@ only.
 
 One run of `measure-app.py` each and the best of six runs of each command:
 the differences are within noise. The split did not make it slower.
+
+## After the checks of 18-system-and-history-checks.md (same day)
+
+| Suite | Before | After |
+| --- | --- | --- |
+| lib-tests | 228 | **267 passed** (39 new) |
+| drive-tests | 299 | **312 passed** (13 new) |
+| migrate-tests | 41 | **41 passed** |
+| i18n-tests | 37 | **37 passed** (26 new messages translated) |
+| package-check | 100 | **102 passed** (the new `system-check.sh`: installed with its mode, and its syntax) |
+| gui-tests | 163 | **165 passed** (2 new) |
+| gui-e2e | 7 | **7 passed** |
+| ShellCheck (CI set), `bash -n`, ruff | clean | clean |
+
+`--cli list --json` (6 drives, warm cache): about 345 ms before, 358 ms after.

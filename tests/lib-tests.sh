@@ -792,6 +792,193 @@ check "report: home and media folders anonymized, URLs kept" eq "$REPLY" "~/x /r
 HOME="$ORIG_HOME"
 bsr_cmd_doctor --fix >/dev/null 2>&1; rc=$?
 check "--doctor takes no option (it never changes anything)" eq "$rc" 2
+pacman() {
+    case "$1" in
+        -Q) [ "${2:-}" = big-storage-rescue ] ;;
+        -Qkk) printf '%s\n' "${FAKE_QKK[@]}" ;;
+        *) return 1 ;;
+    esac
+}
+FAKE_QKK=("warning: big-storage-rescue: /usr/share/applications/org.biglinux.big-storage-rescue.desktop (Size mismatch)"
+    "big-storage-rescue: 66 total files, 1 altered file")
+out="$(bsr_dr_install 2>&1)"
+check "--doctor: the menu entry BigLinux changed (graphics card options) is expected, not a warning" \
+    bash -c '[[ $1 == *"[INFO] The menu entry was changed"* && $1 != *"differ from the package"* && $1 == *"match the package"* ]]' _ "$out"
+FAKE_QKK+=("warning: big-storage-rescue: /usr/lib/big-storage-rescue/lib.sh (SHA256 checksum mismatch)")
+out="$(bsr_dr_install 2>&1)"
+check "  ... any other changed file still is, and only it is listed" \
+    bash -c '[[ $1 == *"[WARN] Installed files differ from the package"*"lib.sh"* && $1 != *"(Size mismatch)"* ]]' _ "$out"
+unset -f pacman
+
+begin "what stays from before this start: the error counters of filesystems"
+SYSFS="$WORK/sysfs"
+mkdir -p "$SYSFS/btrfs/U1/devices" "$SYSFS/btrfs/U1/devinfo/1" "$SYSFS/btrfs/U1/devinfo/2" "$SYSFS/ext4/fake3"
+touch "$SYSFS/btrfs/U1/devices/fake1" "$SYSFS/btrfs/U1/devices/fake2"
+printf 'write_errs 0\nread_errs 2\nflush_errs 0\ncorruption_errs 1\ngeneration_errs 0\n' > "$SYSFS/btrfs/U1/devinfo/1/error_stats"
+printf 'write_errs 0\nread_errs 1\nflush_errs 0\ncorruption_errs 0\ngeneration_errs 0\n' > "$SYSFS/btrfs/U1/devinfo/2/error_stats"
+echo 4 > "$SYSFS/ext4/fake3/errors_count"
+BSR_SYS_FS="$SYSFS"
+bsr_fs_errors /dev/fake1
+check "Btrfs: the counters of every device of the filesystem, by kind" eq "$FE_TOTAL|$FE_KINDS" "4|read 3, corruption 1"
+bsr_fs_errors /dev/fake3
+check "ext4: its error count" eq "$FE_TOTAL|$FE_KINDS" "4|ext4 4"
+bsr_fs_errors /dev/fake9; rc=$?
+check "not a mounted Btrfs or ext4: nothing to read" eq "$rc" 1
+bsr_drive_members() { DRIVE_DEVS=(/dev/fakedisk /dev/fake1 /dev/fake2 /dev/fake3 /dev/fake9); }
+bsr_drive_fs_errors /dev/fakedisk
+check "a drive: each filesystem once, even with two of its devices on it" eq "$FSE_TOTAL|${FSE_LIST[*]}" "8|/dev/fake1: read 3, corruption 1 /dev/fake3: ext4 4"
+printf 'read_errs 0\n' | tee "$SYSFS/btrfs/U1/devinfo/1/error_stats" > "$SYSFS/btrfs/U1/devinfo/2/error_stats"
+echo 0 > "$SYSFS/ext4/fake3/errors_count"
+bsr_drive_fs_errors /dev/fakedisk
+check "  ... no error: nothing to say" eq "$FSE_TOTAL|${#FSE_LIST[@]}" "0|0"
+
+begin "what stays from before this start: earlier starts of an internal drive"
+CUR="$(tr -d - < /proc/sys/kernel/random/boot_id)"
+NOW_US=$(( $(date +%s) * 1000000 )) OLD_US=$(( ($(date +%s) - 40 * 86400) * 1000000 ))
+BA=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa BB=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb BC=cccccccccccccccccccccccccccccccc BD=dddddddddddddddddddddddddddddddd
+FAKE_BOOTS_JSON="[{\"index\":-4,\"boot_id\":\"$BD\",\"first_entry\":1,\"last_entry\":$OLD_US},{\"index\":-3,\"boot_id\":\"$BC\",\"first_entry\":1,\"last_entry\":$NOW_US},{\"index\":-2,\"boot_id\":\"$BB\",\"first_entry\":1,\"last_entry\":$NOW_US},{\"index\":-1,\"boot_id\":\"$BA\",\"first_entry\":1,\"last_entry\":$NOW_US},{\"index\":0,\"boot_id\":\"$CUR\",\"first_entry\":1,\"last_entry\":$NOW_US}]"
+ID_ST="nov 01 10:05:31 pc kernel: ata1.00: ATA-9: ST1000DM003-1CH162, CC47, max UDMA/133"
+declare -A FAKE_BOOT_LOG=(
+    [0]="$ID_ST"
+    [$BA]="$ID_ST"$'\n'"nov 01 10:20:00 pc kernel: ata1.00: failed command: READ FPDMA QUEUED"$'\n'"nov 01 10:20:00 pc kernel: ata1.00: error: { UNC }"$'\n'"nov 01 10:20:01 pc kernel: ata1: SATA link up 6.0 Gbps (SStatus 133 SControl 300)"
+    [$BB]="out 30 08:00:00 pc kernel: ata1.00: ATA-9: WDC WD10EZEX-08WN4A0, 01.01A01, max UDMA/133"$'\n'"out 30 08:10:00 pc kernel: ata1.00: error: { UNC }"
+    [$BC]="$ID_ST"$'\n'"out 29 09:00:00 pc kernel: ata1: SATA link up 6.0 Gbps (SStatus 133 SControl 300)"
+    [$BD]="$ID_ST"$'\n'"set 20 09:00:00 pc kernel: ata1.00: error: { UNC }"
+)
+journalctl() {
+    local a prev="" b=""
+    if [[ " $* " == *" --list-boots "* ]]; then printf '%s\n' "$FAKE_BOOTS_JSON"; return 0; fi
+    for a in "$@"; do [ "$prev" = -b ] && b="$a"; prev="$a"; done
+    printf '%s\n' "$b" >> "$WORK/journal-calls"
+    [ -n "${FAKE_BOOT_LOG[$b]:-}" ] && printf '%s\n' "${FAKE_BOOT_LOG[$b]}"
+}
+bsr_drive_port() { REPLY=ata1; }
+bsr_diskseq() { REPLY="${FAKE_SEQ:-7}"; }
+mkdir -m 700 "$WORK/rt"
+export XDG_RUNTIME_DIR_SAVED="${XDG_RUNTIME_DIR:-}"
+XDG_RUNTIME_DIR="$WORK/rt"
+: > "$WORK/journal-calls"
+bsr_drive_past /dev/sda
+check "two earlier starts found this drive on its port, one of them with a read error" \
+    eq "$DHI_BOOTS|$DHI_BAD|$DHI_COUNT|$DHI_IO|$DHI_LINK|$DHI_PAST" "2|1|2|1|0|1"
+check "  ... the start that found another drive on the port does not count" bash -c '! printf "%s\n" "$@" | grep -q WDC' _ "${DHI_LINES[@]}"
+check "  ... a start older than 30 days is not read" bash -c '! grep -qx "$1" "$2"' _ "$BD" "$WORK/journal-calls"
+check "  ... nor is this start read as an earlier one" bash -c '! grep -qx "$1" "$2"' _ "$CUR" "$WORK/journal-calls"
+check "  ... the messages are kept with their date" bash -c '[[ $1 == "nov 01 10:20:00 "*"{ UNC }" ]]' _ "${DHI_LINES[-1]}"
+journalctl() { echo called >> "$WORK/journal-calls2"; return 1; }
+bsr_drive_past /dev/sda
+check "earlier starts do not change: read once per start" eq "$DHI_BOOTS|$DHI_BAD|$DHI_COUNT|$DHI_PAST|${#DHI_LINES[@]}" "2|1|2|1|2"
+check "  ... without asking the journal again" test ! -e "$WORK/journal-calls2"
+FAKE_SEQ=8 bsr_drive_past /dev/sda; rc=$?
+check "  ... another drive put on that port is read on its own" eq "$DHI_BOOTS|$DHI_PAST" "0|0"
+bsr_drive_port() { REPLY=1-9.1; }
+bsr_drive_history /dev/sdb; rc=$?
+check "a USB drive: only this start counts (names are reused)" eq "$rc|$DHI_BOOTS" "1|0"
+bsr_drive_port() { REPLY=ata1; }
+FAKE_BOOT_LOG[$BA]="$ID_ST"$'\n'"nov 01 10:20:00 pc kernel: ata1.00: error: { ICRC ABRT }"$'\n'"nov 01 10:20:00 pc kernel: ata1.00: error: { ICRC ABRT }"$'\n'"nov 01 10:20:02 pc kernel: ata1: limiting SATA link speed to 3.0 Gbps"
+FAKE_BOOT_LOG[$BB]=""
+journalctl() {
+    local a prev="" b=""
+    if [[ " $* " == *" --list-boots "* ]]; then printf '%s\n' "$FAKE_BOOTS_JSON"; return 0; fi
+    for a in "$@"; do [ "$prev" = -b ] && b="$a"; prev="$a"; done
+    [ -n "${FAKE_BOOT_LOG[$b]:-}" ] && printf '%s\n' "${FAKE_BOOT_LOG[$b]}"
+}
+FAKE_SEQ=9 bsr_drive_past /dev/sda
+check "errors of the cable: counted as connection errors" eq "$DHI_BAD|$DHI_COUNT|$DHI_IO|$DHI_LINK|$DHI_PAST" "1|3|0|3|1"
+FSE_TOTAL=0 FSE_LIST=()
+bsr_doc_new; bsr_drive_doc_past; bsr_doc_render_text
+check "  ... and the advice is the cable" bash -c '[[ $1 == *"1 of the last 2 starts"*"check the data cable"* ]]' _ "$REPLY"
+FAKE_BOOT_LOG[$BA]="$ID_ST"$'\n'"nov 01 10:20:00 pc kernel: ata1.00: failed command: FLUSH CACHE EXT"
+FAKE_SEQ=10 bsr_drive_past /dev/sda
+check "one stray message in a few starts: not a problem" eq "$DHI_COUNT|$DHI_PAST" "1|0"
+BKMSG=("nov 01 10:05:31 pc kernel: nvme nvme0: pci function 0000:09:00.0" "nov 01 10:05:31 pc kernel: nvme nvme10: pci function 0000:0a:00.0")
+bsr_drive_ident nvme0 "$BA"
+check "an NVMe controller is known by its PCI function (nvme10 is another one)" eq "$REPLY" "0000:09:00.0"
+XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR_SAVED"
+unset -f journalctl bsr_drive_port bsr_diskseq bsr_drive_members
+BSR_SYS_FS=/sys/fs
+
+begin "the running system: asked only of the drives it runs from"
+bsr_load system-check.sh
+G=1073741824
+FAKE_MNT=()
+# FAKE_MNT: "TARGET SOURCE FSTYPE SIZE AVAIL"; the mount table has no sizes,
+# statfs gives them for the mounts it is asked about
+findmnt() { local m; for m in "${FAKE_MNT[@]}"; do printf '%s\n' "${m% * *}"; done; }
+bsr_sc_statfs() {
+    local t m f
+    for t in "$@"; do
+        for m in "${FAKE_MNT[@]}"; do
+            read -r -a f <<< "$m"
+            [ "${f[0]}" = "$t" ] && printf '1 %s %s %s\n' "${f[3]}" "${f[4]}" "$t"
+        done
+    done
+}
+bsr_drive_members() { DRIVE_DEVS=("${FAKE_MEMBERS[@]}"); }
+FAKE_MEMBERS=()
+FAKE_MNT=("/ /dev/fakesys2[/@] btrfs $((100 * G)) $((G * 3 / 2))" "/home /dev/fakesys2[/@home] btrfs $((100 * G)) $((G * 3 / 2))"
+    "/tmp tmpfs tmpfs $((8 * G)) $((G / 100))" "/boot/efi /dev/fakesys1 vfat 314572800 251658240"
+    "/run/media/u/Pen /dev/sdz1 vfat $((16 * G)) 1024")
+bsr_sc_run
+check "a full system: critical, once for / and /home of the same filesystem" eq "${SC_KEY[*]}|${SC_LEVEL[*]}" "space-full|critical"
+check "  ... naming where, how much is free and of what" eq "${SC_TEXT[0]}" "The system is out of space on /, /home: only 1.6 GB free of 107 GB."
+check "  ... a full USB stick or /tmp is nobody's concern here" eq "${#SC_KEY[@]}" 1
+check "  ... and it holds the system" eq "$SC_SYSTEM" 1
+FAKE_MNT=("/ /dev/fakesys2 ext4 $((50 * G)) $((20 * G))" "/home /dev/fakehome1 ext4 $((4000 * G)) $((320 * G))" "/boot /dev/fakesys1 ext4 $G $((80 * 1048576))")
+bsr_sc_run
+check "4 TB at 92 %: 320 GB free is plenty; /boot with 80 MiB is not" eq "${SC_KEY[*]}|${SC_LEVEL[*]}" "space-low|attention"
+check "  ... for /boot, the advice is old kernels" bash -c '[[ $1 == *kernels* ]]' _ "${SC_HELP[0]}"
+FAKE_MEMBERS=(/dev/sdb /dev/sdb1)
+bsr_sc_run /dev/sdb
+check "a drive that does not run the system: no question about its space" eq "${#SC_KEY[@]}|$SC_SYSTEM" "0|0"
+FAKE_MEMBERS=(/dev/fakesys /dev/fakesys1 /dev/fakesys2)
+bsr_sc_run /dev/fakesys
+check "  ... the drive that does: its /boot" eq "${SC_KEY[*]}|$SC_SYSTEM" "space-low|1"
+mkdir -p "$SYSFS/btrfs/U2/devices/fakesys2" "$SYSFS/btrfs/U2/allocation/data" "$SYSFS/btrfs/U2/allocation/metadata" "$SYSFS/btrfs/U2/allocation/system"
+echo $((100 * G / 512)) > "$SYSFS/btrfs/U2/devices/fakesys2/size"
+echo $((99 * G + G / 2)) > "$SYSFS/btrfs/U2/allocation/data/disk_total"
+echo $((G / 4)) > "$SYSFS/btrfs/U2/allocation/metadata/disk_total"
+echo $((8 * 1048576)) > "$SYSFS/btrfs/U2/allocation/system/disk_total"
+echo $((G / 8)) > "$SYSFS/btrfs/U2/allocation/metadata/total_bytes"
+echo $((G / 20)) > "$SYSFS/btrfs/U2/allocation/metadata/bytes_used"
+BSR_SYS_FS="$SYSFS"
+FAKE_MNT=("/ /dev/fakesys2[/@] btrfs $((100 * G)) $((30 * G))")
+bsr_sc_run
+check "Btrfs with every chunk given out: 'no space left' can come with free space shown" eq "${SC_KEY[*]}|${SC_LEVEL[*]}" "btrfs-unallocated|attention"
+check "  ... the advice: snapshots first, then a balance by an administrator" bash -c '[[ $1 == *snapshots*"sudo btrfs balance start -dusage=50 /" ]]' _ "${SC_HELP[0]}"
+echo $((G * 12 / 100)) > "$SYSFS/btrfs/U2/allocation/metadata/bytes_used"
+bsr_sc_run
+check "  ... with the metadata full too: critical" eq "${SC_LEVEL[*]}" critical
+echo $((90 * G)) > "$SYSFS/btrfs/U2/allocation/data/disk_total"
+bsr_sc_run
+check "  ... room left to grow: nothing to say" eq "${#SC_KEY[@]}" 0
+FAKE_MNT=("/ /dev/fakesys2 ext4 $((50 * G)) $((20 * G))" "/var/lib/os-prober/mount /dev/fakewin3 ntfs3 $((200 * G)) $((90 * G))")
+FAKE_MEMBERS=(/dev/fakewin /dev/fakewin3)
+bsr_sc_run /dev/fakewin
+check "a partition left mounted by os-prober, on whatever drive it is" eq "${SC_KEY[*]}|$SC_SYSTEM" "os-prober|0"
+check "  ... released at the next restart, or by an administrator" bash -c '[[ $1 == *"sudo umount -R /var/lib/os-prober/mount" ]]' _ "${SC_HELP[0]}"
+FAKE_MEMBERS=(/dev/sdb /dev/sdb1)
+bsr_sc_run /dev/sdb
+check "  ... not on the other drives" eq "${#SC_KEY[@]}" 0
+FAKE_MNT=("/ /dev/fakesys2 ext4 $((50 * G)) $((20 * G))")
+bsr_sc_run; bsr_doc_new; bsr_sc_doc "$SC_SYSTEM"; bsr_doc_render_text
+check "nothing found on the system: said in one sentence" bash -c '[[ $1 == *"enough free space"* ]]' _ "$REPLY"
+FAKE_MNT=("/ /dev/fakesys2 ext4 $((50 * G)) $((G / 2))" "/run/media/u/Stuck /dev/sdz1 fuseblk 1 1")
+eval "$(declare -f bsr_sc_statfs | sed '1s/bsr_sc_statfs/bsr_sc_statfs_fake/')"
+bsr_sc_statfs() { printf '%s\n' "$@" >> "$SYSFS/statfs-asked"; bsr_sc_statfs_fake "$@"; }
+bsr_sc_run
+check "statfs is asked of the system mounts only: a stuck mount elsewhere hangs nothing" eq "$(cat "$SYSFS/statfs-asked")" "/"
+# What statfs answers after its limit, for a system mount that is stuck
+bsr_sc_statfs() { :; }
+bsr_sc_run
+check "  ... a stuck system mount: nothing is invented about it, and it still holds the system" eq "${#SC_KEY[@]}|$SC_SYSTEM" "0|1"
+unset -f bsr_sc_statfs bsr_sc_statfs_fake
+. "$BSR_LIB/system-check.sh"
+check "  ... statfs has a limit of its own" bash -c '[[ $1 == *"timeout "*"stat -f"* ]]' _ "$(declare -f bsr_sc_statfs)"
+unset -f bsr_drive_members
+findmnt() { [ "$1" = --fstab ] && return $((1 - FAKE_FSTAB)); command findmnt "$@"; }
+BSR_SYS_FS=/sys/fs
+. "$BSR_LIB/lib.sh"
 
 echo ""
 echo "========================================="

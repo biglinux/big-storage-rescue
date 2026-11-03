@@ -96,6 +96,19 @@ bsr_drive_health() {
    local f; for f in "${DH_FIND[@]}"; do DH_COUNT[$f]="${FAKE_COUNT:-5}"; done
 }
 bsr_diskseq() { REPLY=7; }
+# What stays from before this start (lib-tests.sh tests the real ones)
+FAKE_HIST_BOOTS=0 FAKE_HIST_BAD=0 FAKE_HIST_COUNT=0 FAKE_HIST_IO=0 FAKE_HIST_LINK=0 FAKE_FSE=0
+bsr_drive_history() {
+   DHI_BOOTS="$FAKE_HIST_BOOTS" DHI_BAD="$FAKE_HIST_BAD" DHI_COUNT="$FAKE_HIST_COUNT" DHI_IO="$FAKE_HIST_IO" DHI_LINK="$FAKE_HIST_LINK"
+   DHI_LINES=()
+   [ "$DHI_COUNT" -gt 0 ] && DHI_LINES=("nov 01 10:20:00 pc kernel: ata1.00: error: { UNC }")
+   [ "$DHI_BOOTS" -gt 0 ]
+}
+bsr_drive_fs_errors() {
+   FSE_TOTAL="$FAKE_FSE" FSE_LIST=()
+   [ "$FSE_TOTAL" -gt 0 ] && FSE_LIST=("/dev/sda1: read $FAKE_FSE")
+   return 0
+}
 
 begin "detection: every kind of drive, one scan"
 bsr_dv_scan
@@ -163,6 +176,19 @@ check "replaced sectors on a hard disk: attention" level /dev/sda attention
 check "replaced sectors on an SSD: normal use" level /dev/sdb normal
 FAKE_BAD=0
 check "a disk image has no health" level /dev/loop1 na
+FAKE_HIST_BOOTS=4 FAKE_HIST_BAD=2 FAKE_HIST_COUNT=9 FAKE_HIST_IO=3
+check "read errors in earlier starts of the computer: attention" level /dev/sda attention
+check "  ... said as such" eq "${DS_WHY[*]}" past-errors
+bsr_ds_why_text past-errors; check "  ... in how many of the starts read" bash -c '[[ $1 == "In 2 of the last 4 starts"*"(9 kernel messages)." ]]' _ "$REPLY"
+FAKE_HIST_COUNT=5 FAKE_HIST_IO=0 FAKE_HIST_LINK=5
+bsr_ds_level /dev/sda; bsr_ds_why_text past-errors
+check "  ... errors of the connection only: the cable is named" bash -c '[[ $1 == *"check the data cable"* ]]' _ "$REPLY"
+FAKE_HIST_BAD=1 FAKE_HIST_COUNT=1 FAKE_HIST_LINK=0
+check "one stray message in earlier starts: no alert" level /dev/sda normal
+FAKE_HIST_BOOTS=0 FAKE_HIST_BAD=0 FAKE_HIST_COUNT=0 FAKE_FSE=3
+check "errors its filesystems keep across restarts: attention" level /dev/sda attention
+bsr_ds_why_text fs-errors; check "  ... naming the filesystem and the kind" bash -c '[[ $1 == *"recorded 3 errors"*"/dev/sda1: read 3"* ]]' _ "$REPLY"
+FAKE_FSE=0
 
 begin "grade: one word, and healthy only on the drive's own report"
 grade() { bsr_ds_level "$1"; eq "$DS_GRADE:${DS_NOTES[*]}" "$2"; }
@@ -216,6 +242,13 @@ check "one window, for the drive with problems only" eq "$(grep -c '^A drive nee
 check "  ... with the way to Big Storage Rescue, or to close it" grep -q '^A drive needs attention|Open Big Storage Rescue|Close$' "$WORK/window.txt"
 check "  ... naming the drive, its grade and what was found" bash -c 'grep -q "ST1000DM003-1CH162: Poor" "$1" && grep -q "USB connection was reset" "$1"' _ "$WORK/window.txt"
 check "  ... remembered once per boot and drive, not per volume" eq "$(wc -l < "$WORK/notified")" 1
+(
+   BSR_NOTIFIED="$WORK/notified2"; : > "$BSR_NOTIFIED"; BSR_SELF=/bin/true
+   bsr_ui_confirm() { echo shown >> "$WORK/window2.txt"; return 1; }
+   F=([DISK]=/dev/sdb [DISK_TYPE]=disk) FAKE_HEALTH_FIND=() FAKE_FSE=3 FAKE_HIST_BOOTS=3 FAKE_HIST_BAD=1 FAKE_HIST_COUNT=4 FAKE_HIST_IO=1
+   bsr_notifier_health /dev/sdb1; wait
+)
+check "errors from before this start only: shown in the application, not announced at every login" test ! -e "$WORK/window2.txt"
 
 begin "SMART: the field case, PASSED with 1848 unreadable sectors"
 SMF="$WORK/smart.txt"
@@ -260,6 +293,23 @@ check "NVMe: warning" eq "$SM_NVME_WARN" 0x04
 check "NVMe: media errors" eq "$SM_NVME_MEDIA" 7
 printf 'garbage\n\n' > "$SMF"; bsr_ds_smart_parse "$SMF"; check "garbage gives nothing" eq "$SM_VERDICT$SM_PENDING" ""
 bsr_ds_smart_parse "$WORK/none"; check "a missing file is not an error of anyone's" eq "$?" 1
+cat > "$SMF" <<'SM'
+SMART overall-health self-assessment test result: PASSED
+SMART Self-test log structure revision number 1
+Num  Test_Description    Status                  Remaining  LifeTime(hours)  LBA_of_first_error
+# 1  Extended offline    Completed: read failure       90%      1552         73448
+# 2  Short offline       Completed without error       00%      1500         -
+SM
+bsr_ds_smart_parse "$SMF"
+check "the last self-test found a read failure" eq "$SM_VERDICT|$SM_SELFTEST" "passed|failed"
+bsr_ds_smart_file /dev/sdb; mkdir -p "${REPLY%/*}"; cp "$SMF" "$REPLY"
+FAKE_HEALTH_FIND=() FAKE_KLOG=1
+check "  ... critical, even with the verdict PASSED" level /dev/sdb critical
+check "  ... and said" eq "${DS_WHY[*]}" selftest-failed
+rm -f "$XDG_RUNTIME_DIR/big-storage-rescue/"*
+sed -i 's/Completed: read failure      /Completed without error/' "$SMF"
+bsr_ds_smart_parse "$SMF"
+check "  ... a self-test without error: nothing" eq "$SM_SELFTEST" ""
 
 begin "the port of a USB disk, and its resets"
 (
@@ -305,6 +355,20 @@ check "booleans" eq "$(bsr_jb a 1 b 0 c "")" '"a":true,"b":false,"c":false'
 FAKE_HEALTH_FIND=() FAKE_KLOG=1 FAKE_SMART=""
 bsr_dv_list_json | json_ok; check "the whole list" eq "${PIPESTATUS[1]}" 0
 n="$(bsr_dv_list_json | python3 -I -c 'import json,sys; d=json.load(sys.stdin); print(len(d["devices"]))')"
+FAKE_HIST_BOOTS=3 FAKE_HIST_BAD=1 FAKE_HIST_COUNT=4 FAKE_HIST_IO=1 FAKE_FSE=2
+bsr_dg_json /dev/sda > "$WORK/dg.json"
+check "a diagnosis: history, filesystem errors, the running system and earlier messages, as valid JSON" \
+   python3 -I - "$WORK/dg.json" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1]))
+h = d["device"]["health"]
+assert h["history"] == {"boots": 3, "with_errors": 1, "messages": 4, "read_errors": 1, "link_errors": 0}, h["history"]
+assert h["fs_errors"] == 2
+assert {r["key"] for r in h["reasons"]} >= {"past-errors", "fs-errors"}
+assert d["system"] == [] and d["holds_system"] is False
+assert d["kernel_earlier"][0].endswith("{ UNC }")
+PY
+FAKE_HIST_BOOTS=0 FAKE_HIST_BAD=0 FAKE_HIST_COUNT=0 FAKE_HIST_IO=0 FAKE_FSE=0
 check "every drive" eq "$n" "${#DV_TOP[@]}"
 bsr_dv_list_text >/dev/null; check "the text list does not fail" eq "$?" 0
 check "a label cannot send escape sequences to the terminal" bash -c '! printf %s "$1" | grep -q $'"'"'\033'"'"'' _ "$(BSR_TUI_COLOR=0 bsr_tui_paint none $'x\033[31my')"

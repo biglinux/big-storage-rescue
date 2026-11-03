@@ -14,6 +14,7 @@
 
 bsr_load drive-detect.sh
 bsr_load drive-diag.sh
+bsr_load system-check.sh
 
 # ---------------------------------------------------------------------------
 # JSON. Device data and file names are untrusted: everything goes through bsr_js.
@@ -330,7 +331,7 @@ bsr_dg_volume_json() {
 
 # What may be offered for each volume, read by the GUI
 bsr_dg_json() {
-   local d="$1" p first=1 vols="" l first2=1 lines="" adv="" w
+   local d="$1" p first=1 vols="" l first2=1 lines="" earlier="" adv="" w
    bsr_dv_tree "$d"
    local tree=("${DV_TREE[@]}")
    for p in "${tree[@]}"; do
@@ -351,8 +352,15 @@ bsr_dg_json() {
       [ "$first2" = 1 ] && first2=0 || lines+=","
       lines+="$REPLY"
    done
-   printf '{"device":%s,"advice":[%s],"kernel":[%s],"volumes":[%s],"tools":{%s}}\n' \
-      "$(bsr_dv_disk_json "$d")" "$adv" "$lines" "$vols" \
+   first2=1
+   for l in "${DHI_LINES[@]}"; do
+      bsr_js "$l"
+      [ "$first2" = 1 ] && first2=0 || earlier+=","
+      earlier+="$REPLY"
+   done
+   bsr_sc_run "$d"
+   printf '{"device":%s,"advice":[%s],"kernel":[%s],"kernel_earlier":[%s],%s,"volumes":[%s],"tools":{%s}}\n' \
+      "$(bsr_dv_disk_json "$d")" "$adv" "$lines" "$earlier" "$(bsr_sc_json)" "$vols" \
       "$(bsr_jb ddrescue "$(command -v ddrescue >/dev/null && echo 1)" testdisk "$(command -v testdisk >/dev/null && echo 1)" \
          photorec "$(command -v photorec >/dev/null && echo 1)" smartctl "$(command -v smartctl >/dev/null && echo 1)" \
          rsync "$(command -v rsync >/dev/null && echo 1)")"

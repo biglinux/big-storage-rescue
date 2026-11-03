@@ -24,10 +24,12 @@ bsr_ds_smart_file() {
 #   SM_NVME_WARN   NVMe critical warning (0x00 is fine)  SM_NVME_MEDIA  media errors
 #   SM_NVME_USED   percentage used
 #   SM_TEMP        temperature, °C
+#   SM_SELFTEST    failed when the last self-test of an ATA drive found an
+#                  error (smartctl -l selftest: "# 1  Extended offline  Completed: read failure")
 bsr_ds_smart_parse() {
    local line id raw k v head=""
    SM_VERDICT="" SM_PENDING="" SM_OFFLINE="" SM_REALLOC="" SM_UNCORR="" SM_CRC="" SM_HOURS=""
-   SM_NVME_WARN="" SM_NVME_MEDIA="" SM_NVME_USED="" SM_TEMP=""
+   SM_NVME_WARN="" SM_NVME_MEDIA="" SM_NVME_USED="" SM_TEMP="" SM_SELFTEST=""
    [ -r "$1" ] || return 1
    while IFS= read -r line; do
       case "$line" in
@@ -40,6 +42,8 @@ bsr_ds_smart_parse() {
          "Percentage Used:"*) v="${line#*:}"; SM_NVME_USED="${v//[^0-9]/}" ;;
          "Power On Hours:"*) v="${line#*:}"; SM_HOURS="${v//[^0-9]/}" ;;
          "Temperature:"*Celsius*) v="${line#*:}"; v="${v%%Celsius*}"; SM_TEMP="${v//[^0-9]/}" ;;
+         "# 1 "*)
+            case "$line" in *failure* | *Fatal*) SM_SELFTEST=failed ;; esac ;;
          *)
             # ID# ATTRIBUTE_NAME FLAG VALUE WORST THRESH TYPE UPDATED WHEN_FAILED RAW_VALUE
             read -r id k _ _ _ _ _ _ _ raw _ <<< "$line"
@@ -90,12 +94,17 @@ bsr_ds_smart_read() {
 bsr_ds_level() {
    local disk="$1" w
    DS_LEVEL=unknown DS_WHY=() DS_BASIS=none DS_SMART_AT="" SM_VERDICT="" SM_PENDING="" SM_OFFLINE="" SM_REALLOC="" SM_UNCORR="" SM_CRC="" SM_HOURS=""
-   SM_NVME_WARN="" SM_NVME_MEDIA="" SM_NVME_USED="" SM_TEMP="" DS_DISK="$disk" DS_GRADE=unknown DS_NOTES=()
+   SM_NVME_WARN="" SM_NVME_MEDIA="" SM_NVME_USED="" SM_TEMP="" SM_SELFTEST="" DS_DISK="$disk" DS_GRADE=unknown DS_NOTES=()
+   DHI_BOOTS=0 DHI_BAD=0 DHI_COUNT=0 DHI_IO=0 DHI_LINK=0 DHI_LINES=() DHI_PAST=0 FSE_TOTAL=0 FSE_LIST=()
    DH_HOURS="" DH_TEMP="" DH_ATTR_FAIL="" DH_ATTR_PAST="" DH_NVME_WARN="" DH_NVME_USED="" DH_NVME_MEDIA="" DH_NVME_HOT=""
    case "${DV[$disk|TYPE]:-disk}" in
       loop | rom) DS_LEVEL=na DS_GRADE=na; return 0 ;;
    esac
    bsr_drive_health "$disk"
+   # What stays from before this start: earlier starts of an internal drive,
+   # and the error counters its filesystems keep
+   bsr_dv_tree "$disk"
+   bsr_drive_past "$disk" "${DV_TREE[@]}"
    bsr_ds_smart_file "$disk"
    local have_smart=0
    DS_SMART_AT=""
@@ -124,6 +133,7 @@ bsr_ds_level() {
       esac
    done
    [ "$SM_VERDICT" = failed ] && [[ " ${crit[*]} " != *" smart-failing "* ]] && crit+=(smart-failing)
+   [ "$SM_SELFTEST" = failed ] && crit+=(selftest-failed)
    # The verdict of a drive is often PASSED with thousands of unreadable
    # sectors: the raw counters are what tells
    [ "${SM_PENDING:-0}" -gt 0 ] 2>/dev/null && crit+=(pending-sectors)
@@ -134,6 +144,8 @@ bsr_ds_level() {
    [ "${SM_UNCORR:-0}" -gt 0 ] 2>/dev/null && attn+=(uncorrectable)
    [ "${SM_CRC:-0}" -gt 0 ] 2>/dev/null && attn+=(link-errors)
    [ "${DH_ATTR_FAIL:-0}" -gt 0 ] 2>/dev/null && attn+=(attrs-failing)
+   [ "$DHI_PAST" = 1 ] && attn+=(past-errors)
+   [ "$FSE_TOTAL" -gt 0 ] && attn+=(fs-errors)
    # A few replaced sectors are normal on an SSD (see 14), not on a hard disk
    [ "${DV[$disk|ROTA]:-0}" = 1 ] && [ "${DV[$disk|TRAN]:-}" != usb ] && [ "${DH_BAD:-0}" -gt 0 ] && attn+=(reallocated)
 
@@ -237,6 +249,17 @@ bsr_ds_why_text() {
       uncorrectable) printf -v REPLY $"The drive reported %s errors it could not correct." "${SM_UNCORR:-?}" ;;
       link-errors) printf -v REPLY $"The cable or adapter corrupted data in transit %s times (CRC errors)." "${SM_CRC:-?}" ;;
       attrs-failing) printf -v REPLY $"%s of its SMART values are below their safe limit now." "${DH_ATTR_FAIL:-?}" ;;
+      selftest-failed) REPLY=$"The last self-test of the drive found an error: some of its sectors cannot be read." ;;
+      past-errors)
+         printf -v REPLY $"In %s of the last %s starts of the computer, the drive had read or connection errors (%s kernel messages)." "$DHI_BAD" "$DHI_BOOTS" "$DHI_COUNT"
+         if [ "$DHI_LINK" -gt 0 ] && [ "$DHI_IO" -eq 0 ]; then
+            REPLY+=" "$"They were errors of the connection: check the data cable and the power connector of the drive, or try another port."
+         fi
+         ;;
+      fs-errors)
+         printf -v REPLY $"Its filesystems recorded %s errors, which are kept across restarts (%s)." "$FSE_TOTAL" "$(IFS=';'; printf '%s' "${FSE_LIST[*]}")"
+         REPLY="${REPLY//;/; }"
+         ;;
       *) REPLY="$1" ;;
    esac
 }
@@ -258,9 +281,11 @@ bsr_ds_json() {
    done
    bsr_ds_level_label; local label="$REPLY"
    bsr_ds_grade_label; note="$REPLY"
-   printf '"health":{"level":"%s","label":%s,"grade":"%s","grade_label":%s,"basis":"%s","reasons":[%s],"notes":[%s],"smart":{%s}}' \
+   printf '"health":{"level":"%s","label":%s,"grade":"%s","grade_label":%s,"basis":"%s","reasons":[%s],"notes":[%s],"smart":{%s}' \
       "$DS_LEVEL" "$(bsr_js "$label"; printf '%s' "$REPLY")" "$DS_GRADE" "$(bsr_js "$note"; printf '%s' "$REPLY")" "$DS_BASIS" "$why" "$notes" \
-      "$(bsr_jn pending "$SM_PENDING" offline "$SM_OFFLINE" reallocated "$SM_REALLOC" uncorrectable "$SM_UNCORR" crc "$SM_CRC" hours "$SM_HOURS" temperature "$SM_TEMP" read_at "$DS_SMART_AT" nvme_media "$SM_NVME_MEDIA" nvme_used "$SM_NVME_USED"),$(bsr_jo_inner verdict "$SM_VERDICT" nvme_warning "$SM_NVME_WARN")"
+      "$(bsr_jn pending "$SM_PENDING" offline "$SM_OFFLINE" reallocated "$SM_REALLOC" uncorrectable "$SM_UNCORR" crc "$SM_CRC" hours "$SM_HOURS" temperature "$SM_TEMP" read_at "$DS_SMART_AT" nvme_media "$SM_NVME_MEDIA" nvme_used "$SM_NVME_USED"),$(bsr_jo_inner verdict "$SM_VERDICT" nvme_warning "$SM_NVME_WARN" selftest "$SM_SELFTEST")"
+   printf ',"history":{%s},"fs_errors":%s}' \
+      "$(bsr_jn boots "$DHI_BOOTS" with_errors "$DHI_BAD" messages "$DHI_COUNT" read_errors "$DHI_IO" link_errors "$DHI_LINK")" "${FSE_TOTAL:-0}"
 }
 
 # ---------------------------------------------------------------------------
@@ -301,6 +326,8 @@ bsr_dg_show() {
    fi
    bsr_ds_advice
    for w in "${DS_ADVICE[@]}"; do bsr_doc_li "$w"; done
+   bsr_sc_run "$d"
+   bsr_sc_doc "$SC_SYSTEM"
    bsr_doc_p $"Volumes:"
    bsr_dv_tree "$d"
    local tree=("${DV_TREE[@]}")

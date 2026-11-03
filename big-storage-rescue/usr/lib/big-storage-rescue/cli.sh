@@ -361,6 +361,7 @@ bsr_disk_parts() {
 
 bsr_cmd_diagnose() {
    local target="${1:-}" part rc=0
+   declare -F bsr_sc_run >/dev/null || bsr_load system-check.sh
    if [ -z "$target" ]; then
       bsr_overview
       return
@@ -447,6 +448,18 @@ bsr_overview() {
       printf '%s %s\n' "$out" "${c[6]}"
    done
    [ "$hint" -eq 1 ] && printf '\n%s\n' $"To find out why a device cannot be written to, run: big-storage-rescue --diagnose DEVICE"
+
+   # Only the drives of the running system: the free space of the others is
+   # their owner's business
+   bsr_sc_run
+   # shellcheck disable=SC2153  # SC_* come from system-check.sh
+   if [ "${#SC_KEY[@]}" -gt 0 ]; then
+      printf '\n%s\n' $"Running system"
+      for i in "${!SC_KEY[@]}"; do
+         printf '  %s\n' "${SC_TEXT[i]}"
+         printf '%s\n' "${SC_HELP[i]}" | fold -s -w 76 | sed 's/^/    /'
+      done
+   fi
 
    printf '\n%s\n' $"Environment"
    local s
@@ -913,7 +926,10 @@ bsr_tran_label() {
 # The drive document (DT_TITLE) for F, the whole disk, after bsr_drive_health
 bsr_drive_doc() {
    local k s
-   if [ "${#DH_FIND[@]}" -gt 0 ]; then DT_TITLE=$"The drive reports errors"; else DT_TITLE=$"No drive errors found"; fi
+   if [ "${#DH_FIND[@]}" -gt 0 ]; then DT_TITLE=$"The drive reports errors"
+   elif [ "${DHI_PAST:-0}" = 1 ] || [ "${FSE_TOTAL:-0}" -gt 0 ]; then DT_TITLE=$"The drive had errors before this start of the computer"
+   else DT_TITLE=$"No drive errors found"
+   fi
    bsr_doc_new
    bsr_doc_h "$DT_TITLE"
    bsr_display_name; bsr_doc_kv $"Drive" "$REPLY"
@@ -933,6 +949,7 @@ bsr_drive_doc() {
       else
          bsr_doc_p $"The kernel log cannot be read by your user, so recent errors of this drive cannot be checked."
       fi
+      bsr_drive_doc_past
       return 0
    fi
    bsr_doc_p $"Problems found:"
@@ -950,6 +967,27 @@ bsr_drive_doc() {
    [ "${F[TRAN]:-}" = sata ] && bsr_doc_li $"Check the data and power cables of the drive, or try another SATA port."
    [ "$DH_ATA" = 1 ] && bsr_doc_li $"An SSD that fails like this may lock itself in a protection mode: it seems to accept writing, but keeps nothing. Copy what you can first; no repair is worth more than your files."
    bsr_doc_li $"If the errors come back, replace the drive."
+   bsr_drive_doc_past
+}
+
+# What stays from before this start (after bsr_drive_past): errors of earlier
+# starts of an internal drive and the counters of its filesystems
+bsr_drive_doc_past() {
+   local s
+   [ "${DHI_PAST:-0}" = 1 ] || [ "${FSE_TOTAL:-0}" -gt 0 ] || return 0
+   bsr_doc_p $"From before this start of the computer:"
+   if [ "$DHI_PAST" = 1 ]; then
+      printf -v s $"In %s of the last %s starts of the computer, the drive had read or connection errors (%s kernel messages)." "$DHI_BAD" "$DHI_BOOTS" "$DHI_COUNT"
+      bsr_doc_li "$s"
+      if [ "$DHI_LINK" -gt 0 ] && [ "$DHI_IO" -eq 0 ]; then
+         bsr_doc_li $"They were errors of the connection: check the data cable and the power connector of the drive, or try another port."
+      fi
+   fi
+   if [ "$FSE_TOTAL" -gt 0 ]; then
+      printf -v s $"Its filesystems recorded %s errors, which are kept across restarts (%s)." "$FSE_TOTAL" "$(IFS=';'; printf '%s' "${FSE_LIST[*]}")"
+      bsr_doc_li "${s//;/; }"
+      bsr_doc_li $"After the cause is solved (a cable, a drive replaced, the files copied), an administrator can reset them: btrfs device stats -z on Btrfs; e2fsck clears them on ext4."
+   fi
 }
 
 # Technical report of the drive (F, after bsr_drive_health)
@@ -965,17 +1003,25 @@ bsr_drive_report() {
    else
       printf '%s\n' "kernel log:  not readable"
    fi
+   if [ "${DHI_BOOTS:-0}" -gt 0 ]; then
+      printf '%s\n' "earlier:     starts=$DHI_BOOTS with-errors=$DHI_BAD messages=$DHI_COUNT read=$DHI_IO link=$DHI_LINK"
+      for l in "${DHI_LINES[@]}"; do printf '             %s\n' "$l"; done
+   fi
+   for l in "${FSE_LIST[@]:-}"; do [ -n "$l" ] && printf '%s\n' "fs errors:   $l"; done
 }
 
 # big-storage-rescue --diagnose DISK: the health of the drive. Fails when it reported errors.
 bsr_drive_show() {
    local disk="$1"
    bsr_drive_health "$disk"
+   bsr_drive_past "$disk"
    bsr_drive_doc
+   bsr_sc_run "$disk"
+   bsr_sc_doc "$SC_SYSTEM"
    bsr_ui_show info "$DT_TITLE"
    printf '\n%s\n' $"Technical details:"
    bsr_drive_report | sed 's/^/  /'
-   [ "${#DH_FIND[@]}" -eq 0 ]
+   [ "${#DH_FIND[@]}" -eq 0 ] && [ "$DHI_PAST" = 0 ] && [ "$FSE_TOTAL" -eq 0 ] && [ "${#SC_KEY[@]}" -eq 0 ]
 }
 
 # ---------------------------------------------------------------------------
@@ -1331,6 +1377,12 @@ bsr_notifier_health() {
    [ -n "${DV[$disk|TYPE]:-}" ] || return 0
    bsr_ds_level "$disk"
    case "$DS_LEVEL" in critical | attention) ;; *) return 0 ;; esac
+   # Errors of earlier starts were already there at the last login: the
+   # application shows them, but they are not announced at every start
+   for w in "${DS_WHY[@]}"; do
+      case "$w" in past-errors | fs-errors) ;; *) w=""; break ;; esac
+   done
+   [ -z "$w" ] || return 0
    read -r boot < /proc/sys/kernel/random/boot_id 2>/dev/null
    bsr_dv_stable_id "$disk"; key="$boot health $REPLY"
    grep -qxF -- "$key" "$BSR_NOTIFIED" 2>/dev/null && return 0

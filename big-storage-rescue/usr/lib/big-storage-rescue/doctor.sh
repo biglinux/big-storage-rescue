@@ -140,7 +140,7 @@ bsr_dr_install() {
    fi
 
    if [ -e /usr/bin/big-storage-rescue ]; then
-      for f in cli.sh lib.sh ui.sh doctor.sh migrate.sh drive.sh drive-detect.sh drive-diag.sh drive-copy.sh \
+      for f in cli.sh lib.sh ui.sh doctor.sh migrate.sh system-check.sh drive.sh drive-detect.sh drive-diag.sh drive-copy.sh \
          drive-recovery.sh drive-tui.sh app.py dialog.py bsr-holders bsr-drive-helper; do
          f="/usr/lib/big-storage-rescue/$f"
          [ -e "$f" ] && continue
@@ -172,6 +172,12 @@ bsr_dr_install() {
 
    if command -v pacman >/dev/null && pacman -Q big-storage-rescue >/dev/null 2>&1; then
       altered="$(LC_ALL=C pacman -Qkk big-storage-rescue 2>&1 | grep -vE '^big-storage-rescue: [0-9]+ total files' | grep -E 'warning|error' | sed 's/^warning: //;s/^error: //')"
+      # BigLinux adds the graphics card options to every menu entry
+      # (render-menu-options watches /usr/share/applications): expected
+      if grep -q ' /usr/share/applications/[^ ]*\.desktop ' <<< "$altered"; then
+         altered="$(grep -v ' /usr/share/applications/[^ ]*\.desktop ' <<< "$altered")"
+         bsr_dr info $"The menu entry was changed after installation, as BigLinux does to add the graphics card options"
+      fi
       if [ -n "$altered" ]; then
          bsr_dr warn $"Installed files differ from the package" "$altered"
       else
@@ -350,6 +356,17 @@ bsr_dr_storage() {
          bsr_fmt $"For details: big-storage-rescue --diagnose %s" "$name"
          bsr_dr warn "$s" "$REPLY"
       fi
+      # Earlier starts (internal drives) and the counters of its filesystems
+      bsr_drive_past "$name" </dev/null
+      if [ "$DHI_PAST" = 1 ]; then
+         bsr_fmt $"%s: errors in %s of the last %s starts of the computer (%s kernel messages)" "${name##*/}" "$DHI_BAD" "$DHI_BOOTS" "$DHI_COUNT"; s="$REPLY"
+         bsr_fmt $"For details: big-storage-rescue --diagnose %s" "$name"
+         bsr_dr warn "$s" "$REPLY"
+      fi
+      if [ "$FSE_TOTAL" -gt 0 ]; then
+         bsr_fmt $"%s: its filesystems recorded %s errors, kept across restarts" "${name##*/}" "$FSE_TOTAL"
+         bsr_dr warn "$REPLY" "$(printf '%s\n' "${FSE_LIST[@]}")"
+      fi
    done < <(lsblk -P -b -p -d -o NAME,TYPE,TRAN,RM,HOTPLUG,SIZE 2>/dev/null)
 
    # NVMe: a controller (/dev/nvme0) holds namespaces (/dev/nvme0n1), which
@@ -373,6 +390,25 @@ bsr_dr_storage() {
    if [ "${#ro[@]}" -gt 0 ]; then
       bsr_fmt $"Mounted read-only: %s" "${ro[*]}"; bsr_dr warn "$REPLY" $"To know why: big-storage-rescue --diagnose DEVICE"
    fi
+}
+
+# The storage of the running system (system-check.sh): free space, room of
+# Btrfs, partitions left mounted by os-prober
+bsr_dr_system() {
+   local i
+   bsr_dr_section $"Running system"
+   bsr_load system-check.sh
+   bsr_sc_run
+   if [ "${#SC_KEY[@]}" -eq 0 ]; then
+      bsr_dr ok $"Enough free space, and nothing left mounted by os-prober"
+      return 0
+   fi
+   for i in "${!SC_KEY[@]}"; do
+      case "${SC_LEVEL[i]}" in
+         critical) bsr_dr fail "${SC_TEXT[i]}" "${SC_HELP[i]}" ;;
+         *) bsr_dr warn "${SC_TEXT[i]}" "${SC_HELP[i]}" ;;
+      esac
+   done
 }
 
 # Symptoms reported together with storage problems that belong to the
@@ -413,6 +449,7 @@ bsr_cmd_doctor() {
    bsr_dr_bigmount
    bsr_dr_session
    bsr_dr_storage
+   bsr_dr_system
    bsr_dr_outside
    printf '\n'
    printf $"Result: %d problem(s), %d warning(s)."'\n' "$DR_FAIL" "$DR_WARN"

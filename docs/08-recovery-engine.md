@@ -8,8 +8,9 @@ Migrated from Big-Mount 2.6 (`drive-diag.sh`, `drive-copy.sh`,
 `bsr_drive_health` and `bsr_ds_level` read only the kernel log of this boot
 (timeouts, I/O errors, link slow-downs, USB resets), udev and what UDisks2
 keeps of SMART/NVMe health without a password. The drive itself is not read.
-`--cli diagnose DISK --smart` adds `smartctl -H -A -i` through the helper
-(password asked; never starts a self-test). The verdict is one of *Healthy,
+`--cli diagnose DISK --smart` adds `smartctl -H -A -i -l selftest` through
+the helper (password asked; the self-test log is only read, a self-test is
+never started). The verdict is one of *Healthy,
 Good, Poor, Critical* with the facts behind it and their basis (log, SMART).
 
 ## Choosing a method

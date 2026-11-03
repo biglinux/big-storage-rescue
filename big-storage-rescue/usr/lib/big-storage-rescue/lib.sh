@@ -1206,6 +1206,220 @@ bsr_drive_health_nvme() {
 }
 
 # ---------------------------------------------------------------------------
+# What a drive went through before this start of the computer
+
+# Where the kernel publishes the filesystems it has mounted (tests use a copy)
+BSR_SYS_FS=/sys/fs
+
+# bsr_fs_errors DEV: the errors a mounted filesystem keeps on the drive itself,
+# so that they survive restarts: the device statistics of Btrfs and the error
+# count of ext4. They count since the filesystem was created, or since an
+# administrator reset them (btrfs device stats -z, e2fsck). Read from /sys,
+# without a password. Sets FE_TOTAL, FE_KINDS ("read 2, corruption 1") and
+# FE_ID (the filesystem, to count it once). Fails when DEV is not a mounted
+# Btrfs or ext4.
+bsr_fs_errors() {
+   local kn="$1" f st k n dir order=(write read flush corruption generation)
+   local -A c=()
+   FE_TOTAL=0 FE_KINDS="" FE_ID=""
+   # /dev/mapper/NAME is a link to /dev/dm-N, the name the kernel uses
+   [ -L "$kn" ] && kn="$(readlink -f -- "$kn" 2>/dev/null)"
+   kn="${kn##*/}"
+   [ -n "$kn" ] || return 1
+   if [ -r "$BSR_SYS_FS/ext4/$kn/errors_count" ]; then
+      n=""
+      { read -r n < "$BSR_SYS_FS/ext4/$kn/errors_count"; } 2>/dev/null
+      [[ $n =~ ^[0-9]+$ ]] || n=0
+      FE_ID="ext4/$kn" FE_TOTAL="$n"
+      [ "$n" -gt 0 ] && FE_KINDS="ext4 $n"
+      return 0
+   fi
+   for f in "$BSR_SYS_FS"/btrfs/*/devices/"$kn"; do
+      [ -e "$f" ] || continue
+      dir="${f%/devices/*}" FE_ID="btrfs/${dir##*/}"
+      # devinfo/DEVID/error_stats: "read_errs 0" lines, for every device of
+      # the filesystem (a filesystem over several drives counts for each)
+      for st in "$dir"/devinfo/*/error_stats; do
+         [ -r "$st" ] || continue
+         while read -r k n; do
+            [[ $n =~ ^[0-9]+$ ]] || continue
+            [ "$n" -gt 0 ] || continue
+            k="${k%_errs}"
+            c[$k]=$((${c[$k]:-0} + n)) FE_TOTAL=$((FE_TOTAL + n))
+         done < "$st"
+      done
+      for k in "${order[@]}"; do
+         [ -n "${c[$k]:-}" ] && FE_KINDS+="${FE_KINDS:+, }$k ${c[$k]}"
+      done
+      return 0
+   done
+   return 1
+}
+
+# bsr_drive_fs_errors DISK [DEV...]: bsr_fs_errors for every filesystem of a
+# drive, or of the devices given (the drive manager already knows them).
+# FSE_TOTAL, and FSE_LIST ("/dev/sda2: read 2") for those with errors.
+bsr_drive_fs_errors() {
+   local d fs_seen=" " devs=("${@:2}")
+   FSE_TOTAL=0 FSE_LIST=()
+   if [ "${#devs[@]}" -eq 0 ]; then
+      bsr_drive_members "$1"
+      devs=("${DRIVE_DEVS[@]}")
+   fi
+   for d in "${devs[@]}"; do
+      bsr_fs_errors "$d" || continue
+      [[ $fs_seen == *" $FE_ID "* ]] && continue
+      fs_seen+="$FE_ID "
+      [ "$FE_TOTAL" -gt 0 ] || continue
+      FSE_TOTAL=$((FSE_TOTAL + FE_TOTAL))
+      FSE_LIST+=("$d: $FE_KINDS")
+   done
+   return 0
+}
+
+# How far back the starts of the computer are read for an internal drive
+BSR_HISTORY_BOOTS=5 BSR_HISTORY_DAYS=30
+
+# bsr_drive_ident PORT BOOT: what the kernel found on an internal port in one
+# start of the computer (REPLY): "model, firmware" of an ATA drive, the PCI
+# function of an NVMe controller. Reads the lines of bsr_drive_boot_kmsg
+# (BKMSG), or this start when BOOT is empty.
+bsr_drive_ident() {
+   local port="$1" l
+   REPLY=""
+   if [ -z "$2" ] && [[ $port == nvme* ]]; then
+      l="$(readlink -f -- "/sys/class/nvme/$port/device" 2>/dev/null)"
+      REPLY="${l##*/}"
+      [ -n "$REPLY" ]
+      return
+   fi
+   [ -n "$2" ] || bsr_drive_boot_kmsg "$port" "" || return 1
+   for l in "${BKMSG[@]}"; do
+      # "ata2.00: ATA-10: WDC WD10SPZX-24Z10T0, 01.01A01, max UDMA/133"
+      if [[ $l =~ (^|[^0-9a-z])$port\.00:\ ATA-[0-9]+:\ (.+),\ max\  ]]; then REPLY="${BASH_REMATCH[2]}"; return 0; fi
+      # "nvme nvme0: pci function 0000:09:00.0"
+      if [[ $l =~ nvme\ $port:\ pci\ function\ ([0-9a-f:.]+) ]]; then REPLY="${BASH_REMATCH[1]}"; return 0; fi
+   done
+   return 1
+}
+
+# bsr_drive_boot_kmsg PORT BOOT_ID: kernel messages of one start (this one
+# when BOOT_ID is empty) about an internal port and the disk behind it (BKMSG)
+bsr_drive_boot_kmsg() {
+   local re
+   BKMSG=()
+   case "$1" in
+      ata[0-9]*) re="${1}(\\.[0-9]+)?" ;;
+      nvme[0-9]*) re="${1}(n[0-9]+(p[0-9]+)?)?" ;;
+      *) return 1 ;;
+   esac
+   mapfile -t BKMSG < <(journalctl -k -b "${2:-0}" -q --no-pager -o short --grep "\\b(${re})\\b" 2>/dev/null)
+   [ "${#BKMSG[@]}" -gt 0 ]
+}
+
+# The earlier starts of the computer, most recent first (BOOT_IDS): at most
+# BSR_HISTORY_BOOTS, none older than BSR_HISTORY_DAYS, never this one
+bsr_earlier_boots() {
+   local now cur obj id last
+   BOOT_IDS=()
+   read -r cur < /proc/sys/kernel/random/boot_id 2>/dev/null
+   cur="${cur//-/}"
+   now="$(date +%s)"
+   while IFS= read -r obj; do
+      [[ $obj =~ \"boot_id\":\"([0-9a-f]{32})\" ]] || continue
+      id="${BASH_REMATCH[1]}"
+      [[ $obj =~ \"last_entry\":([0-9]+) ]] || continue
+      last="${BASH_REMATCH[1]}"
+      [ "$id" = "$cur" ] && continue
+      [ $((last / 1000000)) -ge $((now - BSR_HISTORY_DAYS * 86400)) ] || continue
+      BOOT_IDS=("$id" "${BOOT_IDS[@]}")
+   done < <(journalctl --list-boots -o json -q --no-pager 2>/dev/null | tr '}' '\n')
+   [ "${#BOOT_IDS[@]}" -gt "$BSR_HISTORY_BOOTS" ] && BOOT_IDS=("${BOOT_IDS[@]:0:$BSR_HISTORY_BOOTS}")
+   [ "${#BOOT_IDS[@]}" -gt 0 ]
+}
+
+# bsr_drive_history DISK: errors of an internal drive in earlier starts of the
+# computer. Only for ATA and NVMe ports: an internal drive stays on its port
+# and the kernel names what it finds there at every start, so a message of
+# an earlier start counts only when that start found the same model and
+# firmware (ATA) or the same PCI function (NVMe) on the port. USB drives come
+# and go and their names are reused: for them only this start is read.
+# Earlier starts do not change, so what was found is kept for this start in
+# the private runtime folder. Sets:
+#   DHI_BOOTS  earlier starts read        DHI_BAD    starts with errors
+#   DHI_COUNT  error messages             DHI_IO     of them, read failures
+#   DHI_LINK   of them, connection errors (CRC, slowed link)
+#   DHI_LINES  the last messages counted
+# Fails when there is no history to read (not an internal drive, no
+# earlier start in the journal, a journal this user cannot read).
+bsr_drive_history() {
+   local disk="$1" port sig id l k n file="" dir boot="" tmp seq
+   local link_re='ICRC|limiting SATA link speed' io_re="$BSR_RE_MEDIUM|\\{ ?UNC|I/O error"
+   DHI_BOOTS=0 DHI_BAD=0 DHI_COUNT=0 DHI_IO=0 DHI_LINK=0 DHI_LINES=()
+   # bsr_drive_health of the same drive already found its port
+   if [ "${DH_DISK:-}" = "$disk" ]; then port="$DH_PORT"; else bsr_drive_port "$disk"; port="$REPLY"; fi
+   case "$port" in ata[0-9]* | nvme[0-9]*) ;; *) return 1 ;; esac
+   command -v journalctl >/dev/null || return 1
+
+   dir="${XDG_RUNTIME_DIR:-}"
+   read -r boot < /proc/sys/kernel/random/boot_id 2>/dev/null
+   bsr_diskseq "$disk"; seq="$REPLY"
+   if [ -n "$dir" ] && [ -d "$dir" ] && [ -O "$dir" ] && [ -n "$boot" ] && [ -n "$seq" ]; then
+      file="$dir/big-storage-rescue/history-${boot:0:8}-$port-$seq"
+      if [ -r "$file" ]; then
+         while IFS=' ' read -r k n; do
+            case "$k" in
+               boots) DHI_BOOTS="$n" ;; bad) DHI_BAD="$n" ;; count) DHI_COUNT="$n" ;;
+               io) DHI_IO="$n" ;; link) DHI_LINK="$n" ;; line) DHI_LINES+=("$n") ;;
+            esac
+         done < "$file"
+         [ "$DHI_BOOTS" -gt 0 ]
+         return
+      fi
+   fi
+
+   bsr_drive_ident "$port" "" || return 1
+   sig="$REPLY"
+   bsr_earlier_boots || return 1
+   for id in "${BOOT_IDS[@]}"; do
+      bsr_drive_boot_kmsg "$port" "$id" || continue
+      if ! bsr_drive_ident "$port" "$id" || [ "$REPLY" != "$sig" ]; then continue; fi
+      DHI_BOOTS=$((DHI_BOOTS + 1)) n=0
+      for l in "${BKMSG[@]}"; do
+         if [[ $l =~ $io_re ]]; then DHI_IO=$((DHI_IO + 1))
+         elif [[ $l =~ $link_re ]]; then DHI_LINK=$((DHI_LINK + 1))
+         elif [[ $l =~ $BSR_RE_TIMEOUT ]]; then :
+         else continue
+         fi
+         n=$((n + 1))
+         DHI_LINES+=("$l")
+      done
+      [ "$n" -gt 0 ] && DHI_BAD=$((DHI_BAD + 1))
+      DHI_COUNT=$((DHI_COUNT + n))
+   done
+   [ "${#DHI_LINES[@]}" -gt 15 ] && DHI_LINES=("${DHI_LINES[@]: -15}")
+
+   if [ -n "$file" ] && mkdir -p -- "${file%/*}" 2>/dev/null && tmp="$(mktemp -- "$file.XXXXXX" 2>/dev/null)"; then
+      {
+         printf 'boots %s\nbad %s\ncount %s\nio %s\nlink %s\n' "$DHI_BOOTS" "$DHI_BAD" "$DHI_COUNT" "$DHI_IO" "$DHI_LINK"
+         for l in "${DHI_LINES[@]}"; do printf 'line %s\n' "${l//[[:cntrl:]]/?}"; done
+      } > "$tmp"
+      mv -f -- "$tmp" "$file" 2>/dev/null || rm -f -- "$tmp"
+   fi
+   [ "$DHI_BOOTS" -gt 0 ]
+}
+
+# bsr_drive_past DISK [DEV...]: bsr_drive_history and bsr_drive_fs_errors.
+# DHI_PAST is 1 when the earlier starts count as a problem: one message in a
+# few days can be a glitch, a read failure never is.
+bsr_drive_past() {
+   DHI_PAST=0
+   bsr_drive_history "$1" || DHI_IO=0 DHI_COUNT=0
+   if [ "$DHI_IO" -gt 0 ] || [ "$DHI_COUNT" -ge 3 ]; then DHI_PAST=1; fi
+   bsr_drive_fs_errors "$@"
+}
+
+# ---------------------------------------------------------------------------
 # Privileged inspection (root, through pkexec): processes of every user
 # holding a mount point. Prints lsof field output for bsr_holders.
 bsr_privileged_holders() {

@@ -76,6 +76,7 @@ expect=(
     "644 usr/lib/big-storage-rescue/drive-recovery.sh"
     "644 usr/lib/big-storage-rescue/drive-tui.sh"
     "644 usr/lib/big-storage-rescue/migrate.sh"
+    "644 usr/lib/big-storage-rescue/system-check.sh"
     "644 usr/lib/big-storage-rescue/app.py"
     "644 usr/lib/big-storage-rescue/dialog.py"
     "644 usr/lib/big-storage-rescue/gui/__init__.py"
