@@ -9,18 +9,24 @@ pkgver=$(date +%y.%m.%d)
 pkgrel=$(date +%H%M)
 arch=('any')
 license=('GPL-3.0-or-later')
-# Everything runs as the user: bash and util-linux (lsblk, findmnt, flock,
-# setpriv), udisks2 mounts, unmounts and powers drives off, polkit (pkexec)
+# Everything runs as the user: bash and util-linux (lsblk, findmnt, blkid,
+# flock, setpriv, setsid, ionice), udisks2 mounts, unmounts and powers drives
+# off, glib2 (gdbus) talks to UDisks2 also in a terminal, polkit (pkexec)
 # starts the two small helpers, lsof finds what keeps a device busy, rsync
-# does every copy and smartctl reads the health of a drive. python,
-# python-gobject, gtk4 and libadwaita draw the application and the dialogs;
-# libnotify sends the notifications. Commands of the base system (coreutils,
-# findutils, gawk, procps-ng, systemd) are not listed.
+# does every copy, smartctl reads the health of a drive and diffutils (cmp)
+# keeps the map of a disk image safe. python, python-gobject, gtk4,
+# libadwaita, pango, gdk-pixbuf2 (previews of found photos) and the hicolor
+# icon theme draw the application and the dialogs; libnotify sends the
+# notifications. Commands of the base system (coreutils, findutils, gawk,
+# grep, sed, procps-ng, gettext, systemd) are not listed.
 # libadwaita has an epoch: without it, ">=1.5" would accept any version.
-depends=('bash' 'util-linux' 'udisks2' 'polkit' 'lsof' 'rsync' 'smartmontools'
-         'python' 'python-gobject' 'gtk4' 'libadwaita>=1:1.5' 'libnotify')
+depends=('bash' 'util-linux' 'udisks2' 'glib2' 'polkit' 'lsof' 'rsync'
+         'smartmontools' 'diffutils' 'python' 'python-gobject' 'gtk4'
+         'libadwaita>=1:1.5' 'pango' 'gdk-pixbuf2' 'hicolor-icon-theme'
+         'libnotify')
 optdepends=('ddrescue: disk images of a failing drive, before a deep analysis'
             'testdisk: find lost partitions, search files by content (PhotoRec)'
+            'dolphin: the Storage device actions of the right-click menu'
             'big-mount: mounts the internal partitions at boot')
 # A separate program from big-mount: both can be installed, neither needs the
 # other, and no file of one belongs to the other.
@@ -45,6 +51,11 @@ package() {
     # The revision this package was built from (--version, --doctor)
     local rev
     if rev="$(git -C "${srcdir}/${pkgname}" rev-parse HEAD 2>/dev/null)"; then
+        # Built from a checkout with changes that are not committed yet
+        # (pkgbuild/build-local.sh): the revision says so
+        if [ -n "$(git -C "${srcdir}/${pkgname}" status --porcelain 2>/dev/null)" ]; then
+            rev+="-dirty"
+        fi
         {
             printf 'revision=%s\n' "$rev"
             printf 'date=%s\n' "$(TZ=UTC git -C "${srcdir}/${pkgname}" log -1 --date=format-local:%Y-%m-%dT%H:%M:%SZ --format=%cd)"

@@ -34,7 +34,7 @@ jobs:
           for f in big-storage-rescue/usr/bin/big-storage-rescue big-storage-rescue/usr/lib/big-storage-rescue/*.sh \
                    big-storage-rescue/usr/lib/big-storage-rescue/bsr-holders big-storage-rescue/usr/lib/big-storage-rescue/bsr-drive-helper \
                    tests/*.sh locale/*.sh \
-                   pkgbuild/PKGBUILD pkgbuild/big-storage-rescue.install; do
+                   pkgbuild/PKGBUILD pkgbuild/big-storage-rescue.install pkgbuild/build-local.sh; do
             bash -n "$f"
           done
 
@@ -44,7 +44,7 @@ jobs:
           shellcheck -x -P big-storage-rescue/usr/lib/big-storage-rescue:tests \
             big-storage-rescue/usr/bin/big-storage-rescue big-storage-rescue/usr/lib/big-storage-rescue/*.sh \
             big-storage-rescue/usr/lib/big-storage-rescue/bsr-holders big-storage-rescue/usr/lib/big-storage-rescue/bsr-drive-helper \
-            locale/*.sh tests/stubs/* tests/*.sh
+            locale/*.sh tests/stubs/* tests/*.sh pkgbuild/build-local.sh
 
 
       - name: Library

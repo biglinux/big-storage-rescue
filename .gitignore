@@ -6,3 +6,9 @@ tests/.pkg.*/
 
 # Left by importing the window in a one-off script
 __pycache__/
+
+# Left by makepkg in pkgbuild/
+pkgbuild/src/
+pkgbuild/pkg/
+pkgbuild/big-storage-rescue/
+pkgbuild/*.pkg.tar*

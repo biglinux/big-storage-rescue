@@ -6,12 +6,21 @@ commit goes to `/usr/lib/big-storage-rescue/version` for `--version`.
 
 | Field | Value | Why |
 | --- | --- | --- |
-| `depends` | bash, util-linux, udisks2, polkit, lsof, rsync, smartmontools, python, python-gobject, gtk4, `libadwaita>=1:1.5`, libnotify | each is called by the code (checked with `grep` of every tool name, see 01) |
-| `optdepends` | ddrescue, testdisk, big-mount | images; lost partitions and PhotoRec; mounting at boot |
+| `depends` | bash, util-linux, udisks2, glib2, polkit, lsof, rsync, smartmontools, diffutils, python, python-gobject, gtk4, `libadwaita>=1:1.5`, pango, gdk-pixbuf2, hicolor-icon-theme, libnotify | each is called or imported by the code (checked with `grep` of every tool name, see 01, and with `namcap`) |
+| `optdepends` | ddrescue, testdisk, dolphin, big-mount | images; lost partitions and PhotoRec; the right-click actions; mounting at boot |
 | `provides` / `conflicts` / `replaces` | none | it is a new package beside big-mount, not a replacement |
 | `backup` | none | no file in `/etc` |
 | `install` | `big-storage-rescue.install` | messages only: nothing is started or enabled |
 | `source` | `git+https://github.com/biglinux/big-storage-rescue.git` | the official repository |
+
+Why the less obvious ones: `glib2` gives `gdbus`, with which the engine talks
+to UDisks2 also in a terminal without the window; `diffutils` gives `cmp`, with
+which the helper keeps the map of a disk image safe (it is not part of `base`);
+`pango`, `gdk-pixbuf2` (previews of found photos) and `hicolor-icon-theme` are
+imported or used by the window directly, so they are listed even though gtk4
+brings them (added on 2026-11-02 after a `namcap` of the package). Commands of
+`base` (coreutils, findutils, gawk, grep, sed, procps-ng, gettext, systemd) are
+not listed.
 
 `nvme-cli` is not a dependency: NVMe health is read from UDisks2 and the
 helper uses `smartctl`. Names were checked against the Arch repositories
@@ -21,6 +30,23 @@ helper uses `smartctl`. Names were checked against the Arch repositories
 `biglinux/big-storage-rescue`, which is empty until this branch is pushed and
 merged there. Until then the package can only be built from a local clone
 (`tests/package-check.sh` runs `package()` on the checkout, without network).
+
+## Building from a checkout
+
+`pkgbuild/build-local.sh [MAKEPKG OPTIONS]` builds the package from the
+working tree, including the changes that are not committed yet, with the same
+PKGBUILD: it clones the checkout, lays the uncommitted changes over it and
+runs `makepkg -e` (no download). The package lands in `pkgbuild/` (ignored by
+git); `-si` also installs it. When something was not committed, the revision
+of `big-storage-rescue --version` ends in `-dirty`, so a package built this
+way is never mistaken for one built from a published commit.
+
+On BigLinux, `render-menu-options` (a path unit watching
+`/usr/share/applications`) adds the graphics card options (*Software Render*,
+*Integrated Render*…) to every menu entry after it is installed, so `pacman
+-Qkk big-storage-rescue` reports `org.biglinux.big-storage-rescue.desktop` as
+changed. That is expected: `--doctor` says so as information and warns only
+about other changed files.
 
 ## Installed files
 
