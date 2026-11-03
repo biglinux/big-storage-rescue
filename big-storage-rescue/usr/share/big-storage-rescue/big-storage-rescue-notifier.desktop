@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name[pt_BR]=Notificador do Big Storage Rescue
+Name=Big Storage Rescue notifier
+Comment[pt_BR]=Explica por que um dispositivo de armazenamento não aceita gravação
+Comment=Explains why a storage device cannot be written to
+Exec=/usr/bin/big-storage-rescue --notifier
+Icon=big-storage-rescue
+Terminal=false
+NoDisplay=true
+X-KDE-autostart-phase=2
+X-GNOME-Autostart-enabled=true

@@ -1,0 +1,33 @@
+[Desktop Entry]
+Type=Service
+MimeType=inode/directory;
+X-KDE-Protocols=file
+X-KDE-RequiredNumberOfUrls=1
+X-KDE-Submenu=Storage device
+Icon=big-storage-rescue
+Actions=diagnose;safeRemove;health;rescue;manage;
+
+[Desktop Action diagnose]
+Name=Why can't I write here?
+Icon=dialog-information
+Exec=/usr/bin/big-storage-rescue --gui-diagnose %f
+
+[Desktop Action safeRemove]
+Name=Safely remove (shows what keeps it busy)
+Icon=media-eject
+Exec=/usr/bin/big-storage-rescue --gui-remove %f
+
+[Desktop Action health]
+Name=Check the health of this drive
+Icon=drive-harddisk
+Exec=/usr/bin/big-storage-rescue --gui-health %f
+
+[Desktop Action rescue]
+Name=Recover files from this drive…
+Icon=document-save
+Exec=/usr/bin/big-storage-rescue --gui-rescue %f
+
+[Desktop Action manage]
+Name=Open in Big Storage Rescue
+Icon=big-storage-rescue
+Exec=/usr/bin/big-storage-rescue --gui %f

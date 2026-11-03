@@ -1,0 +1,69 @@
+name: Tests
+
+# Static checks, the stub based suites, translations and packaging, on Arch
+# Linux (the base of BigLinux): the generated .desktop/polkit files depend on
+# the gettext version, so the same tools as on the users' systems are used.
+# Nothing here touches a disk: tests/integration.sh and tests/drive-integration.sh
+# need a local session with UDisks2 and are run by hand (see docs/15-testing.md).
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - name: Install tools
+        run: |
+          pacman -Syu --noconfirm --needed git bash shellcheck gettext desktop-file-utils \
+            libxml2 python glibc-locales util-linux systemd diffutils rsync gtk4 libadwaita python-gobject testdisk adwaita-icon-theme
+          # The suites must not run as root: permission checks would be meaningless
+          useradd --create-home ci
+
+      - uses: actions/checkout@v4
+
+      - name: Prepare the checkout for the test user
+        run: |
+          chown -R ci:ci "$GITHUB_WORKSPACE"
+          # systemd-analyze verify needs this, and a container does not have it
+          install -d -m 1777 /run/systemd
+
+      - name: Bash syntax
+        run: |
+          for f in big-storage-rescue/usr/bin/big-storage-rescue big-storage-rescue/usr/lib/big-storage-rescue/*.sh \
+                   big-storage-rescue/usr/lib/big-storage-rescue/bsr-holders big-storage-rescue/usr/lib/big-storage-rescue/bsr-drive-helper \
+                   tests/*.sh locale/*.sh \
+                   pkgbuild/PKGBUILD pkgbuild/big-storage-rescue.install pkgbuild/build-local.sh; do
+            bash -n "$f"
+          done
+
+      - name: ShellCheck
+        shell: bash
+        run: |
+          shellcheck -x -P big-storage-rescue/usr/lib/big-storage-rescue:tests \
+            big-storage-rescue/usr/bin/big-storage-rescue big-storage-rescue/usr/lib/big-storage-rescue/*.sh \
+            big-storage-rescue/usr/lib/big-storage-rescue/bsr-holders big-storage-rescue/usr/lib/big-storage-rescue/bsr-drive-helper \
+            locale/*.sh tests/stubs/* tests/*.sh pkgbuild/build-local.sh
+
+
+      - name: Library
+        run: runuser -u ci -- bash tests/lib-tests.sh
+
+      - name: Drive manager (stubbed devices)
+        run: runuser -u ci -- bash tests/drive-tests.sh
+
+      - name: State of Big-Mount 2.x (scratch folders, a real resume)
+        run: runuser -u ci -- bash tests/migrate-tests.sh
+
+      - name: The application (GTK 4, on a private Broadway display)
+        run: runuser -u ci -- python3 tests/gui-tests.py
+
+      - name: The application with the real engine, on scratch files
+        run: runuser -u ci -- python3 tests/gui-e2e.py
+
+      - name: Translations
+        run: runuser -u ci -- bash tests/i18n-tests.sh
+
+      - name: Packaging
+        run: runuser -u ci -- bash tests/package-check.sh

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Big Storage Rescue notifier
+Comment=Explains why a storage device cannot be written to
+Exec=/usr/bin/big-storage-rescue --notifier
+Icon=big-storage-rescue
+Terminal=false
+NoDisplay=true
+X-KDE-autostart-phase=2
+X-GNOME-Autostart-enabled=true
