@@ -1,0 +1,70 @@
+source	translation	where the choice comes from
+drive	unidad	udisks2 es (apagar una unidad), plasma devicenotifier
+device	dispositivo	udisks2/kio6/gvfs es
+disk	disco	kio6 es; physical disk, disk image
+volume	volumen	udisks2 es
+partition	partición	gparted/udisks2 es
+partition table	tabla de particiones	gparted es
+filesystem	sistema de archivos	udisks2, gvfs, gparted es
+mount / mounted	montar / montado	udisks2, kio6 (Montado en:)
+unmount	desmontar	kio6 (&Desmontar), gvfs
+read-only	solo lectura / de solo lectura	gvfs (El sistema de archivos es de solo lectura); RAE: solo without accent
+write / writing	escribir / escritura	GNOME/KDE es (permiso de escritura); not 'grabar'
+writing enabled	con la escritura activada	GNOME es activar/desactivar
+write-protected	protegido contra escritura	common es usage (SD lock)
+block writing (protect)	bloquear la escritura	project term; policy 'Proteger'
+safe removal / safely remove	extracción segura / extraer con seguridad	plasma devicenotifier + kio6 (Extraer con &seguridad)
+removable	extraíble	kio6/solid es
+power off	apagar	udisks2 es (Apagar una unidad)
+eject	expulsar	kio6/gvfs es
+busy	ocupado	plasma devicenotifier, gvfs (El sistema de archivos está ocupado)
+health	salud	project; plain word
+Critical / Poor / Good / Healthy	Crítica / Deficiente / Buena / Sana	grade of a drive (unidad, feminine)
+Attention	Atención	project
+SMART	SMART	brand/acronym, unchanged; 'estado SMART' (partitionmanager es)
+rescue	rescate / rescatar	project
+recovery / recover	recuperación / recuperar	common es
+copy	copia / copiar	common
+source	origen	kio6 es (Origen/Destino)
+destination	destino	kio6 es
+resume	reanudar	GNOME es (Reanudar)
+pause / paused	pausar / en pausa	GNOME es
+cancel	cancelar	gtk40 es
+job	tarea	project (copy/image/search job); avoids printing 'trabajo'
+work (generic)	trabajo	job.py 'Stop this work?'
+disk image	imagen de disco	common es
+map (of a disk image)	mapa (del disco)	ddrescue mapfile
+unreadable areas	zonas ilegibles	project
+retries / retry	reintentos / reintentar	common es
+salvage (action)	guardar lo que se pueda leer	project: 'Save what can be read'
+salvage (noun)	recuperación parcial	project
+partly recovered files	archivos recuperados en parte	project
+search by content	búsqueda por contenido	project (PhotoRec carving)
+found files	archivos encontrados	common
+lost partitions	particiones perdidas	TestDisk es usage
+manifest	manifiesto	SHA-256 list; technical
+set aside	apartar / apartados	project: files skipped because they did not advance
+stuck / stalled	atascado	common es
+verify / check	verificar (result) / comprobar (drive, filesystem)	GNOME es comprobar; verificación for the copy check
+dry run	simulación	common es
+encrypted	cifrado	udisks2/gparted es
+unlock / locked	desbloquear / bloqueado	udisks2 es, gtk40
+passphrase	contraseña	plain word for ordinary users
+running system	sistema en ejecución	project
+notifier	notificador	project
+password prompt / authentication	Se requiere autenticación para…	udisks2 es polkit messages
+kernel log	registro del núcleo	GNOME/KDE es (núcleo)
+log	registro	GNOME es
+swap space	espacio de intercambio	gparted/KDE es
+file manager	gestor de archivos	KDE/GNOME es
+home folder	carpeta personal	GNOME/KDE es
+computer	equipo	GNOME/KDE es
+boot / start of the computer	arranque	KDE/GNOME es
+snapshot	instantánea	KDE/GNOME es
+journal (filesystem)	diario	ext4/NTFS es docs
+driver	controlador	GNOME/KDE es
+Fast Startup	Inicio rápido	Windows es UI
+command (CLI)	orden	GNOME es convention
+terminal	el terminal	KDE es (Konsole)
+form of address	usted (Copie, Compruebe…)	GNOME/KDE es formal register
+quotation marks	« »	GNOME/KDE es (kio6 «%1»)

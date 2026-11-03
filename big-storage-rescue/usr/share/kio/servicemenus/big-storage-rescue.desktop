@@ -3,37 +3,91 @@ Type=Service
 MimeType=inode/directory;
 X-KDE-Protocols=file
 X-KDE-RequiredNumberOfUrls=1
+X-KDE-Submenu[de]=Speichergerät
+X-KDE-Submenu[es]=Dispositivo de almacenamiento
+X-KDE-Submenu[fr]=Périphérique de stockage
+X-KDE-Submenu[it]=Dispositivo di archiviazione
+X-KDE-Submenu[ja]=ストレージデバイス
+X-KDE-Submenu[pl]=Urządzenie pamięci masowej
 X-KDE-Submenu[pt_BR]=Dispositivo de armazenamento
+X-KDE-Submenu[ru]=Устройство хранения
+X-KDE-Submenu[tr]=Depolama aygıtı
+X-KDE-Submenu[zh_CN]=存储设备
 X-KDE-Submenu=Storage device
 Icon=big-storage-rescue
 Actions=diagnose;safeRemove;health;rescue;manage;
 
 [Desktop Action diagnose]
+Name[de]=Warum kann ich hier nicht schreiben?
+Name[es]=¿Por qué no puedo escribir aquí?
+Name[fr]=Pourquoi ne puis-je pas écrire ici ?
+Name[it]=Perché non posso scrivere qui?
+Name[ja]=ここに書き込めないのはなぜ?
+Name[pl]=Dlaczego nie mogę tu zapisywać?
 Name[pt_BR]=Por que não consigo gravar aqui?
+Name[ru]=Почему сюда нельзя записать?
+Name[tr]=Buraya neden yazamıyorum?
+Name[zh_CN]=为什么我无法在这里写入？
 Name=Why can't I write here?
 Icon=dialog-information
 Exec=/usr/bin/big-storage-rescue --gui-diagnose %f
 
 [Desktop Action safeRemove]
+Name[de]=Sicher entfernen (zeigt, wodurch es belegt ist)
+Name[es]=Extraer con seguridad (muestra qué lo mantiene ocupado)
+Name[fr]=Retirer en toute sécurité (montre ce qui l’occupe)
+Name[it]=Rimuovi in sicurezza (mostra cosa lo tiene occupato)
+Name[ja]=安全に取り外す (使用中にしているものを表示)
+Name[pl]=Wysuń bezpiecznie (pokazuje, co zajmuje urządzenie)
 Name[pt_BR]=Remover com segurança (mostra o que o mantém ocupado)
+Name[ru]=Безопасно извлечь (показывает, что занимает устройство)
+Name[tr]=Güvenle kaldır (aygıtı neyin meşgul ettiğini gösterir)
+Name[zh_CN]=安全移除（显示占用它的程序）
 Name=Safely remove (shows what keeps it busy)
 Icon=media-eject
 Exec=/usr/bin/big-storage-rescue --gui-remove %f
 
 [Desktop Action health]
+Name[de]=Zustand dieses Laufwerks prüfen
+Name[es]=Comprobar la salud de esta unidad
+Name[fr]=Vérifier la santé de ce disque
+Name[it]=Controlla lo stato di salute di questa unità
+Name[ja]=このドライブの健康状態を確認
+Name[pl]=Sprawdź stan zdrowia tego dysku
 Name[pt_BR]=Verificar a saúde desta unidade
+Name[ru]=Проверить здоровье этого диска
+Name[tr]=Bu sürücünün sağlık durumunu denetle
+Name[zh_CN]=检查此驱动器的健康状况
 Name=Check the health of this drive
 Icon=drive-harddisk
 Exec=/usr/bin/big-storage-rescue --gui-health %f
 
 [Desktop Action rescue]
+Name[de]=Dateien von diesem Laufwerk wiederherstellen …
+Name[es]=Recuperar archivos de esta unidad…
+Name[fr]=Récupérer des fichiers de ce disque…
+Name[it]=Recupera file da questa unità…
+Name[ja]=このドライブからファイルを復元…
+Name[pl]=Odzyskaj pliki z tego dysku…
 Name[pt_BR]=Recuperar arquivos desta unidade…
+Name[ru]=Восстановить файлы с этого диска…
+Name[tr]=Bu sürücüden dosya kurtar…
+Name[zh_CN]=从此驱动器恢复文件…
 Name=Recover files from this drive…
 Icon=document-save
 Exec=/usr/bin/big-storage-rescue --gui-rescue %f
 
 [Desktop Action manage]
+Name[de]=In Big Storage Rescue öffnen
+Name[es]=Abrir en Big Storage Rescue
+Name[fr]=Ouvrir dans Big Storage Rescue
+Name[it]=Apri in Big Storage Rescue
+Name[ja]=Big Storage Rescue で開く
+Name[pl]=Otwórz w Big Storage Rescue
 Name[pt_BR]=Abrir no Big Storage Rescue
+Name[ru]=Открыть в Big Storage Rescue
+Name[tr]=Big Storage Rescue'da aç
+Name[zh_CN]=在 Big Storage Rescue 中打开
 Name=Open in Big Storage Rescue
 Icon=big-storage-rescue
 Exec=/usr/bin/big-storage-rescue --gui %f

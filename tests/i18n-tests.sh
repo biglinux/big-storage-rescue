@@ -42,13 +42,16 @@ for po in locale/*.po; do
     check "$lang: no obsolete message left behind (#~)" bash -c '! grep -q "^#~" "$1"' _ "$po"
     check "$lang: every msgid of the template exists in the translation" \
         test -z "$(comm -23 <(msgids locale/big-storage-rescue.pot) <(msgids "$po"))"
-    # The same printf directives, in the same order, in msgid and msgstr
+    # The same printf directives, in the same order, in msgid and msgstr. %%
+    # takes no argument: it may move ("%87" in Turkish), but not go missing
     bad="$(python3 -I - "$po" <<'EOF'
 import re, sys
 text = open(sys.argv[1], encoding="utf-8").read()
 spec = re.compile(r"%[-+ #0]*[0-9]*(?:\.[0-9]+)?[sdiuxXfc%]")
+def args(s):
+    return [d for d in spec.findall(s) if d != "%%"]
 for mid, mstr in re.findall(r'^msgid "(.*)"\nmsgstr "(.*)"$', text, re.M):
-    if mid and mstr and spec.findall(mid) != spec.findall(mstr):
+    if mid and mstr and (args(mid) != args(mstr) or spec.findall(mid).count("%%") != spec.findall(mstr).count("%%")):
         print(mid)
 EOF
 )"
@@ -71,6 +74,10 @@ check "service menu: submenu and actions translated" \
     test "$(grep -c '\[pt_BR\]=' big-storage-rescue/usr/share/kio/servicemenus/big-storage-rescue.desktop)" -eq 6
 check "polkit: description and message translated (pt_BR form)" \
     test "$(grep -c 'xml:lang="pt_BR"' big-storage-rescue/usr/share/polkit-1/actions/org.biglinux.big-storage-rescue.policy)" -eq 6
+# polkit looks languages up by their POSIX name (zh_CN, not zh-Hans-CN)
+check "polkit: every language of locale/LINGUAS, by its POSIX name" \
+    bash -c 'while read -r l; do [ "$(grep -c "xml:lang=\"$l\"" "$1")" -eq 6 ] || { echo "      $l"; exit 1; }; done < locale/LINGUAS' _ \
+    big-storage-rescue/usr/share/polkit-1/actions/org.biglinux.big-storage-rescue.policy
 
 begin "no user-visible text outside the translation system"
 # Exit 1 only: a match (0) fails, and so does an error of grep (2), which prints nothing
@@ -83,9 +90,10 @@ help_line() { env -i PATH="$PATH" "$@" bash "$BM" --help 2>/dev/null | head -n1;
 check "LANG=C: English" test "$(help_line LANG=C)" = "Usage: big-storage-rescue [OPTION] [DEVICE|FOLDER]"
 check "LANG=en_US.UTF-8: English" test "$(help_line LANG=en_US.UTF-8)" = "Usage: big-storage-rescue [OPTION] [DEVICE|FOLDER]"
 check "LANG=pt_BR.UTF-8: Portuguese" test "$(help_line LANG=pt_BR.UTF-8)" = "Uso: big-storage-rescue [OPÇÃO] [DISPOSITIVO|PASTA]"
-check "language without translation (de_DE): English" test "$(help_line LANG=de_DE.UTF-8)" = "Usage: big-storage-rescue [OPTION] [DEVICE|FOLDER]"
-check "LANGUAGE=fr:pt_BR falls back to the next language" \
-    test "$(help_line LANG=pt_BR.UTF-8 LANGUAGE=fr:pt_BR)" = "Uso: big-storage-rescue [OPÇÃO] [DISPOSITIVO|PASTA]"
+check "language without translation (nl_NL): English" test "$(help_line LANG=nl_NL.UTF-8)" = "Usage: big-storage-rescue [OPTION] [DEVICE|FOLDER]"
+check "LANGUAGE=de: German, one of the other catalogs" test "$(help_line LANG=pt_BR.UTF-8 LANGUAGE=de)" = "Aufruf: big-storage-rescue [OPTION] [GERÄT|ORDNER]"
+check "LANGUAGE=nl:pt_BR falls back to the next language" \
+    test "$(help_line LANG=pt_BR.UTF-8 LANGUAGE=nl:pt_BR)" = "Uso: big-storage-rescue [OPÇÃO] [DISPOSITIVO|PASTA]"
 check "errors are translated too" \
     bash -c 'env -i PATH="$PATH" LANG=pt_BR.UTF-8 bash "$1" --bogus 2>&1 | grep -q "opção desconhecida"' _ "$BM"
 # bash translates $"..." while parsing a command: a text domain chosen inside

@@ -1,0 +1,68 @@
+source	translation	where the choice comes from
+drive	sürücü	udisks2 ($(drive) sürücüsü), gvfs (sürücü); KDE devicenotifier
+device	aygıt	udisks2, gtk40, KDE kio6/devicenotifier, big-mount tr catalog
+disk	disk	gparted, gvfs; physical disk
+volume	birim	udisks2, gvfs, gtk40 (Birim ayrılamadı)
+partition	bölüm	gparted, udisks2, big-mount tr catalog
+partition table	bölüm tablosu	gparted (bölüm tablosu)
+filesystem	dosya sistemi	gvfs, gparted, big-mount
+mount	bağla	KDE devicenotifier (Bağla), big-mount tr, udisks2
+mounted	bağlı	gparted (bağlı durumda), big-mount (zaten bağlı)
+mount point / mounted at	bağlama noktası	big-mount tr catalog
+unmount	ayır	gvfs (%s ayrıldı), gtk40 (Birim ayrılamadı), udisks2, timeshift; GTK app so GNOME term over KDE 'bağlantıyı kes'
+read-only	salt okunur	gvfs, big-mount tr, GNOME/KDE standard
+writing enabled	yazma etkin	by analogy with 'etkin' (enabled) in GNOME/KDE
+write-protect / block writing on the device	yazmaya karşı korumalı / aygıtta yazmayı engelle	plain description; 'koru' for polkit 'protect'
+safely remove	güvenle kaldır	KDE devicenotifier (güvenle kaldırmak), kio6 (Güvenli Kaldır)
+safe removal	güvenli kaldırma	KDE devicenotifier
+power off (a drive)	gücünü kapat	udisks2 (sürücünün gücünü kapatmak)
+disconnect / connect (unplug/plug)	çıkar / tak	everyday Turkish desktop usage (aygıtı çıkarabilirsiniz)
+busy	meşgul	KDE devicenotifier (Aygıt meşgul), gvfs (Dosya sistemi meşgul), gparted
+keep busy	meşgul et	derived from 'meşgul'
+health	sağlık / sağlık durumu	big-mount tr (sürücüsünün sağlık durumu)
+Healthy / Good / Poor / Critical	Sağlıklı / İyi / Zayıf / Kritik	own choice; one-word verdicts
+Attention	Dikkat	standard Turkish UI
+needs attention	dikkat gerektiriyor	standard Turkish phrasing
+SMART	SMART	brand/acronym kept (udisks2: SMART'ı)
+self-test	öz sınama	GNOME Disks tr usage
+rescue / recover / recovery	kurtar / kurtarma	standard (veri kurtarma); one verb for both
+copy (job)	kopyalama	noun for the job; 'kopya' for the resulting copy
+source	kaynak	gvfs (Kaynak dosya), gtk40
+destination	hedef	gtk40 (Hedefte yeterli alan yok), gvfs
+resume	sürdür	kio6 (Sür&dür)
+pause / paused	duraklat / duraklatıldı	gtk40 (Duraklatıldı)
+cancel / cancelled	iptal / iptal edildi	GNOME/KDE standard
+job	iş	gtk40 (İşler Reddediliyor)
+disk image	disk görüntüsü	kio/KDE usage (görüntü dosyası in gvfs); clearer than 'kalıp' for general users
+make an image	görüntü oluştur	derived
+map (of a disk image)	harita	ddrescue mapfile; udisks2 'Bölüm Haritası'
+unreadable areas	okunamayan alanlar	plain wording
+retries / retry	yeniden denemeler / yeniden dene	kio6, gvfs (Yeniden Dene)
+salvage = Save what can be read	okunabileni kaydet / okunabileni kaydetme (işi)	plain wording, distinct from rescue/copy
+partly recovered files	kısmen kurtarılan dosyalar	plain wording
+search by content	içeriğe göre arama	plain wording
+found files	bulunan dosyalar	plain wording
+lost partitions	kayıp bölümler	plain wording
+candidates	adaylar	literal, PhotoRec results
+manifest (SHA-256 list)	sağlama toplamı listesi	gvfs/kio 'sağlama toplamı' (checksum)
+set aside	bir kenara ayır	plain wording for skipped stalled files
+stalled / stuck / does not advance	takılan / ilerlemeyen	plain wording
+verify / check	doğrula / denetle	kio6 (doğrulanıyor), big-mount tr (denetle)
+dry run	deneme çalıştırması	common Turkish CLI wording
+encrypted	şifreli	udisks2 (Şifreli bir aygıt), timeshift
+unlock	kilidini aç	udisks2, gtk40 (Aygıtın Kilidini Aç)
+passphrase	parola	gvfs (parola gerekiyor), udisks2
+running system	çalışan sistem	plain wording
+notifier	bildirici	KDE (bildirici) usage
+password prompt / Authentication is required to	… için kimlik doğrulaması gerekli	udisks2 polkit messages
+log (system log / job log)	günlük	big-mount tr (Günlük), systemd journal
+kernel log / kernel messages	çekirdek günlüğü / çekirdek iletileri	GNOME/KDE standard
+swap space	takas alanı	gparted, KDE
+snapshot	anlık görüntü	timeshift/KDE
+boot / start of the computer	açılış	big-mount tr (açılışta)
+home folder	ev klasörü	GNOME (Ev klasörü)
+container / sandboxed	kapsayıcı / korumalı alan	GNOME/flatpak tr
+driver (filesystem driver)	sürücü yazılımı / dosya sistemi sürücüsü	disambiguates from 'sürücü' = drive
+hub	çoklayıcı (hub)	kept English in parentheses
+form of address	siz (formal imperative: -in/-ın), CLI option help in bare imperative	GNOME/KDE Turkish convention; big-mount tr help lines
+placeholder suffixes	rephrased as 'Label: %s' or '%s aygıtını'; no suffix glued to %s	vowel harmony safety

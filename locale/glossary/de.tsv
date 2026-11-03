@@ -1,0 +1,67 @@
+source	translation	where the choice comes from
+form of address	Sie (formal)	KDE and GNOME German teams; devicenotifier "Klicken Sie, um …"
+quotation marks	„…“	KDE German (kio6 „%1“); gtk40 uses »…«, chose „…“ as standard German typography
+ellipsis	" …" (space before)	kio6 "Wird ausgehängt …", "Wird sicher entfernt …"
+drive	Laufwerk	udisks2 "Power off drive" = "Laufwerk ausschalten"; gparted
+device	Gerät	kio6 "Device" = "Gerät"; devicenotifier "Gerätestatus"
+disk (physical)	Datenträger / physischer Datenträger; hard disk = Festplatte	gnome-disk-utility convention; drive-detect "Hard disk" = Festplatte
+volume	Datenträger	GNOME Disks / Windows German usage; avoids English "Volume"
+disk image	Datenträgerabbild (short: Abbild)	common German desktop term (GNOME Disks "Laufwerksabbild"/"Abbild")
+partition	Partition	gparted, partitionmanager
+partition table	Partitionstabelle	gparted
+filesystem	Dateisystem	udisks2, gparted, util-linux
+mount	einhängen	kio6 "Mount" = "Einhängen"; devicenotifier; gparted "Eingehängt"
+unmount	aushängen	kio6 "&Unmount" = "&Aushängen"; udiskie
+mounted at	eingehängt unter	gparted/util-linux "Einhängepunkt"
+read-only	schreibgeschützt	common KDE/GNOME usage; util-linux "Nur-Lese-Gerät" rejected as stiff
+writing enabled	mit Schreibzugriff	project choice, plain wording
+block writing on the device / protect	Schreiben auf dem Gerät blockieren / schützen	project choice from msgid
+safely remove	sicher entfernen	devicenotifier "Safely remove" = "Sicher entfernen"; kio6
+safe removal	sicheres Entfernen	derived from "sicher entfernen"
+power off	ausschalten	udisks2 "Power off drive" = "Laufwerk ausschalten"
+disconnect	trennen	common KDE/GNOME usage
+busy (device)	belegt	util-linux "wird benutzt"; devicenotifier "beschäftigt" rejected as unidiomatic for devices
+in use	in Verwendung / wird verwendet	common usage
+health	Zustand	GNOME Disks "SMART-Daten … Zustand"; plain word for users
+Healthy / Good / Poor / Critical	Einwandfrei / Gut / Schlecht / Kritisch	project choice; four distinct grades
+Attention	Achtung	common usage
+SMART	SMART	brand, kept
+rescue	retten / Rettung	project choice (Dateirettung)
+recover / recovery	wiederherstellen / Wiederherstellung	KDE/GNOME usage
+copy	Kopie / kopieren	standard
+source	Quelle	standard (gtk40, dolphin)
+destination	Ziel	gtk40 "Zielort", dolphin "Zielordner"
+resume	fortsetzen	common GNOME usage (kio6 "Wiederaufnehmen" rejected as stiff)
+pause	pausieren / Pausiert	standard
+cancel	abbrechen	dolphin, udiskie "Abbrechen"
+stop (a job)	anhalten	project choice; services "beenden"
+job	Auftrag	common German desktop term for print/backup jobs
+map (of a disk image)	Karte (des Datenträgers)	project choice, plain word
+unreadable areas	unlesbare Bereiche	project choice
+retries	Wiederholungen	project choice
+salvage / Save what can be read	Lesbares sichern; noun: teilweise Rettung	project choice from msgid
+partly recovered files	teilweise wiederhergestellte Dateien	project choice
+search by content	Suche nach Inhalt / nach Inhalt suchen	project choice
+found files / candidates	gefundene Dateien / Kandidaten	project choice
+lost partitions	verlorene Partitionen	standard
+manifest (SHA-256 list)	Prüfsummenliste	project choice, plainer than "Manifest"
+set aside	zurückstellen / zurückgestellt	project choice
+stalled / does not advance	es geht nicht voran / hängend	project choice
+check / verify	prüfen / Prüfung	gparted "Prüfen"
+dry run	Probelauf	common German CLI usage
+encrypted / unlock / locked	verschlüsselt / entsperren / gesperrt	udisks2 "Ein verschlüsseltes Gerät entsperren"
+passphrase	Passphrase	KDE/GNOME usage
+running system	laufendes System	project choice
+notifier	Benachrichtigung (über schreibgeschützte Geräte)	project choice
+password prompt / authentication	Legitimierung ist erforderlich …	udisks2/polkit "Legitimierung ist … notwendig"
+file manager	Dateiverwaltung	KDE German "Dateiverwaltung"
+home folder	persönlicher Ordner	KDE/GNOME German
+swap space	Auslagerungsbereich	KDE German (Auslagerungsspeicher/-bereich)
+kernel log	Kernel-Protokoll	common usage
+log	Protokoll	standard
+report	Bericht	standard
+removable device	Wechseldatenträger	standard Windows/KDE German
+boot (at boot)	beim Systemstart	standard
+Fast Startup (Windows)	Schnellstart	Windows German UI
+Shift key	Umschalttaste	standard
+Ctrl	Strg	standard German keyboard

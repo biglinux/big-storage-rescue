@@ -1,0 +1,61 @@
+source	translation	source of the choice
+drive	unità	udisks2 it ("Spegne un'unità"), gvfs it
+device	dispositivo	udisks2, gparted, kio6 it
+disk	disco	gparted, udisks2 it
+volume	volume	gvfs it
+partition	partizione	gparted, big-mount it
+filesystem	file system	udisks2, gvfs, big-mount it (two words)
+mount	montare / Monta	udisks2, kio6, devicenotifier it
+unmount	smontare / Smonta	udisks2, gvfs ("Smonta comunque") it
+mounted	montato	gparted ("Montata su"), big-mount it
+mount point	punto di montaggio	gparted, kio6 it
+read-only	sola lettura (in sola lettura)	gvfs ("Il file system è in sola lettura"), big-mount it
+read and write	lettura e scrittura	big-mount it
+writing enabled	scrittura abilitata	GNOME convention abilitare/disabilitare
+write-protected	protetto da scrittura	common Italian desktop usage
+safe removal	rimozione sicura	big-mount it
+safely remove	Rimuovi in sicurezza	plasma devicenotifier it
+power off	spegnere / Spegni	udisks2 it
+busy	occupato	devicenotifier, gparted it
+health	stato di salute / salute	big-mount it ("lo stato di salute della sua unità")
+Healthy / Good / Poor / Critical	Sano / Buono / Scarso / Critico	rating ladder, masculine (stato di salute)
+Attention	Attenzione	common
+SMART	SMART	udisks2 it (unchanged)
+rescue	recupero; mettere in salvo (verb)	big-mount it ("messa in salvo dei file"); recupero for nouns
+recovery	recupero	common
+copy	copia / copiare	dolphin it
+source	origine	kio6/dolphin it ("Origine"); sorgente only for source code
+destination	destinazione	kio6, gtk40 it
+resume	riprendere / Riprendi	filelight it
+pause	sospendere / Pausa / In pausa	gtk40 it ("In pausa")
+cancel	annullare / Annulla	gvfs, dolphin, gparted it
+job	lavoro	gtk40, udisks2 it ("Annulla un lavoro")
+disk image	immagine disco	common Italian desktop
+map (of image)	mappa	ddrescue mapfile
+unreadable areas	aree illeggibili	plain Italian
+retries	tentativi	common
+salvage	recupero parziale	CONTEXT (save what can be read)
+Save what can be read	Salva ciò che è leggibile	CONTEXT
+partly recovered files	file recuperati in parte	CONTEXT
+search by content	ricerca per contenuto	plain Italian
+found files	file trovati	plain Italian
+lost partitions	partizioni perse	plain Italian
+manifest (SHA-256 list)	elenco di verifica	plain word instead of jargon
+set aside	messo da parte	plain Italian
+stalled	bloccato	plain Italian
+verify	verificare / Verifica	kio6 it
+check	controllare / Controlla	devicenotifier ("Controlla gli errori"), gparted it
+dry run	simulazione	common Italian CLI usage
+encrypted	cifrato	udisks2, gparted it
+unlock	sbloccare / Sblocca	udisks2 it
+running system	sistema in esecuzione	plain Italian
+notifier	servizio di notifica	plain Italian
+password prompt	richiesta della password	plain Italian
+administrator password	password di amministratore	big-mount it ("privilegi di amministratore")
+file manager	gestore di file	GNOME/KDE it
+home folder	cartella home	GNOME/KDE it
+swap space	spazio di swap	common Italian
+kernel log	registro del kernel	common Italian
+Usage	Uso	big-mount it
+form of address	informal tu, imperative for buttons; 3rd person for CLI option help	big-mount it, GNOME/KDE it
+quotes	«…» for quoted UI words; '%s' kept in CLI messages as in big-mount it	GNOME it / big-mount it

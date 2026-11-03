@@ -1,0 +1,52 @@
+source	translation	source of the choice
+drive	диск (USB drive: USB-накопитель)	ordinary-user wording, gnome-disk-utility/big-mount ru "диск"; udisks2 "привод" is for optical drives
+device	устройство	kio6, libadwaita, udisks2
+disk	диск	gparted, big-mount ru
+volume	том	gvfs, udisks2 "группа томов"
+partition	раздел	gparted, big-mount ru
+filesystem	файловая система	gparted, gvfs, big-mount ru
+mount / mounted	смонтировать / смонтирован, монтирование	big-mount ru, udisks2
+unmount	размонтировать, размонтирование	gtk40 "Размонтировать" (udisks2 uses "демонтировать"; gtk40 chosen as GTK peer)
+read-only	только для чтения	big-mount ru, Plasma
+writing enabled	с разрешённой записью	descriptive; pairs with "только для чтения"
+write-protect	защита от записи / защищено от записи	standard Russian hardware term
+safe removal / safely remove	безопасное извлечение / безопасно извлечь	plasma devicenotifier "Безопасно извлечь", big-mount ru
+power off	выключить питание	udisks2 "Выключить питание привода"
+busy	занято (устройство занято)	plasma devicenotifier "поскольку оно занято"
+health	здоровье (диска)	SMART tools convention; kept distinct from state = состояние
+Healthy / Good / Poor / Critical	Отличное / Хорошее / Плохое / Критическое	grade of здоровье (neuter); Healthy is the best grade (no notes), Good has notes
+Attention	Внимание	standard
+SMART	SMART	brand, kept
+rescue	спасение (файлов)	big-mount ru "спасение файлов"
+recovery	восстановление	standard
+copy	копия / копирование	standard
+source	источник	kio6
+destination	место назначения / папка назначения	kio6 "Назначение"
+resume	продолжить / возобновить	bigocrpdf/bignetscreen "Продолжить", balooctl "Возобновить"
+pause	приостановить	dolphin "Приостановить"
+cancel	отменить (button: Отмена)	gtk/dolphin "Отмена"
+job	задание	standard KDE/GNOME "задание"
+disk image	образ диска	standard
+map (of a disk image)	карта (образа)	GNU ddrescue mapfile, "карта" = what was read
+unreadable areas	нечитаемые области	descriptive
+retries	повторные попытки	standard
+salvage / Save what can be read	сохранение читаемого / Сохранить то, что читается	plain wording, no jargon
+partly recovered files	частично восстановленные файлы	descriptive
+search by content	поиск по содержимому	standard (PhotoRec carving)
+found files	найденные файлы	standard
+lost partitions	потерянные разделы	TestDisk wording
+manifest (SHA-256 list)	манифест (список SHA-256)	flatpak/bfd ru "манифест"
+set aside	отложить / отложенные	plain wording
+stalled / stuck	завис / не продвигается	plain wording
+verify / check	проверить / проверка	standard
+dry run	пробный запуск	flatpak ru "Пробный запуск"
+encrypted / unlock	зашифрованный / разблокировать	gparted, gtk40
+running system	работающая система	descriptive
+notifier	служба уведомлений	descriptive; avoids calque "уведомитель"
+password prompt	запрос пароля	standard
+administrator password	пароль администратора	standard
+file manager	файловый менеджер	KDE/GNOME ru
+home folder	домашняя папка	KDE/GNOME ru
+swap space	пространство подкачки	gparted/KDE ru
+form of address	вы (lowercase, formal), imperatives "Выберите", buttons infinitive	GNOME/KDE ru convention
+quotes	«…»	Russian typography, big-mount ru

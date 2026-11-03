@@ -104,3 +104,11 @@ in `/var/tmp`, whatever `TMPDIR` says. `/tmp` may be mounted noexec, and an
 `execvp` then quietly runs the real program instead. Salvage tests use GNU ddrescue itself, told
 which areas are bad (`--test-mode`) or how fast it may read
 (`--max-read-rate`). CI installs `ddrescue` for them.
+
+## Nine more languages (2026-11-03)
+
+| Suite | Before | After |
+| --- | --- | --- |
+| i18n-tests | 37 | **102 passed** (each catalog complete and compiled; every language in polkit by its POSIX name; German chosen at run time; the fallback checks use Dutch, which has no catalog) |
+| package-check | 112 | **121 passed** (one installed catalog per language of `locale/LINGUAS`) |
+| lib, drive, migrate, gui, gui-e2e | 278, 393, 54, 174, 7 | unchanged, all pass |

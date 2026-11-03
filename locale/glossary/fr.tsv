@@ -1,0 +1,61 @@
+source	translation	where the choice comes from
+drive	disque	udisks2 fr: Drive → Disque; GNOME Disks usage
+device	périphérique	udisks2, kio6, gparted, Plasma device notifier
+disk	disque	udisks2, kio6 (Disk Full → Disque plein)
+volume	volume	gtk40 (Volume type → Type de volume)
+partition	partition	gparted
+filesystem	système de fichiers	udisks2, gvfs
+mount / unmount	monter / démonter	udisks2, gtk40, Plasma device notifier
+mounted at	monté sur	kio6 (Mounted on: → Monté sur :), gparted, big-mount fr
+read-only	lecture seule / en lecture seule	udisks2, gvfs, big-mount fr
+writing enabled	l'écriture activée	project consistency (Remonter en écriture)
+write-protected / protect	protégé en écriture / protéger	common French usage; polkit string
+block writing on the device	bloquer l'écriture sur le périphérique	literal, matches msgid
+safe removal	retrait sécurisé	big-mount fr catalog
+safely remove	retirer en toute sécurité	Plasma device notifier (Safely remove → Retirer en toute sécurité)
+power off	éteindre	udisks2 (power off $(drive) → éteindre $(drive))
+busy	occupé	gvfs (File system is busy → occupé), Plasma device notifier
+in use	utilisé / en cours d'utilisation	plasma_engine_soliddevice (In Use → En cours d'utilisation)
+health	santé	big-mount fr (la santé de son disque)
+Healthy / Good / Poor / Critical	Sain / Bon / Médiocre / Critique	grade adjectives agree with 'disque'
+Attention	Attention	French typographic usage
+SMART	SMART	udisks2 (untranslated)
+rescue (files)	sauvetage / sauver	big-mount fr (sauvetage de fichiers)
+recover / recovery	récupérer / récupération	common desktop usage
+copy	copie / copier	standard
+source / destination	source / destination	standard
+resume	reprendre	kio6/kjobwidgets (Resume → Reprendre)
+pause / paused	mettre en pause / en pause	kjobwidgets (Pause → Mettre en pause)
+cancel / cancelled	annuler / annulé	gtk40
+job	tâche	gtk40 (Rejecting Jobs → Tâches non acceptées)
+disk image	image disque	common French usage
+map (ddrescue)	carte (du disque)	GNU ddrescue mapfile, plain word
+unreadable areas	zones illisibles	plain French
+retries	nouvelles tentatives	plain French
+salvage / Save what can be read	sauvetage partiel / Sauver ce qui est lisible	project wording
+partly recovered files	fichiers partiellement récupérés	project wording
+left out (by a copy)	omis	distinct from set aside
+set aside	mis de côté	project wording
+stalled / stuck	bloqué	plain French
+search by content	recherche par contenu	project wording
+found files	fichiers trouvés	plain French
+lost partitions	partitions perdues	plain French
+look whole / cut short / damaged	semblent intacts / tronqués / endommagés	plain French
+manifest	manifeste	technical usage (SHA-256 list)
+verify / check	vérifier / vérification	gparted (Check → Vérifier)
+dry run	simulation	common French CLI usage
+encrypted	chiffré	udisks2, gparted
+unlock / locked	déverrouiller / verrouillé	udisks2, gtk40
+passphrase	phrase de passe	GNOME/udisks usage
+running system	système en cours d'exécution	plain French
+notifier	notificateur	KDE French usage
+password prompt / authentication	une authentification est nécessaire pour…	udisks2 polkit messages
+swap space	espace d'échange	common French usage
+home folder	dossier personnel	GNOME/KDE fr
+kernel log	journal du noyau	common usage
+hub	concentrateur	standard French
+Fast Startup (Windows)	démarrage rapide	Windows French UI
+KDE Partition Manager	Gestionnaire de partitions de KDE	KDE fr app name
+option help (CLI)	infinitif, minuscule	coreutils/big-mount fr (afficher cette aide)
+address	vous (impératif vouvoyé)	GNOME/KDE French
+typography	espace insécable U+00A0 avant : ; ? ! et dans « »; apostrophe ’	installed gtk40/glib20/libadwaita fr .mo use U+00A0 (no U+202F found)

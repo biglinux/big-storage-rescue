@@ -1,0 +1,63 @@
+drive	dysk (Optical drive = Napęd optyczny)	reviewer: plain desktop word (Windows/GNOME Disks 'Dyski'); napęd reads as optical drive; same gender/declension as napęd
+disk	dysk	gparted, udisks2; physical disk = dysk fizyczny
+device	urządzenie	udisks2, kio6, devicenotifier
+volume	wolumin	gparted/udisks2 usage
+partition	partycja	gparted
+filesystem	system plików	udisks2, gparted
+mount / mounted	zamontuj / zamontowane	GNOME/GTK: udisks2, gparted, big-mount pl (KDE uses podepnij; app is GTK)
+unmount	odmontuj / odmontowanie	gparted (odmontować); GTK convention
+read-only	tylko do odczytu	gparted, big-mount pl
+writing enabled	z włączonym zapisem	descriptive; gparted read-write context
+write-protect / block writing	zabezpieczone przed zapisem / zablokuj zapis	own choice, consistent
+safely remove / safe removal	wysuń bezpiecznie / bezpieczne wysuwanie	reviewer: KDE devicenotifier/kio6 (Wysuń bezpiecznie), BigLinux is Plasma; keeps odłącz for the physical unplug
+disconnect	odłącz (fizycznie)	devicenotifier/kio usage
+power off	wyłącz	udisks2 (wyłączyć napęd)
+eject	wysuń	kio6, devicenotifier (keywords only)
+busy	zajęte / zajmuje urządzenie	devicenotifier (jest zajęte); gparted 'W użyciu' for in use
+in use	w użyciu / używane	gparted
+health	stan zdrowia	own choice; 'stan' alone is used for state/status
+Critical / Poor / Good / Healthy	Krytyczny / Słaby / Dobry / Zdrowy	masculine, agrees with napęd/dysk
+Attention:	Uwaga:	standard
+SMART	SMART	brand, unchanged
+SMART verdict PASSED / Passed / Failing	PASSED / Pozytywny / Awaria	PASSED kept as smartctl output
+rescue	ratowanie / ratuj	own choice; recovery = odzyskiwanie
+recovery / recover	odzyskiwanie / odzyskaj	standard
+copy (noun / verb)	kopia, kopiowanie / kopiuj	standard
+source	źródło	gparted
+destination	miejsce docelowe	gparted (miejsce docelowe)
+resume	wznów	timeshift pl
+pause / paused	wstrzymaj / wstrzymano	GNOME convention
+cancel / cancelled	anuluj / anulowano	GTK
+job	zadanie	standard
+disk image	obraz dysku	gtk40 (obraz), standard
+map (of disk image)	mapa dysku	own
+unreadable areas	nieczytelne obszary	own
+retries / retry	ponowienia / ponów	gparted (Ponów)
+salvage / Save what can be read	ocalanie, ocalić / Zapisz to, co da się odczytać	own; avoids clash with ratowanie (rescue)
+partly recovered files	częściowo odzyskane pliki	own
+left out (by a copy)	pominięte	own
+search by content	wyszukiwanie według zawartości	own
+found files / candidates	znalezione pliki / potencjalne pliki	reviewer: 'kandydaci' is masculine-personal (people)
+lost partitions	utracone partycje	own
+manifest	manifest	kept as technical term (SHA-256 list)
+set aside	odłożone / odkładać	own
+stuck / does not advance	zablokowany / nie postępuje	own
+verify / check	sprawdź / sprawdzanie	gparted (Sprawdź)
+dry run	przebieg próbny	timeshift pl
+encrypted / unlock / lock	zaszyfrowany / odblokuj / zablokuj	gparted, timeshift, gtk40
+passphrase	hasło	timeshift (Wprowadź hasło, aby odblokować)
+running system	działający system	own
+notifier	powiadamianie (o urządzeniach tylko do odczytu)	own
+swap space	przestrzeń wymiany	standard Polish
+folder	katalog	GNOME/KDE Polish convention
+home folder	katalog domowy	standard
+file manager	menedżer plików	standard
+kernel log	dziennik jądra	standard
+log	dziennik	standard
+journal (filesystem)	kronika	Polish e2fsprogs/GNOME usage
+hub	koncentrator	standard
+adapter	przejściówka	common Polish
+storage	pamięć masowa	standard
+Authentication is required to ...	Wymagane jest uwierzytelnienie, aby ...	udisks2 pl
+form of address	impersonal (Należy…, Można…, Proszę…) in text; imperative in buttons; checkbox labels as nouns (Wyświetlanie…)	GNOME Polish convention
+quotation marks	„…”	gtk40 pl
