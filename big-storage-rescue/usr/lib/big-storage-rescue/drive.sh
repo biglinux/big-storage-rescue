@@ -602,7 +602,8 @@ bsr_drive_protect() {
    local verb="$1" target="${2:-}" rc
    [[ $target == /dev/* ]] || { printf '%s\n' $"Name a device, such as /dev/sdb1." >&2; return 2; }
    bsr_resolve "$target" || { bsr_resolve_fail "$target"; return 24; }
-   bsr_helper "$verb" "$R_DEV"; rc=$?
+   bsr_seq_of "$R_DEV"
+   bsr_helper "$verb" "$R_DEV" "${BSR_SEQ[@]}"; rc=$?
    case "$rc" in
       0)
          [ "$verb" = protect ] && bsr_facts "$R_DEV" && bsr_chosen_ro_add "${F[DISK]}" "${F[DISK]}"
@@ -612,6 +613,7 @@ bsr_drive_protect() {
          ;;
       3) printf '%s\n' $"Another volume of this drive is mounted with writing enabled. Unmount it first." >&2; return 3 ;;
       4) printf '%s\n' $"Refused: this drive holds the running system." >&2; return 4 ;;
+      5) printf '%s\n' $"The device was disconnected or replaced. Nothing was done." >&2; return 24 ;;
       126 | 127) printf '%s\n' $"Permission was not granted." >&2; return 5 ;;
       *) printf $"The helper failed (exit %s)."'\n' "$rc" >&2; return 1 ;;
    esac

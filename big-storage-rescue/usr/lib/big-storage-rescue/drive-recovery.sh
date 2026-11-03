@@ -123,7 +123,8 @@ bsr_rec_image_supervise() {
       bsr_job_state_save "$dir"; bsr_job_report_write "$dir"
       return 0
    fi
-   bsr_helper image "$dev" "${JC[DEST]}" "${JC[MAP]}" "${JC[RETRIES]}" "$dir/stop" >> "$dir/ddrescue.out" 2>&1 &
+   bsr_seq_of "$dev"
+   bsr_helper image "$dev" "${JC[DEST]}" "${JC[MAP]}" "${JC[RETRIES]}" "$dir/stop" "${BSR_SEQ[@]}" >> "$dir/ddrescue.out" 2>&1 &
    pid=$!
    while kill -0 "$pid" 2>/dev/null; do
       sleep 2
@@ -153,6 +154,8 @@ bsr_rec_image_supervise() {
    case "$rc" in
       126 | 127) JS[STATE]=failed JS[REASON]=not-authorized ;;
       25) JS[STATE]=failed JS[REASON]=no-ddrescue ;;
+      5) JS[STATE]=needs-attention JS[REASON]=source-gone ;;
+      4) JS[STATE]=failed JS[REASON]=image-system ;;
       *)
          if [ "$ctl" = cancel ]; then JS[STATE]=cancelled
          elif [ "$ctl" = pause ]; then JS[STATE]=paused

@@ -148,6 +148,14 @@ check "service menu: KIO keys present" bash -c 'grep -q "^Type=Service" "$1" && 
 command -v xmllint >/dev/null && check "polkit policy is well-formed XML" xmllint --noout "$P/usr/share/polkit-1/actions/org.biglinux.big-storage-rescue.policy"
 check "polkit exec.path names the installed helper" grep -q '>/usr/lib/big-storage-rescue/bsr-holders<' "$P/usr/share/polkit-1/actions/org.biglinux.big-storage-rescue.policy"
 check "polkit exec.path names the drive helper" grep -q '>/usr/lib/big-storage-rescue/bsr-drive-helper<' "$P/usr/share/polkit-1/actions/org.biglinux.big-storage-rescue.policy"
+check "a disk image has its own polkit action, which asks every time" python3 -I -c '
+import sys, xml.etree.ElementTree as ET
+acts = {a.get("id"): a for a in ET.parse(sys.argv[1]).getroot().iter("action")}
+a = acts["org.biglinux.big-storage-rescue.image"]
+ann = {x.get("key"): x.text for x in a.iter("annotate")}
+ok = ann.get("org.freedesktop.policykit.exec.argv1") == "image" and a.find("defaults/allow_active").text == "auth_admin"
+ok = ok and list(acts).index("org.biglinux.big-storage-rescue.image") < list(acts).index("org.biglinux.big-storage-rescue.drive-helper")
+sys.exit(not ok)' "$P/usr/share/polkit-1/actions/org.biglinux.big-storage-rescue.policy"
 command -v xmllint >/dev/null && check "icon is a well-formed SVG" xmllint --noout "$P/usr/share/icons/hicolor/scalable/apps/big-storage-rescue.svg"
 check "translation catalog loads" msgunfmt -o /dev/null "$P/usr/share/locale/pt_BR/LC_MESSAGES/big-storage-rescue.mo"
 if command -v appstreamcli >/dev/null; then

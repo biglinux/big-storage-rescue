@@ -29,6 +29,9 @@ THUMB_CACHE = 256
 # The first bytes of the formats offered. gdk-pixbuf picks its loader by content:
 # only files that start like one of these reach a loader
 PICTURE_MAGIC = (b"\xff\xd8\xff", b"\x89PNG\r\n\x1a\n", b"GIF87a", b"GIF89a", b"BM")
+# A found file is untrusted: a few bytes can declare a picture of billions of
+# pixels, which would take gigabytes to decode. Larger ones are not drawn
+PICTURE_MAX_PIXELS = 100 * 1000 * 1000
 
 
 def picture(path, size):
@@ -37,6 +40,9 @@ def picture(path, size):
     with open(path, "rb") as handle:
         head = handle.read(12)
     if not (head.startswith(PICTURE_MAGIC) or (head[:4] == b"RIFF" and head[8:12] == b"WEBP")):
+        raise ValueError(path)
+    info = GdkPixbuf.Pixbuf.get_file_info(path)
+    if info is None or info[0] is None or info[1] <= 0 or info[2] <= 0 or info[1] * info[2] > PICTURE_MAX_PIXELS:
         raise ValueError(path)
     return Gdk.Texture.new_for_pixbuf(GdkPixbuf.Pixbuf.new_from_file_at_scale(path, size, size, True))
 
@@ -118,7 +124,7 @@ class Index:
 
 
 class FileItem(GObject.Object):
-    __gtype_name__ = "BigMountFileItem"
+    __gtype_name__ = "BsrFileItem"
 
     def __init__(self, record, path, size, mtime, category):
         super().__init__()
@@ -132,7 +138,7 @@ class FileItem(GObject.Object):
 class ResultsModel(GObject.Object, Gio.ListModel):
     """Only the rows on screen exist as objects."""
 
-    __gtype_name__ = "BigMountResultsModel"
+    __gtype_name__ = "BsrResultsModel"
 
     def __init__(self):
         super().__init__()

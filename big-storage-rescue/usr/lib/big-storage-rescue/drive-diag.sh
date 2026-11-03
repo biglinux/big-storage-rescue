@@ -480,9 +480,11 @@ bsr_mnt_mount() {
    [ "$REPLY" = "$seq" ] || { MNT_WHY=gone; return 24; }
    bsr_mnt_auto_protect "$mode" "$fs" && protect=1
    if [ "$protect" = 1 ] && [ "$mode" = ro ]; then
-      bsr_helper protect "$dev"; local hrc=$?
+      bsr_seq_of "$dev"
+      bsr_helper protect "$dev" "${BSR_SEQ[@]}"; local hrc=$?
       case "$hrc" in
          0) MNT_PROTECTED=1 ;;
+         5) MNT_WHY=gone; return 24 ;;
          3) MNT_WHY="protect-busy"; return 20 ;;
          4) MNT_WHY="protect-system"; return 20 ;;
          126 | 127) MNT_WHY=not-authorized; return 5 ;;

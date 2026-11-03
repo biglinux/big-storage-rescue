@@ -406,6 +406,14 @@ bsr_job_state_load() {
       k="${l%%=*}" v="${l#*=}"
       [ -n "$k" ] && [ "$k" != "$l" ] && JS[$k]="$v"
    done < "$dir/state.env"
+   # Numbers are used in arithmetic, where bash would also evaluate a name or
+   # an expression: anything but digits is dropped
+   for k in "${!JS[@]}"; do
+      case "$k" in
+         STATE | REASON | CURRENT | VERIFY_RESULT | TOTAL_ESTIMATE) ;;
+         *) [[ ${JS[$k]} =~ ^-?[0-9]*$ ]] || unset -v 'JS[$k]' ;;
+      esac
+   done
    case "${JS[STATE]:-}" in
       pending | analyzing | running | verifying | stopping)
          # Pending without a supervisor is the moment before it starts
@@ -461,9 +469,12 @@ bsr_job_reason_text() {
       not-authorized) REPLY=$"Permission was not granted." ;;
       no-ddrescue) REPLY=$"GNU ddrescue is not installed (package ddrescue). It makes the disk image." ;;
       image-error) REPLY=$"GNU ddrescue stopped with an error. See the log." ;;
+      image-system) REPLY=$"A drive of the running system cannot be imaged while it runs. Start the computer from another system (a live USB) to image it." ;;
       image-incomplete) REPLY=$"Some areas of the disk could not be read. The image holds everything that could be." ;;
       read-errors) REPLY=$"Some folders could not be read, so the list may be incomplete. See the log." ;;
       search-error) REPLY=$"PhotoRec stopped with an error. See the log." ;;
+      salvage-partial) REPLY=$"Some files have areas that could not be read. They were saved with everything else, in a folder of their own, with a list of what is missing." ;;
+      salvage-left) REPLY=$"Some files could not be saved. See the list below." ;;
       nothing-found) REPLY=$"No file was recognized by its content. That does not prove there is nothing to recover: another method, or a professional, may find more." ;;
       "") REPLY="" ;;
       *) REPLY="$1" ;;

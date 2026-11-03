@@ -408,7 +408,10 @@ check "btrfs read-only, healthy drive: mounted" mnt /dev/sdg1 0 ""
 check "  ... without asking for the password" test ! -s "$WORK/helper.log"
 FAKE_HEALTH_FIND=(smart-failing) FAKE_SMART=failing
 check "btrfs read-only, drive at risk: mounted" mnt /dev/sdg1 0 ""
-check "  ... with writing blocked on the device" grep -qx 'protect /dev/sdg1' "$WORK/helper.log"
+check "  ... with writing blocked on the device, the helper told which disk it must still be" grep -qx 'protect /dev/sdg1 7' "$WORK/helper.log"
+FAKE_HELPER_RC=5
+check "  ... another drive took its place during the password: nothing done, said as such" mnt /dev/sdg1 24 gone
+FAKE_HELPER_RC=0
 : > "$WORK/helper.log"
 check "ext4 read-only, drive at risk: no protection" mnt /dev/sda1 0 ""
 check "  ... so no password is asked" test ! -s "$WORK/helper.log"
@@ -735,6 +738,34 @@ if [ "$(command findmnt -n -o SOURCE -T "$SC")" != "$(command findmnt -n -o SOUR
 fi
 run_b --drive copy --results-of 20261031-000000-dead --destination "$WORK/x" --dry-run --json >/dev/null 2>&1; check "--results-of nothing: refused" eq "$?" 1
 run_b --drive copy --results-of "$id" --destination "$WORK/x" --dry-run --json >/dev/null 2>&1; check "--results-of a list (not a search): refused" eq "$?" 2
+
+begin "the helper opens the files of an image without being led astray (its opener, as this user)"
+eval "$(sed -n "/^BSR_OPEN_OWN='/,/^'\$/p" "$L/bsr-drive-helper")"
+OD="$WORK/open"; mkdir -p "$OD/real"
+opened() { python3 -I -c "$BSR_OPEN_OWN" "$(id -u)" "$@" -- /bin/bash -c 'for f in "$@"; do readlink "/proc/$$/fd/$f"; done' _ 2>/dev/null; }
+out="$(opened "$OD/real/a.img" "$OD/real/a.map" "$OD/real/a.map.bak")"
+check "three new files: created, open, and handed on by descriptor" eq "$out" "$OD/real/a.img"$'\n'"$OD/real/a.map"$'\n'"$OD/real/a.map.bak"
+check "  ... the image only for its owner" eq "$(stat -c %a "$OD/real/a.img")" 600
+out="$(opened "$OD/real/a.img" "$OD/real/a.map" "$OD/real/a.map.bak")"
+check "  ... and open again when they exist (a resume)" eq "$(wc -l <<< "$out")" 3
+ln -s "$OD/real" "$OD/link"
+opened "$OD/link/b.img" "$OD/link/b.map" "$OD/link/b.map.bak" >/dev/null; rc=$?
+check "a link among the folders on the way: refused, nothing created" bash -c '[ "$1" != 0 ] && [ ! -e "$2" ]' _ "$rc" "$OD/real/b.img"
+ln -s "$WORK/elsewhere" "$OD/real/c.img"
+opened "$OD/real/c.img" "$OD/real/c.map" "$OD/real/c.map.bak" >/dev/null; rc=$?
+check "the file itself a link: refused, the link not followed" bash -c '[ "$1" != 0 ] && [ ! -e "$2" ]' _ "$rc" "$WORK/elsewhere"
+check "  ... and what it had created before refusing is removed" bash -c '[ ! -e "$1" ]' _ "$OD/real/c.map"
+mkfifo "$OD/real/d.img"
+timeout 5 python3 -I -c "$BSR_OPEN_OWN" "$(id -u)" "$OD/real/d.img" "$OD/real/d.map" "$OD/real/d.map.bak" -- /bin/true 2>/dev/null; rc=$?
+check "a FIFO: refused at once, never opened (exit $rc)" bash -c '[ "$1" != 0 ] && [ "$1" != 124 ]' _ "$rc"
+printf x > "$OD/real/e.img"; ln "$OD/real/e.img" "$OD/real/e2"
+opened "$OD/real/e.img" "$OD/real/e.map" "$OD/real/e.map.bak" >/dev/null; check "a file with a second name (hard link): refused" test "$?" != 0
+opened /usr/x.img /usr/x.map /usr/x.map.bak >/dev/null; check "a folder that is not the user's: refused" test "$?" != 0
+opened "$OD/real/f.img" "$OD/real/f.img" "$OD/real/f.map.bak" >/dev/null; check "the image and its map the same file: refused" test "$?" != 0
+opened "$OD/real/../real/g.img" "$OD/real/g.map" "$OD/real/g.map.bak" >/dev/null; check "a path with ..: refused" test "$?" != 0
+check "the helper refuses to image the running system" bash -c 'sed -n "/^   image)/,/^      ;;/p" "$1" | grep -q "^      refuse_system"' _ "$L/bsr-drive-helper"
+check "  ... and checks again, with the files open" bash -c 'sed -n "/^   __image-opened)/,/^      ;;/p" "$1" | grep -q "^      refuse_system"' _ "$L/bsr-drive-helper"
+check "  ... no file of the user is opened by name as root any more" bash -c '! grep -qE "exec \{FD\}[<>]" "$1"' _ "$L/bsr-drive-helper"
 
 echo "========================================="
 echo "drive result: $PASS passed, $FAIL failed"
