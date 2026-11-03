@@ -318,8 +318,13 @@ bsr_sv_supervise() {
             # Complete, and nothing there yet: where the copy would have put it
             if [ "$res" != complete ] || ! bsr_sv_place "$outw" "$target"; then
                target="$d/${JC[OUT_NAME]}/$rel"
-               bsr_sv_place "$outw" "$target" || bsr_sv_place "$outw" "${target%/*}/$id-${target##*/}" || res=conflict
+               if ! bsr_sv_place "$outw" "$target"; then
+                  target="${target%/*}/$id-${target##*/}"
+                  bsr_sv_place "$outw" "$target" || res=conflict
+               fi
             fi
+            # Where each file went, relative to the destination (for --cli manifest)
+            [ "$res" = conflict ] || printf '%s\0' "${target#"$d"/}" >> "$dir/placed0"
             ;;
          *) rm -f -- "$outw" ;;
       esac

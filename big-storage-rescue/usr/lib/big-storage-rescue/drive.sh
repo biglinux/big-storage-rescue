@@ -148,6 +148,7 @@ bsr_drive_usage() {
       "resume ID [--retry-deferred]" $"continue it, also after a shutdown; optionally try what was set aside" \
       "salvage ID [--retries N]" $"read again, with GNU ddrescue, the files a copy left out, and save what can be read of each" \
       "map ID" $"what a disk image has read so far, as a map of the disk" \
+      "manifest ID [--output FILE]" $"SHA-256 of what a copy, a salvage or an image wrote, to check later with sha256sum -c (reads the destination only)" \
       "report TARGET|ID [--anonymize]" $"report of a drive or of a copy (--output FILE [--replace])" \
       "methods TARGET" $"which ways of recovering files can be used on it, and which is advised" \
       "image --source DEV --image FILE" $"make a disk image with GNU ddrescue" \
@@ -657,7 +658,7 @@ bsr_drive_main() {
       close-apps) bsr_drive_close_apps "$@" ;;
       protect | unprotect) bsr_drive_protect "$cmd" "$@" ;;
       unlock) bsr_drive_unlock_volume "$@" ;;
-      destinations | copy | jobs | status | pause | cancel | resume | report | salvage | map | __run)
+      destinations | copy | jobs | status | pause | cancel | resume | report | salvage | map | manifest | __run)
          bsr_load drive-copy.sh
          bsr_load drive-recovery.sh
          bsr_load drive-salvage.sh

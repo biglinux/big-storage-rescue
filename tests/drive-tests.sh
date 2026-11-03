@@ -823,6 +823,8 @@ if [ -n "$REAL_DDRESCUE" ] && [ "$(command findmnt -n -o SOURCE -T "$SVS")" != "
    check "  ... resumed, it ends complete" bash -c '[[ $1 == *"\"state\":\"completed\""* && $1 == *"\"bad_bytes\":0"* ]]' _ "$st"
    check "  ... and the file is the source, byte for byte" cmp -s "$SVS/large.bin" "$SVD/out/large.bin"
    check "  ... what the first run read was not read again (it is now 'unreadable', and the file has no hole)" bash -c '[ "$1" -ge 65536 ]' _ "${done1:-0}"
+   run_b --drive manifest "$id" >/dev/null
+   check "  ... its manifest lists the file where it was placed, and checks" bash -c 'grep -q "  large.bin$" "$1/manifest.sha256" && cd "$2" && sha256sum --quiet -c "$1/manifest.sha256"' _ "$BSR_JOBS/$id" "$SVD/out"
 else
    echo "  (skipped: needs GNU ddrescue and /dev/shm on another filesystem)"
 fi
@@ -897,6 +899,28 @@ check "--cli check-files: the counts as JSON" eq "$out" '{"complete":6,"truncate
 res="$(run_b --drive results 20261103-120000-ffff --json)"
 check "  ... and the results say where the verdicts are" bash -c '[[ $1 == *"\"integrity\":\"$2/integrity\""* && $1 == *"\"truncated\":6"* ]]' _ "$res" "$BSR_JOBS/20261103-120000-ffff"
 check "  ... the report says what whole means" bash -c '[[ $1 == *"Look whole"*"6"* && $1 == *"does not prove every byte"* ]]' _ "$(run_b --drive report 20261103-120000-ffff 2>&1)"
+
+begin "a manifest: SHA-256 of what was written, checked later with sha256sum -c"
+MD="$WORK/mdest"; mkdir -p "$MD/sub" "$BSR_JOBS/20261103-130000-aaaa" "$BSR_JOBS/20261103-130000-bbbb"
+printf a > "$MD/a.txt"; printf b > "$MD/sub/b c.txt"; printf c > "$MD/x|y.txt"
+printf '%s\n' KIND=copy "DEST=$MD" SOURCE=/src > "$BSR_JOBS/20261103-130000-aaaa/job.conf"; printf 'STATE=completed\n' > "$BSR_JOBS/20261103-130000-aaaa/state.env"
+{ printf '2026/11/03 10:00:00 [1] >f+++++++++|1|a.txt\n'; printf '2026/11/03 10:00:00 [1] cd+++++++++|0|sub/\n'
+  printf '2026/11/03 10:00:01 [1] >f+++++++++|1|sub/b c.txt\n'; printf '2026/11/03 10:00:02 [1] >f.st......|1|a.txt\n'
+  printf '2026/11/03 10:00:03 [1] >f+++++++++|1|x|y.txt\n'; } > "$BSR_JOBS/20261103-130000-aaaa/events.log"
+out="$(run_b --drive manifest 20261103-130000-aaaa)"; rc=$?
+man="$BSR_JOBS/20261103-130000-aaaa/manifest.sha256"
+check "a copy: each file written, once ($out)" bash -c '[ "$1" = 0 ] && [ "$(grep -vc "^#" "$2")" = 3 ]' _ "$rc" "$man"
+check "  ... and sha256sum -c agrees, in the destination" bash -c 'cd "$1" && sha256sum --quiet -c "$2"' _ "$MD" "$man"
+printf changed > "$MD/a.txt"
+check "  ... a file changed since is caught by that check" bash -c 'cd "$1" && ! sha256sum --quiet -c "$2" 2>/dev/null' _ "$MD" "$man"
+rm -f "$MD/sub/b c.txt"
+run_b --drive manifest 20261103-130000-aaaa >/dev/null 2>&1; check "a file gone from the destination: said, and left out" eq "$?" 1
+mkdir -p "$WORK/mimg"; head -c 4096 /dev/urandom > "$WORK/mimg/disk.img"
+printf '%s\n' KIND=image "DEST=$WORK/mimg/disk.img" DEVICE=/dev/sdc SERIAL=S1 SIZE=4096 > "$BSR_JOBS/20261103-130000-bbbb/job.conf"; printf 'STATE=needs-attention\n' > "$BSR_JOBS/20261103-130000-bbbb/state.env"
+run_b --drive manifest 20261103-130000-bbbb --output "$WORK/img.sha256" >/dev/null
+check "an image: its hash, with where it came from and what its zeros mean" bash -c '[[ $(cat "$1") == *"serial S1, 4096 bytes"*"zeros"* ]] && (cd "$2" && sha256sum --quiet -c "$1")' _ "$WORK/img.sha256" "$WORK/mimg"
+printf 'STATE=running\nPID=%s\n' "$$" > "$BSR_JOBS/20261103-130000-bbbb/state.env"; bsr_proc_state "$$"; printf 'PID_START=%s\n' "$PROC_START" >> "$BSR_JOBS/20261103-130000-bbbb/state.env"
+run_b --drive manifest 20261103-130000-bbbb >/dev/null 2>&1; check "  ... not while it is still being written" eq "$?" 10
 
 begin "the map of a disk image, from a ddrescue map"
 mkdir -p "$BSR_JOBS/20261103-110000-eeee"

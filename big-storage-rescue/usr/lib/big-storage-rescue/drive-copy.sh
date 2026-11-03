@@ -1171,6 +1171,59 @@ bsr_job_report_text() {
    printf '\n%s %s\n' $"Log:" "$dir/events.log"
 }
 
+# big-storage-rescue --cli manifest ID [--output FILE]: the SHA-256 of what a
+# copy, a salvage or an image wrote, in the format of sha256sum, so that
+# anyone can check it later with `sha256sum -c` in the destination folder.
+# Only the destination is read: the source, maybe failing, is never read again.
+bsr_job_cmd_manifest() {
+   local id="" out="" a dir root list rc n
+   while [ "$#" -gt 0 ]; do
+      case "$1" in
+         --output) out="${2:-}"; shift ;;
+         -*) bsr_drive_badarg "$1"; return 2 ;;
+         *) id="$1" ;;
+      esac
+      shift
+   done
+   bsr_job_dir "$id" || { printf $"There is no job '%s'."'\n' "$id" >&2; return 1; }
+   dir="$REPLY"
+   bsr_job_conf_load "$dir"
+   bsr_job_state_load "$dir"
+   case "${JS[STATE]}" in
+      pending | analyzing | running | verifying | stopping) printf '%s\n' $"It is still running. Wait for it to finish, or pause it first." >&2; return 10 ;;
+   esac
+   list="$dir/manifest.list0"
+   case "${JC[KIND]:-copy}" in
+      copy)
+         root="${JC[DEST]}"
+         # The files rsync wrote, each once, from its log
+         LC_ALL=C awk -F'|' '$1 ~ /(^|[^|]* )>f/ { sub(/^[^|]*\|[^|]*\|/, ""); if (!seen[$0]++) printf "%s%c", $0, 0 }' "$dir/events.log" > "$list" 2>/dev/null
+         ;;
+      salvage) root="${JC[DEST]}"; cp -f -- "$dir/placed0" "$list" 2>/dev/null || : > "$list" ;;
+      image) root="${JC[DEST]%/*}"; printf '%s\0' "${JC[DEST]##*/}" > "$list" ;;
+      *) printf '%s\n' $"Only a copy, a salvage or an image has files to list in a manifest." >&2; return 2 ;;
+   esac
+   [ -n "$out" ] || out="$dir/manifest.sha256"
+   [[ $out == /* ]] || out="$PWD/$out"
+   n="$(tr -cd '\0' < "$list" | wc -c)"
+   [ "$n" -gt 0 ] || { printf '%s\n' $"There is nothing to list." >&2; rm -f -- "$list"; return 1; }
+   timeout 10 test -d "$root" || { bsr_cp_err_text dest-missing; printf '%s\n' "$REPLY" >&2; rm -f -- "$list"; return 24; }
+   {
+      printf '# Big Storage Rescue %s, %s\n' "${JC[KIND]:-copy}" "$id"
+      printf '# %(%Y-%m-%dT%H:%M:%S%z)T: SHA-256 of what was written, relative to: %s\n' -1 "${root//[[:cntrl:]]/?}"
+      [ "${JC[KIND]:-copy}" = image ] && printf '# source: %s, serial %s, %s bytes; unreadable areas are zeros in the image (see its map)\n' \
+         "${JC[DEVICE]:-?}" "${JC[SERIAL]:-?}" "${JC[SIZE]:-?}"
+      printf '# check with: cd <that folder> && sha256sum -c <this file>\n'
+      (cd -- "$root" && xargs -0 -r ionice -c 2 -n 6 sha256sum -- < "$list")
+   } > "$out.tmp"
+   rc=$?
+   rm -f -- "$list"
+   mv -f -- "$out.tmp" "$out" || return 1
+   printf $"Manifest of %s files: %s"'\n' "$(grep -vc '^#' "$out")" "$out"
+   # 123: a file listed could not be read (moved, deleted): it is not in the manifest
+   [ "$rc" -eq 0 ] || { printf '%s\n' $"Some files could not be read at the destination and are not in the manifest." >&2; return 1; }
+}
+
 bsr_job_report_write() {
    local dir="$1"
    bsr_job_report_text "$dir" > "$dir/report.tmp" 2>/dev/null
@@ -1654,6 +1707,7 @@ bsr_job_cmd() {
       resume) bsr_job_cmd_resume "$@" ;;
       report) bsr_job_cmd_report "$@" ;;
       salvage) bsr_sv_cmd "$@" ;;
+      manifest) bsr_job_cmd_manifest "$@" ;;
       map) bsr_rec_map_cmd "$@" ;;
    esac
 }
