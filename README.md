@@ -825,6 +825,16 @@ LC_ALL=C.UTF-8 python3 tests/readme-screenshots.py --dark
 locale/update-pot.sh && locale/compile.sh                   # after translating (docs/13)
 ```
 
+### Packages
+
+`.github/workflows/translate-and-build-package.yml` is the workflow of
+BigLinux packages, as in biglinux-settings. On every push to a branch without
+a `/` (`main`, `stable-…`), the BigLinux translator machine-translates the
+messages into its languages and commits them. Then the BigLinux build service
+is asked to build the package and send it to the repository. Work branches
+(`feature/x`, `fix/y`) never trigger it. pt_BR is translated by hand here
+(`locale/`) and is not replaced.
+
 Architecture and decisions: [docs/03](docs/03-architecture.md). The history of
 the code, from Big-Mount 2.0 to 2.6, is kept in git and in
 [docs/big-mount-history](docs/big-mount-history).
