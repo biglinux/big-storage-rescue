@@ -1279,6 +1279,67 @@ class Jobs(Base):
         self.open(kind="image", state="needs-attention", state_label="Finished, needs your attention", reason_text="Some areas could not be read.", bad_bytes=4096)
         self.see("could not be read.")
 
+    def test_a_copy_that_left_files_out_offers_to_save_what_can_be_read(self):
+        fix_text("report", "r")
+        page = self.open(state="needs-attention", state_label="Finished, needs your attention", reason="files-left", failed=3, deferred=2)
+        self.assertTrue(page.salvage_btn.get_visible())
+        fix("salvage-dry", {"error": "", "error_text": "", "ok": True, "exit": 0, "total_files": 5, "total_bytes": 4096,
+                            "warnings": [{"key": "salvage-holes", "text": "What cannot be read of a file is left as zeros."}]})
+        fix("salvage", {"id": "20261031-120000-beef", "dir": str(WORK)})
+        forget_calls()
+        page.salvage_btn.emit("clicked")
+        dialog = self.dialog()
+        self.assertIn("5 files", dialog.get_body())
+        self.assertIn("left as zeros", dialog.get_body())
+        self.assertFalse(any(c.startswith("--cli salvage") and "--dry-run" not in c for c in calls()), "never without consent")
+        self.assertEqual(dialog.get_close_response(), "cancel")
+        fix("status", job_json(id="20261031-120000-beef", kind="salvage", result_kind="salvaged-files", state_label="Saving what can be read of each file"))
+        dialog.emit("response", "start")
+        self.assertTrue(pump(lambda: any(c.startswith("--cli salvage 20261031-120000-abcd") and "--dry-run" not in c for c in calls()), 3))
+        self.assertTrue(pump(lambda: getattr(self.win.nav.get_visible_page(), "job_id", "") == "20261031-120000-beef", 3))
+
+    def test_nothing_to_salvage_is_said_and_nothing_starts(self):
+        fix_text("report", "r")
+        page = self.open(state="needs-attention", state_label="Finished, needs your attention", failed=1)
+        fix("salvage-dry", {"error": "nothing-to-salvage", "error_text": "This copy left out no file that can still be read.", "ok": False, "exit": 20, "warnings": []}, rc=20)
+        forget_calls()
+        page.salvage_btn.emit("clicked")
+        self.assertIn("no file that can still be read", self.dialog().get_body())
+        self.assertFalse(any(c.startswith("--cli salvage") and "--dry-run" not in c for c in calls()))
+
+    def test_a_complete_copy_offers_no_salvage(self):
+        fix_text("report", "r")
+        page = self.open(state="completed", state_label="Completed and checked")
+        self.assertFalse(page.salvage_btn.get_visible())
+
+    def test_a_salvage_says_what_it_saved_in_part(self):
+        fix_text("report", "r")
+        (DEST / "Partly recovered files - 2026-11-03").mkdir(parents=True, exist_ok=True)
+        page = self.open(kind="salvage", result_kind="salvaged-files", state="needs-attention", state_label="Finished, needs your attention",
+                         reason_text="Some files have areas that could not be read.", files_done=2, partial=1, bad_bytes=65536,
+                         partial_dir=str(DEST / "Partly recovered files - 2026-11-03"))
+        self.see("Files saved", page)
+        self.assertEqual(page.stat["partial"].value.get_text(), "1")
+        self.see("could not be read.", page)
+        self.assertTrue(page.partial_btn.get_visible())
+        self.assertFalse(page.salvage_btn.get_visible())
+
+    def test_an_image_shows_its_map(self):
+        fix_text("report", "r")
+        fix("map", {"size": 1048576, "rescued": 458752, "bad": 32768, "slow": 32768, "untried": 524288, "position": 0, "pass": 1, "bins": 16,
+                    "cells": "++++-/++????????", "read": "AAAA00AA00000000"})
+        page = self.open(kind="image", state="running", state_label="Making the disk image", destination=str(DEST / "a.img"))
+        self.assertTrue(pump(lambda: page.map_group.get_visible(), 3))
+        self.see("Could not be read: 32", page)
+        label = page.damage_map.area.get_property("accessible-role")
+        self.assertEqual(label, Gtk.AccessibleRole.IMG)
+
+    def test_a_copy_has_no_map(self):
+        page = self.open()
+        pump(timeout=0.3)
+        self.assertFalse(page.map_group.get_visible())
+        self.assertFalse(any(c.startswith("--cli map") for c in calls()))
+
     def test_job_gone(self):
         fix("status", "", rc=1)
         (FIX / "status.json").unlink()

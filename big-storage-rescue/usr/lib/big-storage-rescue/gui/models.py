@@ -258,6 +258,8 @@ class Job:
     scanned: int = 0
     pass_: int = 0
     bad_bytes: int = 0
+    partial: int = 0
+    partial_dir: str = ""
     total_estimate: bool = False
     pausable: bool = False
 
@@ -332,6 +334,7 @@ class Job:
             "image": _("Disk image"),
             "scan": _("List of files"),
             "carve": _("Search by content"),
+            "salvage": _("Readable parts of files"),
         }.get(self.kind, self.kind)
 
     @property
@@ -341,6 +344,7 @@ class Job:
             "copy": _("Files copied"),
             "scan": _("Files listed"),
             "carve": _("Candidates found"),
+            "salvage": _("Files saved"),
         }.get(self.kind, _("Files"))
 
 

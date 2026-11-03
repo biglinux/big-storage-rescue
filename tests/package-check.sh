@@ -85,6 +85,7 @@ expect=(
     "644 usr/lib/big-storage-rescue/gui/actions.py"
     "644 usr/lib/big-storage-rescue/gui/application.py"
     "644 usr/lib/big-storage-rescue/gui/common.py"
+    "644 usr/lib/big-storage-rescue/gui/damage_map.py"
     "644 usr/lib/big-storage-rescue/gui/dialogs.py"
     "644 usr/lib/big-storage-rescue/gui/engine.py"
     "644 usr/lib/big-storage-rescue/gui/models.py"

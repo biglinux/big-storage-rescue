@@ -1009,7 +1009,8 @@ bsr_job_json_of() {
    printf '{%s,%s,%s}' \
       "$(bsr_jo_inner id "$id" kind "$kind" result_kind "$result" state "${JS[STATE]}" state_label "$label" reason "${JS[REASON]:-}" reason_text "$reason" \
          source "${JC[SOURCE]:-}" destination "${JC[DEST]:-}" name "${JC[NAME]:-}" current "${JS[CURRENT]:-}" verify "${JC[VERIFY]:-}" \
-         verify_result "${JS[VERIFY_RESULT]:-}" dir "$dir" categories "${JC[CATEGORIES]:-}" then_carve "${JC[THEN_CARVE]:-}" copy_to "${JC[COPY_TO]:-}" map "${JC[MAP]:-}" level "${JC[LEVEL]:-}")" \
+         verify_result "${JS[VERIFY_RESULT]:-}" dir "$dir" categories "${JC[CATEGORIES]:-}" then_carve "${JC[THEN_CARVE]:-}" copy_to "${JC[COPY_TO]:-}" map "${JC[MAP]:-}" level "${JC[LEVEL]:-}" \
+         partial_dir "${JC[OUT_NAME]:+${JC[DEST]}/${JC[OUT_NAME]}}")" \
       "$(bsr_jn files_done "${JS[FILES_DONE]:-0}" files_total "${JS[FILES_TOTAL]:-0}" bytes_done "${JS[BYTES_NOW]:-0}" bytes_total "${JS[BYTES_TOTAL]:-0}" \
          rate_now "${JS[RATE_NOW]:-0}" rate_avg "${JS[RATE_AVG]:-0}" elapsed "${JS[ELAPSED]:-0}" eta "${JS[ETA]:-}" deferred "${JS[DEFERRED]:-0}" \
          failed "${JS[FAILED]:-0}" differ "${JS[DIFFER]:-0}" conflicts "${JS[CONFLICTS]:-0}" read_errors "${JS[READ_FAILS]:-0}" stuck "${JS[STUCK_SECONDS]:-0}" \
