@@ -139,13 +139,18 @@ bsr_cp_err_text() {
       no-filesystem) REPLY=$"No filesystem was recognized on it, so its files cannot be listed." ;;
       pick-volume) REPLY=$"Choose one of the volumes of this drive to see its files." ;;
       image-file) REPLY=$"This is already a disk image." ;;
+      salvage-not-copy) REPLY=$"Only the files a copy left out can be salvaged." ;;
+      job-running) REPLY=$"It is still running. Wait for it to finish, or pause it first." ;;
+      no-ddrescue-files) REPLY=$"GNU ddrescue is not installed (package ddrescue). It reads what can be read of each file." ;;
+      nothing-to-salvage) REPLY=$"This copy left out no file that can still be read: every file was copied, or the ones left out are no longer in the source." ;;
       *) REPLY=$"The copy was refused." ;;
    esac
 }
 
 bsr_cp_err_rc() {
    case "$1" in
-      no-rsync | no-ddrescue | no-photorec | no-testdisk) REPLY=25 ;;
+      no-rsync | no-ddrescue | no-ddrescue-files | no-photorec | no-testdisk) REPLY=25 ;;
+      job-running) REPLY=10 ;;
       no-space) REPLY=21 ;;
       not-authorized) REPLY=5 ;;
       cancelled) REPLY=23 ;;
@@ -435,6 +440,8 @@ bsr_job_state_label() {
       scan:completed) REPLY=$"List of files complete"; return ;;
       carve:analyzing | carve:running) REPLY=$"Searching by content"; return ;;
       carve:completed) REPLY=$"Search complete"; return ;;
+      salvage:running) REPLY=$"Saving what can be read of each file"; return ;;
+      salvage:completed) REPLY=$"Every file was read completely"; return ;;
    esac
    case "$1" in
       pending) REPLY=$"Waiting to start" ;;
@@ -996,6 +1003,7 @@ bsr_job_json_of() {
       image) result=disk-image pausable=1 ;;
       scan) result=existing-files ;;
       carve) result=carved-candidates ;;
+      salvage) result=salvaged-files pausable=1 ;;
       *) result="" ;;
    esac
    printf '{%s,%s,%s}' \
@@ -1005,7 +1013,8 @@ bsr_job_json_of() {
       "$(bsr_jn files_done "${JS[FILES_DONE]:-0}" files_total "${JS[FILES_TOTAL]:-0}" bytes_done "${JS[BYTES_NOW]:-0}" bytes_total "${JS[BYTES_TOTAL]:-0}" \
          rate_now "${JS[RATE_NOW]:-0}" rate_avg "${JS[RATE_AVG]:-0}" elapsed "${JS[ELAPSED]:-0}" eta "${JS[ETA]:-}" deferred "${JS[DEFERRED]:-0}" \
          failed "${JS[FAILED]:-0}" differ "${JS[DIFFER]:-0}" conflicts "${JS[CONFLICTS]:-0}" read_errors "${JS[READ_FAILS]:-0}" stuck "${JS[STUCK_SECONDS]:-0}" \
-         created "${JC[CREATED]:-0}" finished "${JS[FINISHED]:-}" scanned "${JS[SCANNED]:-0}" pass "${JS[PASS]:-0}" bad_bytes "${JS[BAD_BYTES]:-0}")" \
+         created "${JC[CREATED]:-0}" finished "${JS[FINISHED]:-}" scanned "${JS[SCANNED]:-0}" pass "${JS[PASS]:-0}" bad_bytes "${JS[BAD_BYTES]:-0}" \
+         partial "${JS[PARTIAL]:-0}")" \
       "$(bsr_jb total_estimate "${JS[TOTAL_ESTIMATE]:-0}" pausable "$pausable")"
 }
 
@@ -1121,6 +1130,10 @@ bsr_job_report_text() {
       bsr_rec_report_text "$dir"
       return 0
    fi
+   if [ "${JC[KIND]:-copy}" = salvage ]; then
+      bsr_sv_report_text "$dir"
+      return 0
+   fi
    bsr_doc_kv $"Destination" "${JC[DEST]}"
    bsr_doc_kv $"Files copied" "${JS[FILES_DONE]:-0}"
    bsr_human_size "${JS[BYTES_DONE]:-0}"; bsr_doc_kv $"Data copied" "$REPLY"
@@ -1139,6 +1152,9 @@ bsr_job_report_text() {
       head -n 50 -- "$dir/deferred.txt" | bsr_printable_lines
       [ "$n" -gt 50 ] && printf '  … %s\n' "$dir/deferred.txt"
       printf $"To try them again, which puts more strain on the disk: big-storage-rescue --cli resume %s --retry-deferred"'\n' "${dir##*/}"
+   fi
+   if [ "${JS[DEFERRED]:-0}" -gt 0 ] || [ "${JS[FAILED]:-0}" -gt 0 ]; then
+      printf $"To save what can be read of each file left out, resuming where it stops: big-storage-rescue --cli salvage %s"'\n' "${dir##*/}"
    fi
    n="${JS[FAILED]:-0}"
    if [ "$n" -gt 0 ] && [ -s "$dir/failed.txt" ]; then
@@ -1598,7 +1614,12 @@ bsr_job_cmd_resume() {
    fi
    rm -f -- "$dir/stop"
    case "${JC[KIND]:-copy}" in
-      image | scan | carve) bsr_rec_image_start "$id" || return 1 ;;
+      image | scan | carve | salvage)
+         # Whatever the last state said is over (as in bsr_job_start)
+         JS[STATE]=pending JS[PID]=""
+         bsr_job_state_save "$dir"
+         bsr_rec_image_start "$id" || return 1
+         ;;
       *) bsr_job_start "$id" || return 1 ;;
    esac
    if [ "$json" = 1 ]; then bsr_jo id "$id" dir "$dir"; printf '\n'; return 0; fi
@@ -1619,6 +1640,7 @@ bsr_job_cmd() {
             image) bsr_rec_image_supervise "$id" ;;
             scan) bsr_rec_scan_supervise "$id" ;;
             carve) bsr_rec_carve_supervise "$id" ;;
+            salvage) bsr_sv_supervise "$id" ;;
             *) bsr_job_supervise "$id" ;;
          esac
          ;;
@@ -1629,5 +1651,7 @@ bsr_job_cmd() {
       pause | cancel) bsr_job_cmd_stop "$cmd" "$@" ;;
       resume) bsr_job_cmd_resume "$@" ;;
       report) bsr_job_cmd_report "$@" ;;
+      salvage) bsr_sv_cmd "$@" ;;
+      map) bsr_rec_map_cmd "$@" ;;
    esac
 }

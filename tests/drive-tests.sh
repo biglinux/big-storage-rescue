@@ -739,6 +739,94 @@ fi
 run_b --drive copy --results-of 20261031-000000-dead --destination "$WORK/x" --dry-run --json >/dev/null 2>&1; check "--results-of nothing: refused" eq "$?" 1
 run_b --drive copy --results-of "$id" --destination "$WORK/x" --dry-run --json >/dev/null 2>&1; check "--results-of a list (not a search): refused" eq "$?" 2
 
+begin "salvage: what can be read of the files a copy left out, with real GNU ddrescue on scratch files"
+REAL_DDRESCUE="$(command -v ddrescue)"
+SVS="$(mktemp -d -p /var/tmp bsr-salv-XXXXXX)" SVD="/dev/shm/bsr-salv-$$"
+# The stand-in for ddrescue is run by ionice: it cannot live in /tmp, which may be noexec
+SVB="$(mktemp -d -p /var/tmp bsr-salv-bin-XXXXXX)"
+trap 'rm -rf "$WORK" "$SC" "$OUTD" "$SVS" "$SVD" "$SVB"' EXIT
+if [ -n "$REAL_DDRESCUE" ] && [ "$(command findmnt -n -o SOURCE -T "$SVS")" != "$(command findmnt -n -o SOURCE -T /dev/shm 2>/dev/null)" ]; then
+   # GNU ddrescue itself, told which areas are bad (its --test-mode) or how
+   # fast it may read: a failing disk without a disk
+   mkdir -p "$SVS/sub" "$SVD/out"
+   printf '#!/bin/sh\nexec %s ${FAKE_DDRESCUE_BAD:+--test-mode="$FAKE_DDRESCUE_BAD"} ${FAKE_DDRESCUE_RATE:+--max-read-rate=$FAKE_DDRESCUE_RATE} "$@"\n' "$REAL_DDRESCUE" > "$SVB/ddrescue"
+   chmod 755 "$SVB/ddrescue"
+   head -c 1048576 /dev/urandom > "$SVS/big.bin"
+   head -c 65536 /dev/urandom > "$SVS/sub/with space.bin"
+   printf '# test\n0x0 + 1\n0x00000000 0x00040000 +\n0x00040000 0x00010000 -\n0x00050000 0x7FFB0000 +\n' > "$WORK/bad.map"
+   sv_parent() { # ID: a copy that left two files out (and two names that must be ignored)
+      local pd="$BSR_JOBS/$1"
+      mkdir -p "$pd"
+      printf '%s\n' KIND=copy "SOURCE=$SVS" "DEST=$SVD/out" "SRC_MP=$(command findmnt -n -o TARGET -T "$SVS")" \
+         "DST_MP=$(command findmnt -n -o TARGET -T "$SVD")" NAME=Teste > "$pd/job.conf"
+      printf 'STATE=needs-attention\nREASON=files-left\n' > "$pd/state.env"
+      printf '%s\t%s\n' "its content could not be read" big.bin "its content could not be read" ../../etc/passwd "No such file" gone.bin > "$pd/failed.txt"
+      printf 'sub/with space.bin\n' > "$pd/deferred.txt"
+   }
+   sv_run() { PATH="$SVB:$PATH" FAKE_DDRESCUE_BAD="${FAKE_DDRESCUE_BAD:-}" FAKE_DDRESCUE_RATE="${FAKE_DDRESCUE_RATE:-}" run_b --drive "$@"; }
+   sv_parent 20261103-100000-aaaa
+   out="$(sv_run salvage 20261103-100000-aaaa --dry-run --json)"; rc=$?
+   printf '%s' "$out" | json_ok; check "a dry run: valid JSON (exit $rc)" eq "$?:$rc" 0:0
+   check "  ... the two files that are still in the source, nothing outside it" grep -q '"total_files":2' <<< "$out"
+   check "  ... it says what happens to what cannot be read" grep -q '"key":"salvage-holes"' <<< "$out"
+   FAKE_DDRESCUE_BAD="$WORK/bad.map"
+   id="$(sv_run salvage 20261103-100000-aaaa --json | python3 -I -c 'import json,sys; print(json.load(sys.stdin)["id"])')"
+   check "it starts as a job of its own" bash -c '[[ $1 =~ ^[0-9]{8}-[0-9]{6}-[0-9a-f]{4}$ ]]' _ "$id"
+   wait_job "$id"; check "  ... and it ends" eq "$?" 0
+   st="$(run_b --drive status "$id" --json)"; printf '%s' "$st" | json_ok; check "  ... its status is valid JSON" eq "$?" 0
+   check "  ... called what it is, and it can be paused" bash -c '[[ $1 == *"\"result_kind\":\"salvaged-files\""* && $1 == *"\"pausable\":true"* ]]' _ "$st"
+   check "  ... one file with unreadable areas: needs attention, and says why" bash -c '[[ $1 == *"\"state\":\"needs-attention\""* && $1 == *"\"reason\":\"salvage-partial\""* && $1 == *"\"partial\":1"* && $1 == *"\"files_done\":2,"* ]]' _ "$st"
+   check "  ... 64 KiB could not be read" grep -q '"bad_bytes":65536' <<< "$st"
+   check "the file read completely goes where the copy would have put it, equal to the source" cmp -s "$SVS/sub/with space.bin" "$SVD/out/sub/with space.bin"
+   part="$(find "$SVD/out" -path '*Partly recovered files*' -name big.bin)"
+   check "the file with a hole goes to a folder of its own, never under the place of a good file" bash -c '[ -f "$1" ] && [ ! -e "$2" ]' _ "$part" "$SVD/out/big.bin"
+   check "  ... at its full size" eq "$(stat -c %s "$part" 2>/dev/null)" 1048576
+   check "  ... everything around the hole is the source, byte for byte" bash -c 'cmp -s -n 262144 "$1" "$2" && cmp -s -i 327680 "$1" "$2"' _ "$SVS/big.bin" "$part"
+   check "  ... the hole holds zeros" bash -c '[ "$(dd if="$1" bs=65536 skip=4 count=1 2>/dev/null | tr -d "\0" | wc -c)" = 0 ]' _ "$part"
+   check "  ... with its date" eq "$(stat -c %Y "$part")" "$(stat -c %Y "$SVS/big.bin")"
+   check "  ... and the list of what is missing next to it" grep -q '262144–327679' "${part%/*}/unreadable areas.txt"
+   check "no working folder is left at the destination" bash -c '! compgen -G "$1/.big-storage-rescue-salvage-*" >/dev/null' _ "$SVD/out"
+   check "the source is untouched" bash -c '[ "$(stat -c %s "$1")" = 1048576 ]' _ "$SVS/big.bin"
+   rep="$(run_b --drive report "$id" 2>&1)"
+   check "the report counts both kinds of file" bash -c '[[ $1 == *"Files read completely"*"1"* && $1 == *"Files saved with unreadable areas"*"1"* ]]' _ "$rep"
+   run_b --drive salvage "$id" --json >/dev/null; check "a salvage of a salvage: refused" eq "$?" 20
+   sv_parent 20261103-100000-bbbb; printf 'STATE=running\nPID=%s\n' "$$" > "$BSR_JOBS/20261103-100000-bbbb/state.env"
+   bsr_proc_state "$$"; printf 'PID_START=%s\n' "$PROC_START" >> "$BSR_JOBS/20261103-100000-bbbb/state.env"
+   run_b --drive salvage 20261103-100000-bbbb --json >/dev/null; check "  ... of a copy still running: refused" eq "$?" 10
+   sv_parent 20261103-100000-cccc; : > "$BSR_JOBS/20261103-100000-cccc/failed.txt"; : > "$BSR_JOBS/20261103-100000-cccc/deferred.txt"
+   run_b --drive salvage 20261103-100000-cccc --json >/dev/null; check "  ... of a copy that left nothing out: refused" eq "$?" 20
+
+   # Paused halfway through a large file, then resumed: the map goes on from
+   # where it stopped, it does not start the file again
+   rm -rf "$SVD/out"; mkdir -p "$SVD/out"
+   head -c 4194304 /dev/urandom > "$SVS/large.bin"
+   sv_parent 20261103-100000-dddd; printf 'large.bin\n' > "$BSR_JOBS/20261103-100000-dddd/deferred.txt"; : > "$BSR_JOBS/20261103-100000-dddd/failed.txt"
+   FAKE_DDRESCUE_BAD="" FAKE_DDRESCUE_RATE=524288
+   id="$(sv_run salvage 20261103-100000-dddd --json | python3 -I -c 'import json,sys; print(json.load(sys.stdin)["id"])')"
+   sleep 3
+   st="$(run_b --drive status "$id" --json)"
+   live="$(sed -n 's/.*"bytes_done":\([0-9]*\).*/\1/p' <<< "$st")"
+   check "while it runs, the progress is live ($live bytes read)" bash -c '[ "$1" -gt 0 ]' _ "${live:-0}"
+   run_b --drive pause "$id" >/dev/null
+   wait_job "$id"
+   st="$(run_b --drive status "$id" --json)"
+   check "a pause in the middle of a file" grep -q '"state":"paused"' <<< "$st"
+   done1="$(sed -n 's/.*"bytes_done":\([0-9]*\).*/\1/p' <<< "$st")"
+   check "  ... part of it was read ($done1 bytes), not all" bash -c '[ "$1" -gt 0 ] && [ "$1" -lt 4194304 ]' _ "${done1:-0}"
+   # The second run is told the start of the file is now unreadable: if it
+   # read again what the first run had read, the file would end with a hole
+   printf '# test\n0x0 + 1\n0x00000000 0x00010000 -\n0x00010000 0x7FFF0000 +\n' > "$WORK/start-bad.map"
+   FAKE_DDRESCUE_RATE=""
+   PATH="$SVB:$PATH" FAKE_DDRESCUE_BAD="$WORK/start-bad.map" run_b --drive resume "$id" --json >/dev/null
+   wait_job "$id"
+   st="$(run_b --drive status "$id" --json)"
+   check "  ... resumed, it ends complete" bash -c '[[ $1 == *"\"state\":\"completed\""* && $1 == *"\"bad_bytes\":0"* ]]' _ "$st"
+   check "  ... and the file is the source, byte for byte" cmp -s "$SVS/large.bin" "$SVD/out/large.bin"
+   check "  ... what the first run read was not read again (it is now 'unreadable', and the file has no hole)" bash -c '[ "$1" -ge 65536 ]' _ "${done1:-0}"
+else
+   echo "  (skipped: needs GNU ddrescue and /dev/shm on another filesystem)"
+fi
+
 begin "the helper opens the files of an image without being led astray (its opener, as this user)"
 eval "$(sed -n "/^BSR_OPEN_OWN='/,/^'\$/p" "$L/bsr-drive-helper")"
 OD="$WORK/open"; mkdir -p "$OD/real"
@@ -766,6 +854,24 @@ opened "$OD/real/../real/g.img" "$OD/real/g.map" "$OD/real/g.map.bak" >/dev/null
 check "the helper refuses to image the running system" bash -c 'sed -n "/^   image)/,/^      ;;/p" "$1" | grep -q "^      refuse_system"' _ "$L/bsr-drive-helper"
 check "  ... and checks again, with the files open" bash -c 'sed -n "/^   __image-opened)/,/^      ;;/p" "$1" | grep -q "^      refuse_system"' _ "$L/bsr-drive-helper"
 check "  ... no file of the user is opened by name as root any more" bash -c '! grep -qE "exec \{FD\}[<>]" "$1"' _ "$L/bsr-drive-helper"
+
+begin "the map of a disk image, from a ddrescue map"
+mkdir -p "$BSR_JOBS/20261103-110000-eeee"
+printf '%s\n' KIND=image "MAP=$WORK/img.map" SOURCE=/dev/sdc DEST="$WORK/img" > "$BSR_JOBS/20261103-110000-eeee/job.conf"
+printf '# Mapfile\n0x00080000 + 1\n#  pos  size  status\n0x00000000  0x00040000  +\n0x00040000  0x00008000  -\n0x00048000  0x00008000  /\n0x00050000  0x00030000  +\n0x00080000  0x00080000  ?\n' > "$WORK/img.map"
+out="$(run_b --drive map 20261103-110000-eeee --bins 16 --json)"; printf '%s' "$out" | json_ok
+check "--json: valid" eq "$?" 0
+check "  ... the totals, in bytes" bash -c '[[ $1 == *"\"size\":1048576"* && $1 == *"\"rescued\":458752"* && $1 == *"\"bad\":32768"* && $1 == *"\"slow\":32768"* && $1 == *"\"untried\":524288"* ]]' _ "$out"
+check "  ... each cell shows the worst it holds" grep -q '"cells":"++++-+++????????"' <<< "$out"
+check "  ... and how much of it was read" grep -q '"read":"AAAA0AAA00000000"' <<< "$out"
+out="$(run_b --drive map 20261103-110000-eeee --bins 64)"
+check "the terminal: a grid and a legend" bash -c '[[ $1 == *"################XX~~############....."* && $1 == *"could not be read"* ]]' _ "$out"
+big="$WORK/big.map"
+{ printf '0x0 ? 1\n'; for ((i = 0; i < 20000; i++)); do printf '0x%x 0x200 %s\n' $((i * 1024)) +; printf '0x%x 0x200 -\n' $((i * 1024 + 512)); done; printf '0x%x 0x%x ?\n' $((20000 * 1024)) $((4000 * 1000 ** 4)); } > "$big"
+printf '%s\n' KIND=image "MAP=$big" > "$BSR_JOBS/20261103-110000-eeee/job.conf"
+t0=$SECONDS; out="$(run_b --drive map 20261103-110000-eeee --json)"
+check "a map of 40 000 areas on 4 TB: summed in a few seconds ($((SECONDS - t0)) s)" bash -c '[ "$1" -lt 15 ] && [[ $2 == *"\"bad\":10240000"* ]]' _ "$((SECONDS - t0))" "$out"
+run_b --drive map 20261103-100000-aaaa >/dev/null 2>&1; check "a copy has no map" eq "$?" 2
 
 echo "========================================="
 echo "drive result: $PASS passed, $FAIL failed"

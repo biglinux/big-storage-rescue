@@ -74,6 +74,7 @@ expect=(
     "644 usr/lib/big-storage-rescue/drive-diag.sh"
     "644 usr/lib/big-storage-rescue/drive-copy.sh"
     "644 usr/lib/big-storage-rescue/drive-recovery.sh"
+    "644 usr/lib/big-storage-rescue/drive-salvage.sh"
     "644 usr/lib/big-storage-rescue/drive-tui.sh"
     "644 usr/lib/big-storage-rescue/migrate.sh"
     "644 usr/lib/big-storage-rescue/system-check.sh"

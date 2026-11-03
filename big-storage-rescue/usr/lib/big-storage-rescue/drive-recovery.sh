@@ -34,6 +34,93 @@ bsr_rec_map_parse() {
    [ "$seen" = 1 ]
 }
 
+# bsr_rec_map_bins MAP BINS: the map of a disk in BINS cells, in one pass over
+# the map, whatever the size of the disk or the number of areas. Three lines:
+#   SIZE READ BAD SLOW UNTRIED POSITION PASS     (bytes; SLOW: areas ddrescue
+#                                                 left to trim or scrape)
+#   the worst status in each cell: - bad, / hard to read, ? not read yet, + read
+#   how much of each cell was read, in tenths (0-9, A for all of it)
+bsr_rec_map_bins() {
+   LC_ALL=C awk -v bins="$2" '
+      function hex(s,   i, v) { s = tolower(substr(s, 3)); v = 0
+         for (i = 1; i <= length(s); i++) v = v * 16 + index("0123456789abcdef", substr(s, i, 1)) - 1
+         return v }
+      function rank(st) { return st == "-" ? 4 : (st == "*" || st == "/") ? 3 : st == "+" ? 1 : 2 }
+      /^#/ || NF < 2 { next }
+      !seen { seen = 1; pos = hex($1); pass = $3 + 0; next }
+      $1 !~ /^0x[0-9A-Fa-f]+$/ || $2 !~ /^0x[0-9A-Fa-f]+$/ { next }
+      { p = hex($1); n = hex($2); st = $3; k++; P[k] = p; N[k] = n; S[k] = st
+        if (p + n > size) size = p + n
+        if (st == "+") ok += n; else if (st == "-") bad += n; else if (st == "*" || st == "/") slow += n; else todo += n }
+      END {
+         if (!size || bins < 1) exit 1
+         w = size / bins
+         for (i = 1; i <= k; i++) {
+            a = P[i]; b = P[i] + N[i]; r = rank(S[i])
+            c = int(a / w); e = int((b - 1) / w); if (e >= bins) e = bins - 1
+            for (j = c; j <= e; j++) {
+               if (r > W[j]) W[j] = r
+               if (S[i] == "+") { lo = a > j * w ? a : j * w; hi = b < (j + 1) * w ? b : (j + 1) * w; R[j] += hi - lo }
+            }
+         }
+         printf "%.0f %.0f %.0f %.0f %.0f %.0f %d\n", size, ok, bad, slow, todo, pos, pass
+         cells = ""; read = ""
+         for (j = 0; j < bins; j++) {
+            cells = cells substr("+?/-", (W[j] ? W[j] : 2), 1)
+            d = int(R[j] * 10 / w + 1e-9); if (d > 10) d = 10
+            read = read substr("0123456789A", d + 1, 1)
+         }
+         print cells; print read
+      }' "$1" 2>/dev/null
+}
+
+# big-storage-rescue --cli map ID [--bins N] [--json]: what an image has read
+bsr_rec_map_cmd() {
+   local id="" bins="" json=0 a dir head cells done_cells size ok unread slow todo pos pass
+   while [ "$#" -gt 0 ]; do
+      case "$1" in
+         --bins) bins="${2:-}"; shift ;;
+         --json) json=1 ;;
+         -*) bsr_drive_badarg "$1"; return 2 ;;
+         *) id="$1" ;;
+      esac
+      shift
+   done
+   [ -n "$bins" ] || bins=1024
+   if ! [[ $bins =~ ^[0-9]+$ ]] || [ "$bins" -lt 1 ] || [ "$bins" -gt 16384 ]; then
+      bsr_drive_badarg "--bins $bins"
+      return 2
+   fi
+   bsr_job_dir "$id" || { printf $"There is no job '%s'."'\n' "$id" >&2; return 1; }
+   dir="$REPLY"
+   bsr_job_conf_load "$dir"
+   if [ "${JC[KIND]:-}" != image ]; then
+      printf '%s\n' $"Only a disk image has a map." >&2
+      return 2
+   fi
+   { read -r head; read -r cells; read -r done_cells; } < <(bsr_rec_map_bins "${JC[MAP]}" "$bins")
+   if [ -z "${head:-}" ]; then
+      if [ "$json" = 1 ]; then printf '{"size":0,"bins":0,"cells":"","read":""}\n'; return 0; fi
+      printf '%s\n' $"Nothing has been read yet." >&2
+      return 1
+   fi
+   read -r size ok unread slow todo pos pass <<< "$head"
+   if [ "$json" = 1 ]; then
+      printf '{%s,%s}\n' "$(bsr_jn size "$size" rescued "$ok" bad "$unread" slow "$slow" untried "$todo" position "$pos" pass "$pass" bins "$bins")" \
+         "$(bsr_jo_inner cells "$cells" read "$done_cells")"
+      return 0
+   fi
+   local s_ok s_bad s_size
+   bsr_human_size "$ok"; s_ok="$REPLY"
+   bsr_human_size "$unread"; s_bad="$REPLY"
+   bsr_human_size "$size"; s_size="$REPLY"
+   printf $"Read: %s of %s. Could not be read: %s."'\n\n' "$s_ok" "$s_size" "$s_bad"
+   # The terminal gets 64 columns: one line per 64 cells
+   cells="$(tr '+?/-' '#.~X' <<< "$cells")"
+   fold -w 64 <<< "$cells" | sed 's/^/  /'
+   printf '\n  # %s   ~ %s   X %s   . %s\n' $"already read" $"hard to read, to be retried" $"could not be read" $"not read yet"
+}
+
 bsr_rec_image_start() {
    local id="$1" dir
    bsr_job_dir "$id" || return 1
@@ -96,6 +183,8 @@ bsr_rec_warn_text() {
       carve-names) REPLY=$"Files found by content lose their original names and folders." ;;
       source-risk) REPLY=$"This drive reported problems. Reading all of it can make it worse: the disk image is read only once, and only with your consent." ;;
       scan-reads) REPLY=$"Making the list goes through all the folders. On a drive with problems this is extra wear." ;;
+      salvage-holes) REPLY=$"What cannot be read of a file is left as zeros. Files with such areas go to a folder of their own, with a list of what is missing." ;;
+      salvage-retries) REPLY=$"Retries read the damaged areas again. They may save a little more, and wear a failing drive more." ;;
       trim) REPLY=$"This SSD erases deleted blocks by itself (TRIM). Files deleted some time ago may be gone for good, however deep the search." ;;
       *) REPLY="$1" ;;
    esac
