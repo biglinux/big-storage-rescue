@@ -34,6 +34,7 @@ a scan that wears the disk.
 | --- | --- | --- |
 | copy | yes: rsync is stopped between files; files already renamed are complete | yes, also after a power cut; the log is the record |
 | image (ddrescue) | yes: stopped through its stop file | yes, from the mapfile |
+| salvage | yes: ddrescue stopped with SIGTERM, which saves its map | yes, from the map of the file it was on: what was read is not read again |
 | scan, carve | no (the window shows no pause button) | they can be started again |
 
 `pausable` in the JSON of a job tells the window whether to show the button.
@@ -51,6 +52,17 @@ source at risk mounted with writing. Existing files are kept by default
 (`--on-conflict skip|backup|overwrite`). Nothing is ever deleted at either end.
 A file that stops advancing for 90 s is set aside and retried at the end on
 request; more than 100 set aside stops the job (the drive is getting worse).
+
+## What a copy left out: salvage
+
+A copy is file by file on purpose. A file with its final name is complete,
+even after a power cut. The price is that a file with one bad sector, or a
+large file that was interrupted, is not there at all.
+`--cli salvage COPY_ID` (or *Save what can be read…* on the page of the
+copy) reads those files again with GNU ddrescue, block by block, with a map
+each, and saves what can be read. A file with holes never goes under the
+name of a good file. Details and the options that were rejected
+(`--append`, `--partial-dir`): [21](21-world-class-progress.md).
 
 ## Verification
 

@@ -7,11 +7,14 @@ from gi.repository import Adw, GLib, Gtk
 
 from .. import widgets as w
 from ..common import _, human_duration, human_size, human_time
+from ..damage_map import DamageMap
 from ..models import Job
 from .device import job_row
 
 POLL_MS = 1500
 PULSE_MS = 180
+# The map of an image changes slowly and costs a pass over its map file
+MAP_EVERY_S = 6
 
 
 def animations_on():
@@ -29,6 +32,9 @@ class JobPage(Adw.NavigationPage):
         self._pulse = 0
         self._busy = False
         self._report_state = None
+        self._map_at = 0
+        self._map_busy = False
+        self._map_state = None
 
         content = w.box(spacing=16)
         self.state_icon = w.icon("media-playback-start-symbolic", 32)
@@ -57,7 +63,8 @@ class JobPage(Adw.NavigationPage):
         self.stats = Gtk.FlowBox(selection_mode=Gtk.SelectionMode.NONE, column_spacing=8, row_spacing=8, min_children_per_line=2, max_children_per_line=5)
         self.stat = {}
         for key, caption in (("files", _("Files")), ("examined", _("Files examined")), ("bytes", _("Data")), ("speed", _("Speed")),
-                             ("elapsed", _("Elapsed")), ("eta", _("Remaining")), ("aside", _("Set aside")), ("failed", _("Failed"))):
+                             ("elapsed", _("Elapsed")), ("eta", _("Remaining")), ("aside", _("Set aside")), ("partial", _("With unreadable areas")),
+                             ("failed", _("Failed"))):
             self.stat[key] = w.Stat(caption)
             self.stats.append(self.stat[key])
         content.append(self.stats)
@@ -66,6 +73,12 @@ class JobPage(Adw.NavigationPage):
         content.append(self.reason)
         self.current = w.label("", css=("caption", "dim-label"), ellipsize=True)
         content.append(self.current)
+
+        self.map_group = w.Group(_("Map of the disk"), _("What has been read so far, from the start of the disk (top left) to its end."))
+        self.damage_map = DamageMap()
+        self.map_group.add(self.damage_map)
+        self.map_group.set_visible(False)
+        content.append(self.map_group)
 
         self.route_group = w.Group()
         self.source_row = w.fact_row(_("Source"), "")
@@ -89,10 +102,13 @@ class JobPage(Adw.NavigationPage):
         self.results_btn = w.button(_("See what was found"), lambda: window.open_results(self.job_id), css=("suggested-action",), icon_name="view-list-bullet-symbolic")
         self.next_btn = w.button(_("Search this image for files"), self._search_image, css=("suggested-action",), icon_name="system-search-symbolic")
         self.open_btn = w.button(_("Open destination"), self._open_dest, icon_name="folder-open-symbolic")
+        self.salvage_btn = w.button(_("Save what can be read…"), self._salvage, icon_name="document-save-symbolic",
+                                    tooltip=_("Reads each file left out again with GNU ddrescue, and saves what can be read of it."))
+        self.partial_btn = w.button(_("Open partly recovered files"), self._open_partial, icon_name="folder-open-symbolic")
         self.log_btn = w.button(_("Show log"), self._show_log, css=("flat",))
         for b in (self.log_btn, self.cancel_btn):
             self.actions.pack_start(b)
-        for b in (self.next_btn, self.results_btn, self.resume_btn, self.retry_btn, self.pause_btn, self.open_btn):
+        for b in (self.next_btn, self.results_btn, self.resume_btn, self.salvage_btn, self.retry_btn, self.pause_btn, self.open_btn, self.partial_btn):
             self.actions.pack_end(b)
             b.set_visible(False)
 
@@ -189,6 +205,7 @@ class JobPage(Adw.NavigationPage):
         self.stat["elapsed"].set_value(human_time(job.elapsed))
         self.stat["eta"].set_value(human_duration(job.eta) if running and job.eta is not None else "")
         self.stat["aside"].set_value(str(job.deferred) if job.deferred else "")
+        self.stat["partial"].set_value(str(job.partial) if job.kind == "salvage" and job.partial else "")
         self.stat["failed"].set_value(str(job.failed) if job.failed else "")
         for key in self.stat:
             parent = self.stat[key].get_parent()
@@ -196,7 +213,7 @@ class JobPage(Adw.NavigationPage):
                 parent.set_visible(self.stat[key].get_visible())
 
         reason = job.reason_text
-        if job.kind == "image" and job.bad_bytes:
+        if job.kind in ("image", "salvage") and job.bad_bytes:
             reason = (reason + " " if reason else "") + _("%s could not be read.") % human_size(job.bad_bytes)
         self.reason.set_text(reason)
         self.reason.set_visible(bool(reason))
@@ -222,6 +239,11 @@ class JobPage(Adw.NavigationPage):
         self.results_btn.set_visible(job.has_results and job.files_done > 0)
         self.open_btn.set_visible(bool(job.destination) and not running and job.kind != "image" and os.path.isdir(job.destination))
         self.next_btn.set_visible(job.kind == "image" and not running and job.state in ("completed", "needs-attention") and bool(job.then_carve))
+        # What a copy left out can still be read in part, block by block
+        self.salvage_btn.set_visible(job.kind == "copy" and not running and job.state in ("needs-attention", "paused", "interrupted", "cancelled")
+                                     and (job.failed or job.deferred) > 0)
+        self.partial_btn.set_visible(job.kind == "salvage" and not running and job.partial > 0 and os.path.isdir(job.partial_dir))
+        self._update_map(job)
 
         if not running:
             self.stop()
@@ -232,6 +254,55 @@ class JobPage(Adw.NavigationPage):
         elif previous and not previous.running:
             self.report_expander.set_visible(False)
             self._report_state = None
+
+    def _update_map(self, job):
+        """The map of an image: every few seconds while it runs, once more when it stops."""
+        if job.kind != "image":
+            return
+        now = GLib.get_monotonic_time() // 1000000
+        changed = job.state != self._map_state
+        if self._map_busy or not (changed or (job.running and now - self._map_at >= MAP_EVERY_S)):
+            return
+        self._map_busy, self._map_at, self._map_state = True, now, job.state
+
+        def answered(res):
+            self._map_busy = False
+            if isinstance(res.data, dict):
+                self.damage_map.set_map(res.data)
+                self.map_group.set_visible(bool(res.data.get("cells")))
+        self.window.engine.damage_map(self.job_id, answered)
+
+    def _salvage(self):
+        """Says what would happen, and starts it when the person agrees."""
+        def planned(res):
+            data = res.data if isinstance(res.data, dict) else {}
+            if not data.get("ok"):
+                w.alert(self.window, _("Nothing can be salvaged"), data.get("error_text") or res.message)
+                return
+            body = _("%(files)s files (%(size)s) left out by this copy will be read again with GNU ddrescue, good areas first, "
+                     "without retries. A pause or a power cut resumes where it stopped.") % {
+                "files": data.get("total_files", 0), "size": human_size(data.get("total_bytes", 0))}
+            notes = [x.get("text", "") for x in data.get("warnings", [])]
+            body = "\n\n".join([body, *[n for n in notes if n]])
+
+            def answered(rid):
+                if rid == "start":
+                    self.window.engine.salvage(self.job_id, started)
+            w.alert(self.window, _("Save what can be read?"), body, responses=(("cancel", _("Cancel")), ("start", _("Start"))),
+                    default="start", close="cancel", suggested=("start",), callback=answered)
+
+        def started(res):
+            data = res.data if isinstance(res.data, dict) else {}
+            if data.get("id"):
+                self.window.refresh_jobs()
+                self.window.open_job(data["id"], replace_top=True)
+            else:
+                w.alert(self.window, _("It did not start"), data.get("error_text") or res.message)
+        self.window.engine.salvage(self.job_id, planned, dry_run=True)
+
+    def _open_partial(self):
+        if self.job and self.job.partial_dir:
+            w.open_folder(self.window, self.job.partial_dir)
 
     def _report(self, res):
         text = res.out or res.err
@@ -245,8 +316,12 @@ class JobPage(Adw.NavigationPage):
         job = self.job
         if not job:
             return
-        text = _("Stop the search? What was found so far stays.") if job.kind in ("scan", "carve") else \
-            _("Stop the copy? Files already copied stay at the destination, and the copy can be resumed later.")
+        if job.kind in ("scan", "carve"):
+            text = _("Stop the search? What was found so far stays.")
+        elif job.kind in ("image", "salvage"):
+            text = _("Stop? What was read so far is kept, and it can be resumed later from where it stopped.")
+        else:
+            text = _("Stop the copy? Files already copied stay at the destination, and the copy can be resumed later.")
 
         def answered(rid):
             if rid == "stop":
@@ -282,7 +357,7 @@ class JobPage(Adw.NavigationPage):
         job = self.job
         if not job:
             return
-        name = {"image": "ddrescue.out", "scan": "scan.err", "carve": "report.txt"}.get(job.kind, "events.log")
+        name = {"image": "ddrescue.out", "salvage": "ddrescue.out", "scan": "scan.err", "carve": "report.txt"}.get(job.kind, "events.log")
         path = os.path.join(job.dir or "", name)
         try:
             with open(path, "rb") as handle:

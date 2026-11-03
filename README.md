@@ -61,6 +61,10 @@
 | 🔒 **Why can't I write here?** | Windows Fast Startup, filesystem errors, write-protected cards, permissions, another operating system… explained in plain words, and fixed when that is safe |
 | ⏏️ **Busy devices and safe removal** | which programs keep a device busy, and what else does (another mount, swap, a container, a service); then unmount, lock encrypted volumes and power off, without forcing anything |
 | 🛟 **Rescue files** | copies files off a failing disk with real progress, pause and resume (also after a power cut), and a check of the result |
+| 🧩 **What a copy left out** | files a copy could not finish are read again block by block with GNU ddrescue: resumable at any point, and saved with what can be read, never under the name of a good file |
+| 🗺️ **Map of the disk** | a disk image shows what has been read, what could not be, and what is left, drawn from ddrescue's map |
+| 🔍 **Whole or not** | files found by content are checked by their structure: *complete*, *cut short* or *damaged* |
+| #️⃣ **Manifests** | SHA-256 of everything rescued, to check later with `sha256sum -c` |
 | 🔎 **When files cannot be reached** | a disk image with GNU ddrescue, lost partitions with TestDisk, files by content with PhotoRec |
 | 📄 **Reports** | technical reports of a drive or of a copy, anonymized on request |
 
@@ -125,17 +129,33 @@ On GitHub they follow your light or dark theme.
   <tr>
     <td align="center">
       <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/images/app-image-map-dark.png">
+        <img src="docs/images/app-image-map.png" alt="A disk image in progress, with the map of the disk">
+      </picture>
+      <br><sub><b>Map of the disk</b> while an image is made</sub>
+    </td>
+    <td align="center">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/images/app-results-checked-dark.png">
+        <img src="docs/images/app-results-checked.png" alt="Files found by content, checked: some are cut short">
+      </picture>
+      <br><sub><b>Checked</b>: what is cut short is said by name</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/images/app-salvage-dark.png">
+        <img src="docs/images/app-salvage.png" alt="What a copy left out, saved with what could be read">
+      </picture>
+      <br><sub><b>What a copy left out</b>, saved with what could be read</sub>
+    </td>
+    <td align="center">
+      <picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/images/app-overview-grid-dark.png">
         <img src="docs/images/app-overview-grid.png" alt="Home as a grid">
       </picture>
       <br><sub><b>Home</b> as a grid</sub>
-    </td>
-    <td align="center">
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/images/app-dialog-read-only-dark.png">
-        <img src="docs/images/app-dialog-read-only.png" alt="A read-only device explained">
-      </picture>
-      <br><sub><b>Why can't I write here?</b> from Dolphin</sub>
     </td>
   </tr>
 </table>
@@ -149,6 +169,7 @@ On GitHub they follow your light or dark theme.
 | ![Choosing the source](docs/images/app-rescue-source.png) | ![Choosing what to recover](docs/images/app-rescue-what.png) |
 | ![Confirming the copy](docs/images/app-rescue-confirm.png) | ![A busy device](docs/images/app-dialog-busy.png) |
 | ![A narrow window](docs/images/app-narrow.png) | ![About](docs/images/app-about.png) |
+| ![A read-only device explained](docs/images/app-dialog-read-only.png) | ![The health of a failing disk](docs/images/app-health.png) |
 
 </details>
 
@@ -188,14 +209,14 @@ pacman installs these with the package:
 | `rsync` | every copy of files |
 | `smartmontools` | the health of a drive (`smartctl`) |
 | `diffutils` | keeping the map of a disk image safe (`cmp`) |
-| `python`, `python-gobject`, `gtk4`, `libadwaita` ≥ 1.5, `pango`, `gdk-pixbuf2`, `hicolor-icon-theme` | the application and its dialogs |
+| `python`, `python-gobject`, `python-cairo`, `gtk4`, `libadwaita` ≥ 1.5, `pango`, `gdk-pixbuf2`, `hicolor-icon-theme` | the application and its dialogs |
 | `libnotify` | notifications (`notify-send`) |
 
 Optional, used when present:
 
 | Package | Adds |
 | --- | --- |
-| `ddrescue` | disk images of a failing drive, before a deep analysis |
+| `ddrescue` | disk images of a failing drive, and saving what can be read of files a copy left out |
 | `testdisk` | lost partitions (TestDisk) and files by content (PhotoRec) |
 | `dolphin` | the **Storage device** actions of the right-click menu |
 | `big-mount` | mounting the internal partitions at boot |
@@ -249,7 +270,16 @@ and shows the current file, files and bytes, speed, elapsed and remaining
 time, and files that failed or were set aside. Pause and resume are shown only
 for the jobs that support them.
 
-**4. Results.** Four words that never mean the same thing:
+**4. What was left out.** On a failing disk, a file with a bad sector, or one
+that stopped advancing, is set aside so that the rest is saved first. When
+the copy ends, **Save what can be read…** reads those files again with GNU
+ddrescue, good areas first and block by block, so a pause or a power cut
+resumes where it stopped. A file read completely goes to its place. A file
+with unreadable areas goes to *Partly recovered files*, with zeros where
+nothing could be read and a list of those areas, never under the name of a
+good file.
+
+**5. Results.** Words that never mean the same thing:
 
 | Word | Meaning |
 | --- | --- |
@@ -257,6 +287,12 @@ for the jobs that support them.
 | **Candidate** | a file PhotoRec rebuilt from its content: no name, maybe incomplete |
 | **Recovered** | a file written to the destination and synced |
 | **Verified** | a recovered file compared with the source, and equal |
+| **Partly recovered** | a file saved with areas that could not be read (zeros there, listed) |
+
+Files found by content are also checked by their structure: a photo without
+its end, a video without its index or a document without its directory is
+marked *Cut short* or *Damaged*. Whole does not prove every byte is right:
+open the files that matter.
 
 ## Health of a drive
 
@@ -334,6 +370,10 @@ big-storage-rescue --cli --help          # every command
 big-storage-rescue --cli list --json     # for scripts
 big-storage-rescue --cli diagnose /dev/sdb
 big-storage-rescue --doctor              # check the installation and the storage stack
+big-storage-rescue --cli salvage ID      # save what can be read of the files a copy left out
+big-storage-rescue --cli map ID          # the map of a disk image, in the terminal
+big-storage-rescue --cli check-files ID  # are the files a search found whole?
+big-storage-rescue --cli manifest ID     # SHA-256 of what was rescued (sha256sum -c)
 ```
 
 Every operation of the window is a command, and the window uses those same
@@ -405,6 +445,8 @@ changes Big-Mount's configuration or restarts its service.
   polkit, or through two small helpers run by pkexec with the administrator
   password. There is no daemon, and nothing stays running.
   [docs/12](docs/12-security.md)
+- A disk image asks for the administrator password every time, and a drive of
+  the running system is never imaged: a raw copy holds the files of every user.
 - A drive at risk is mounted read-only, and can be blocked at the device level.
 - Destination checks: never inside the source, never on the same physical disk
   (through partitions, LUKS and LVM) unless you insist in the terminal, enough
@@ -436,7 +478,7 @@ big-storage-rescue/usr/lib/big-storage-rescue/   engine (bash) and application (
 locale/                                          gettext catalog, templates
 pkgbuild/                                        PKGBUILD, build-local.sh
 tests/                                           test suites
-docs/                                            technical documentation (01–18)
+docs/                                            technical documentation (00–21)
 ```
 
 Run it from the checkout without installing:
@@ -474,9 +516,10 @@ Translations: `locale/update-pot.sh`, translate, `locale/compile.sh`
 
 ## Known limitations
 
-- Resuming works per file: a large file that was interrupted starts over. A
-  file with read errors is not saved in part; a disk image keeps what can be
-  read.
+- The copy itself resumes per file: a large file that was interrupted starts
+  over in it. What a copy left out is then saved block by block by
+  *Save what can be read…*, which resumes anywhere.
+- An image with unreadable areas does not yet say which files they hit.
 - `--protect` lasts until the drive is disconnected. Clicking a failing disk in
   Dolphin mounts it with writing enabled before this program can protect it:
   that is the policy of UDisks2 and the desktop.
@@ -497,6 +540,7 @@ Translations: `locale/update-pot.sh`, translate, `locale/compile.sh`
 
 | | | |
 | --- | --- | --- |
+| [00 Audit of the state found](docs/00-world-class-audit.md) | [20 Global benchmark](docs/20-global-benchmark.md) | [21 What was done, and validated](docs/21-world-class-progress.md) |
 | [01 Source audit](docs/01-source-audit.md) | [07 Safe removal](docs/07-safe-removal.md) | [13 Translations](docs/13-i18n.md) |
 | [02 Migration plan](docs/02-migration-plan.md) | [08 Recovery engine](docs/08-recovery-engine.md) | [14 Packaging](docs/14-packaging.md) |
 | [03 Architecture](docs/03-architecture.md) | [09 Copy and resume](docs/09-copy-and-resume.md) | [15 Testing](docs/15-testing.md) |

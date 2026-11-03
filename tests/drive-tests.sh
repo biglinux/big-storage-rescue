@@ -408,7 +408,10 @@ check "btrfs read-only, healthy drive: mounted" mnt /dev/sdg1 0 ""
 check "  ... without asking for the password" test ! -s "$WORK/helper.log"
 FAKE_HEALTH_FIND=(smart-failing) FAKE_SMART=failing
 check "btrfs read-only, drive at risk: mounted" mnt /dev/sdg1 0 ""
-check "  ... with writing blocked on the device" grep -qx 'protect /dev/sdg1' "$WORK/helper.log"
+check "  ... with writing blocked on the device, the helper told which disk it must still be" grep -qx 'protect /dev/sdg1 7' "$WORK/helper.log"
+FAKE_HELPER_RC=5
+check "  ... another drive took its place during the password: nothing done, said as such" mnt /dev/sdg1 24 gone
+FAKE_HELPER_RC=0
 : > "$WORK/helper.log"
 check "ext4 read-only, drive at risk: no protection" mnt /dev/sda1 0 ""
 check "  ... so no password is asked" test ! -s "$WORK/helper.log"
@@ -544,6 +547,14 @@ JS=([STATE]=running [PID]="$$" [PID_START]=1); bsr_job_state_save "$d"
 bsr_job_state_load "$d"; check "a reused PID is not the supervisor" eq "${JS[STATE]}" interrupted
 JS=([STATE]=pending [PID]=""); bsr_job_state_save "$d"
 bsr_job_state_load "$d"; check "pending, before the supervisor starts" eq "${JS[STATE]}" pending
+# A helper of rsync left to an init that never reaps it (a container) is a
+# zombie: a pause must not wait for it forever
+bash -c 'sleep 0.1 & echo "$!" > "$1"; exec sleep 6' _ "$WORK/zombie" & holder=$!
+sleep 0.5; zpid="$(cat "$WORK/zombie")"
+bsr_proc_state "$zpid"; check "a helper nobody reaps is a zombie" eq "$REPLY" Z
+t0=$SECONDS; bsr_job_wait_gone "$zpid"
+check "  ... and waiting for it ends at once" test $((SECONDS - t0)) -le 2
+kill "$holder" 2>/dev/null; wait "$holder" 2>/dev/null
 JS=([STATE]=completed); bsr_job_exit; check "exit: completed 0" eq "$?" 0
 JS=([STATE]=needs-attention [REASON]=files-left); bsr_job_exit; check "exit: files left 22" eq "$?" 22
 JS=([STATE]=needs-attention [REASON]=no-space); bsr_job_exit; check "exit: no space 21" eq "$?" 21
@@ -735,6 +746,222 @@ if [ "$(command findmnt -n -o SOURCE -T "$SC")" != "$(command findmnt -n -o SOUR
 fi
 run_b --drive copy --results-of 20261031-000000-dead --destination "$WORK/x" --dry-run --json >/dev/null 2>&1; check "--results-of nothing: refused" eq "$?" 1
 run_b --drive copy --results-of "$id" --destination "$WORK/x" --dry-run --json >/dev/null 2>&1; check "--results-of a list (not a search): refused" eq "$?" 2
+
+begin "salvage: what can be read of the files a copy left out, with real GNU ddrescue on scratch files"
+REAL_DDRESCUE="$(command -v ddrescue)"
+SVS="$(mktemp -d -p /var/tmp bsr-salv-XXXXXX)" SVD="/dev/shm/bsr-salv-$$"
+# The stand-in for ddrescue is run by ionice: it cannot live in /tmp, which may be noexec
+SVB="$(mktemp -d -p /var/tmp bsr-salv-bin-XXXXXX)"
+trap 'rm -rf "$WORK" "$SC" "$OUTD" "$SVS" "$SVD" "$SVB"' EXIT
+if [ -n "$REAL_DDRESCUE" ] && [ "$(command findmnt -n -o SOURCE -T "$SVS")" != "$(command findmnt -n -o SOURCE -T /dev/shm 2>/dev/null)" ]; then
+   # GNU ddrescue itself, told which areas are bad (its --test-mode) or how
+   # fast it may read: a failing disk without a disk
+   mkdir -p "$SVS/sub" "$SVD/out"
+   printf '#!/bin/sh\nexec %s ${FAKE_DDRESCUE_BAD:+--test-mode="$FAKE_DDRESCUE_BAD"} ${FAKE_DDRESCUE_RATE:+--max-read-rate=$FAKE_DDRESCUE_RATE} "$@"\n' "$REAL_DDRESCUE" > "$SVB/ddrescue"
+   chmod 755 "$SVB/ddrescue"
+   head -c 1048576 /dev/urandom > "$SVS/big.bin"
+   head -c 65536 /dev/urandom > "$SVS/sub/with space.bin"
+   printf '# test\n0x0 + 1\n0x00000000 0x00040000 +\n0x00040000 0x00010000 -\n0x00050000 0x7FFB0000 +\n' > "$WORK/bad.map"
+   sv_parent() { # ID: a copy that left two files out (and two names that must be ignored)
+      local pd="$BSR_JOBS/$1"
+      mkdir -p "$pd"
+      printf '%s\n' KIND=copy "SOURCE=$SVS" "DEST=$SVD/out" "SRC_MP=$(command findmnt -n -o TARGET -T "$SVS")" \
+         "DST_MP=$(command findmnt -n -o TARGET -T "$SVD")" NAME=Teste > "$pd/job.conf"
+      printf 'STATE=needs-attention\nREASON=files-left\n' > "$pd/state.env"
+      printf '%s\t%s\n' "its content could not be read" big.bin "its content could not be read" ../../etc/passwd "No such file" gone.bin > "$pd/failed.txt"
+      printf 'sub/with space.bin\n' > "$pd/deferred.txt"
+   }
+   sv_run() { PATH="$SVB:$PATH" FAKE_DDRESCUE_BAD="${FAKE_DDRESCUE_BAD:-}" FAKE_DDRESCUE_RATE="${FAKE_DDRESCUE_RATE:-}" run_b --drive "$@"; }
+   sv_parent 20261103-100000-aaaa
+   out="$(sv_run salvage 20261103-100000-aaaa --dry-run --json)"; rc=$?
+   printf '%s' "$out" | json_ok; check "a dry run: valid JSON (exit $rc)" eq "$?:$rc" 0:0
+   check "  ... the two files that are still in the source, nothing outside it" grep -q '"total_files":2' <<< "$out"
+   check "  ... it says what happens to what cannot be read" grep -q '"key":"salvage-holes"' <<< "$out"
+   FAKE_DDRESCUE_BAD="$WORK/bad.map"
+   id="$(sv_run salvage 20261103-100000-aaaa --json | python3 -I -c 'import json,sys; print(json.load(sys.stdin)["id"])')"
+   check "it starts as a job of its own" bash -c '[[ $1 =~ ^[0-9]{8}-[0-9]{6}-[0-9a-f]{4}$ ]]' _ "$id"
+   wait_job "$id"; check "  ... and it ends" eq "$?" 0
+   st="$(run_b --drive status "$id" --json)"; printf '%s' "$st" | json_ok; check "  ... its status is valid JSON" eq "$?" 0
+   check "  ... called what it is, and it can be paused" bash -c '[[ $1 == *"\"result_kind\":\"salvaged-files\""* && $1 == *"\"pausable\":true"* ]]' _ "$st"
+   check "  ... one file with unreadable areas: needs attention, and says why" bash -c '[[ $1 == *"\"state\":\"needs-attention\""* && $1 == *"\"reason\":\"salvage-partial\""* && $1 == *"\"partial\":1"* && $1 == *"\"files_done\":2,"* ]]' _ "$st"
+   check "  ... 64 KiB could not be read" grep -q '"bad_bytes":65536' <<< "$st"
+   check "the file read completely goes where the copy would have put it, equal to the source" cmp -s "$SVS/sub/with space.bin" "$SVD/out/sub/with space.bin"
+   part="$(find "$SVD/out" -path '*Partly recovered files*' -name big.bin)"
+   check "the file with a hole goes to a folder of its own, never under the place of a good file" bash -c '[ -f "$1" ] && [ ! -e "$2" ]' _ "$part" "$SVD/out/big.bin"
+   check "  ... at its full size" eq "$(stat -c %s "$part" 2>/dev/null)" 1048576
+   check "  ... everything around the hole is the source, byte for byte" bash -c 'cmp -s -n 262144 "$1" "$2" && cmp -s -i 327680 "$1" "$2"' _ "$SVS/big.bin" "$part"
+   check "  ... the hole holds zeros" bash -c '[ "$(dd if="$1" bs=65536 skip=4 count=1 2>/dev/null | tr -d "\0" | wc -c)" = 0 ]' _ "$part"
+   check "  ... with its date" eq "$(stat -c %Y "$part")" "$(stat -c %Y "$SVS/big.bin")"
+   check "  ... and the list of what is missing next to it" grep -q '262144–327679' "${part%/*}/unreadable areas.txt"
+   check "no working folder is left at the destination" bash -c '! compgen -G "$1/.big-storage-rescue-salvage-*" >/dev/null' _ "$SVD/out"
+   check "the source is untouched" bash -c '[ "$(stat -c %s "$1")" = 1048576 ]' _ "$SVS/big.bin"
+   rep="$(run_b --drive report "$id" 2>&1)"
+   check "the report counts both kinds of file" bash -c '[[ $1 == *"Files read completely"*"1"* && $1 == *"Files saved with unreadable areas"*"1"* ]]' _ "$rep"
+   run_b --drive salvage "$id" --json >/dev/null; check "a salvage of a salvage: refused" eq "$?" 20
+   sv_parent 20261103-100000-bbbb; printf 'STATE=running\nPID=%s\n' "$$" > "$BSR_JOBS/20261103-100000-bbbb/state.env"
+   bsr_proc_state "$$"; printf 'PID_START=%s\n' "$PROC_START" >> "$BSR_JOBS/20261103-100000-bbbb/state.env"
+   run_b --drive salvage 20261103-100000-bbbb --json >/dev/null; check "  ... of a copy still running: refused" eq "$?" 10
+   sv_parent 20261103-100000-cccc; : > "$BSR_JOBS/20261103-100000-cccc/failed.txt"; : > "$BSR_JOBS/20261103-100000-cccc/deferred.txt"
+   run_b --drive salvage 20261103-100000-cccc --json >/dev/null; check "  ... of a copy that left nothing out: refused" eq "$?" 20
+
+   # Paused halfway through a large file, then resumed: the map goes on from
+   # where it stopped, it does not start the file again
+   rm -rf "$SVD/out"; mkdir -p "$SVD/out"
+   head -c 4194304 /dev/urandom > "$SVS/large.bin"
+   sv_parent 20261103-100000-dddd; printf 'large.bin\n' > "$BSR_JOBS/20261103-100000-dddd/deferred.txt"; : > "$BSR_JOBS/20261103-100000-dddd/failed.txt"
+   FAKE_DDRESCUE_BAD="" FAKE_DDRESCUE_RATE=524288
+   id="$(sv_run salvage 20261103-100000-dddd --json | python3 -I -c 'import json,sys; print(json.load(sys.stdin)["id"])')"
+   sleep 3
+   st="$(run_b --drive status "$id" --json)"
+   live="$(sed -n 's/.*"bytes_done":\([0-9]*\).*/\1/p' <<< "$st")"
+   check "while it runs, the progress is live ($live bytes read)" bash -c '[ "$1" -gt 0 ]' _ "${live:-0}"
+   run_b --drive pause "$id" >/dev/null
+   wait_job "$id"
+   st="$(run_b --drive status "$id" --json)"
+   check "a pause in the middle of a file" grep -q '"state":"paused"' <<< "$st"
+   done1="$(sed -n 's/.*"bytes_done":\([0-9]*\).*/\1/p' <<< "$st")"
+   check "  ... part of it was read ($done1 bytes), not all" bash -c '[ "$1" -gt 0 ] && [ "$1" -lt 4194304 ]' _ "${done1:-0}"
+   # The second run is told the start of the file is now unreadable: if it
+   # read again what the first run had read, the file would end with a hole
+   printf '# test\n0x0 + 1\n0x00000000 0x00010000 -\n0x00010000 0x7FFF0000 +\n' > "$WORK/start-bad.map"
+   FAKE_DDRESCUE_RATE=""
+   PATH="$SVB:$PATH" FAKE_DDRESCUE_BAD="$WORK/start-bad.map" run_b --drive resume "$id" --json >/dev/null
+   wait_job "$id"
+   st="$(run_b --drive status "$id" --json)"
+   check "  ... resumed, it ends complete" bash -c '[[ $1 == *"\"state\":\"completed\""* && $1 == *"\"bad_bytes\":0"* ]]' _ "$st"
+   check "  ... and the file is the source, byte for byte" cmp -s "$SVS/large.bin" "$SVD/out/large.bin"
+   check "  ... what the first run read was not read again (it is now 'unreadable', and the file has no hole)" bash -c '[ "$1" -ge 65536 ]' _ "${done1:-0}"
+   run_b --drive manifest "$id" >/dev/null
+   check "  ... its manifest lists the file where it was placed, and checks" bash -c 'grep -q "  large.bin$" "$1/manifest.sha256" && cd "$2" && sha256sum --quiet -c "$1/manifest.sha256"' _ "$BSR_JOBS/$id" "$SVD/out"
+else
+   echo "  (skipped: needs GNU ddrescue and /dev/shm on another filesystem)"
+fi
+
+begin "the helper opens the files of an image without being led astray (its opener, as this user)"
+eval "$(sed -n "/^BSR_OPEN_OWN='/,/^'\$/p" "$L/bsr-drive-helper")"
+OD="$WORK/open"; mkdir -p "$OD/real"
+opened() { python3 -I -c "$BSR_OPEN_OWN" "$(id -u)" "$@" -- /bin/bash -c 'for f in "$@"; do readlink "/proc/$$/fd/$f"; done' _ 2>/dev/null; }
+out="$(opened "$OD/real/a.img" "$OD/real/a.map" "$OD/real/a.map.bak")"
+check "three new files: created, open, and handed on by descriptor" eq "$out" "$OD/real/a.img"$'\n'"$OD/real/a.map"$'\n'"$OD/real/a.map.bak"
+check "  ... the image only for its owner" eq "$(stat -c %a "$OD/real/a.img")" 600
+out="$(opened "$OD/real/a.img" "$OD/real/a.map" "$OD/real/a.map.bak")"
+check "  ... and open again when they exist (a resume)" eq "$(wc -l <<< "$out")" 3
+ln -s "$OD/real" "$OD/link"
+opened "$OD/link/b.img" "$OD/link/b.map" "$OD/link/b.map.bak" >/dev/null; rc=$?
+check "a link among the folders on the way: refused, nothing created" bash -c '[ "$1" != 0 ] && [ ! -e "$2" ]' _ "$rc" "$OD/real/b.img"
+ln -s "$WORK/elsewhere" "$OD/real/c.img"
+opened "$OD/real/c.img" "$OD/real/c.map" "$OD/real/c.map.bak" >/dev/null; rc=$?
+check "the file itself a link: refused, the link not followed" bash -c '[ "$1" != 0 ] && [ ! -e "$2" ]' _ "$rc" "$WORK/elsewhere"
+check "  ... and what it had created before refusing is removed" bash -c '[ ! -e "$1" ]' _ "$OD/real/c.map"
+mkfifo "$OD/real/d.img"
+timeout 5 python3 -I -c "$BSR_OPEN_OWN" "$(id -u)" "$OD/real/d.img" "$OD/real/d.map" "$OD/real/d.map.bak" -- /bin/true 2>/dev/null; rc=$?
+check "a FIFO: refused at once, never opened (exit $rc)" bash -c '[ "$1" != 0 ] && [ "$1" != 124 ]' _ "$rc"
+printf x > "$OD/real/e.img"; ln "$OD/real/e.img" "$OD/real/e2"
+opened "$OD/real/e.img" "$OD/real/e.map" "$OD/real/e.map.bak" >/dev/null; check "a file with a second name (hard link): refused" test "$?" != 0
+opened /usr/x.img /usr/x.map /usr/x.map.bak >/dev/null; check "a folder that is not the user's: refused" test "$?" != 0
+opened "$OD/real/f.img" "$OD/real/f.img" "$OD/real/f.map.bak" >/dev/null; check "the image and its map the same file: refused" test "$?" != 0
+opened "$OD/real/../real/g.img" "$OD/real/g.map" "$OD/real/g.map.bak" >/dev/null; check "a path with ..: refused" test "$?" != 0
+check "the helper refuses to image the running system" bash -c 'sed -n "/^   image)/,/^      ;;/p" "$1" | grep -q "^      refuse_system"' _ "$L/bsr-drive-helper"
+check "  ... and checks again, with the files open" bash -c 'sed -n "/^   __image-opened)/,/^      ;;/p" "$1" | grep -q "^      refuse_system"' _ "$L/bsr-drive-helper"
+check "the step hands its mark to what it runs" eq "$(python3 -I -c "$BSR_OPEN_OWN" "$(id -u)" "$OD/real/h.img" "$OD/real/h.map" "$OD/real/h.map.bak" -- /bin/sh -c 'echo "$BSR_IMAGE_OPENED"')" 1
+check "  ... and the inner verb refuses to run without it (pkexec through the action of the other verbs)" bash -c 'sed -n "/^   __image-opened)/,/^      ;;/p" "$1" | grep -A1 "^      # verb, which keeps" | grep -q "^      \[ \"\${BSR_IMAGE_OPENED:-}\" = 1 \] || die"' _ "$L/bsr-drive-helper"
+check "  ... no file of the user is opened by name as root any more" bash -c '! grep -qE "exec \{FD\}[<>]" "$1"' _ "$L/bsr-drive-helper"
+
+begin "files found by content: whole, cut short or damaged, from their structure (integrity.py)"
+IG="$WORK/found"; mkdir -p "$IG/recup_dir.1"
+python3 -I - "$IG/recup_dir.1" <<'PY'
+import io, struct, sys, zipfile, zlib
+d = sys.argv[1]
+def put(name, data): open(f"{d}/{name}", "wb").write(data)
+jpeg = b"\xff\xd8" + b"\xff\xe0\x00\x10JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00" + b"\xff\xda\x00\x08\x01\x01\x00\x00\x3f\x00" + b"\x12" * 500 + b"\xff\xd9"
+put("f1.jpg", jpeg); put("f2.jpg", jpeg[:300])
+def chunk(t, b): return struct.pack(">I", len(b)) + t + b + struct.pack(">I", zlib.crc32(t + b))
+png = b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", 1, 1, 8, 2, 0, 0, 0)) + chunk(b"IDAT", zlib.compress(b"\x00\x00\x00\x00")) + chunk(b"IEND", b"")
+put("f3.png", png); put("f4.png", png[:-12]); bad = bytearray(png); bad[40] ^= 0xFF; put("f5.png", bytes(bad))
+z = io.BytesIO(); zf = zipfile.ZipFile(z, "w"); zf.writestr("word/document.xml", "x" * 2000); zf.close()
+put("f6.docx", z.getvalue()); put("f7.docx", z.getvalue()[:-30])
+box = lambda t, b: struct.pack(">I", 8 + len(b)) + t + b
+mp4 = box(b"ftyp", b"isom\x00\x00\x02\x00") + box(b"moov", b"\x00" * 40) + box(b"mdat", b"\x01" * 1000)
+put("f8.mp4", mp4); put("f9.mp4", mp4[:-100]); put("f10.mp4", box(b"ftyp", b"isom\x00\x00\x02\x00") + box(b"mdat", b"\x01" * 100))
+put("f11.pdf", b"%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF\n"); put("f12.pdf", b"%PDF-1.4\n1 0 obj\n<<>>\n")
+wav = b"RIFF" + struct.pack("<I", 36 + 100) + b"WAVEfmt " + b"\x00" * 24 + b"data" + struct.pack("<I", 100) + b"\x00" * 100
+put("f13.wav", wav); put("f14.wav", wav[:80]); put("f15.xyz", b"whatever")
+big = b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", 1, 1, 8, 2, 0, 0, 0)) + chunk(b"IDAT", b"\x07" * 500) + chunk(b"IEND", b"")
+put("f17.png", big[:200]); put("f18.png", png[:33] + chunk(b"IEND", b""))
+def zip64(data, rec_off=None):
+    at = data.rfind(b"PK\x05\x06")
+    n = struct.unpack("<H", data[at + 10:at + 12])[0]
+    cd_size, cd_off = struct.unpack("<II", data[at + 12:at + 20])
+    body = data[:at]
+    rec = b"PK\x06\x06" + struct.pack("<QHHIIQQQQ", 44, 45, 45, 0, 0, n, n, cd_size, cd_off)
+    loc = b"PK\x06\x07" + struct.pack("<IQI", 0, len(body) if rec_off is None else rec_off, 1)
+    return body + rec + loc + b"PK\x05\x06" + struct.pack("<HHHHIIH", 0, 0, 0xFFFF, 0xFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0)
+put("f19.zip", zip64(z.getvalue())); put("f20.zip", zip64(z.getvalue(), rec_off=0))
+PY
+ln -s /etc/passwd "$IG/recup_dir.1/f16.jpg"
+idx="$WORK/found.index"
+(cd "$IG" && for f in recup_dir.1/*; do printf '1\t0\tother\t%s\0' "$f"; done) > "$idx"
+printf '1\t0\tother\t../etc/passwd\0' >> "$idx"
+python3 -I "$L/integrity.py" "$IG" < "$idx" > "$WORK/found.out" 2> "$WORK/found.err"
+st() { tr '\0' '\n' < "$WORK/found.out" | awk -F'\t' -v f="recup_dir.1/$1" '$2 == f { print $1 }'; }
+check "a whole JPEG, and one cut short" eq "$(st f1.jpg) $(st f2.jpg)" "complete truncated"
+check "a whole PNG, one cut short, one with a bad chunk (CRC)" eq "$(st f3.png) $(st f4.png) $(st f5.png)" "complete truncated damaged"
+check "  ... one cut short inside a long chunk, and one without image data" eq "$(st f17.png) $(st f18.png)" "truncated damaged"
+check "a zip64 whose directory is where its record says, and one whose record is not there" eq "$(st f19.zip) $(st f20.zip)" "complete damaged"
+check "a whole document (zip inside), and one without its directory" eq "$(st f6.docx) $(st f7.docx)" "complete truncated"
+check "a whole video, one cut short, one without its index (moov)" eq "$(st f8.mp4) $(st f9.mp4) $(st f10.mp4)" "complete truncated damaged"
+check "a whole PDF and one cut short; a whole WAV and one cut short" eq "$(st f11.pdf) $(st f12.pdf) $(st f13.wav) $(st f14.wav)" "complete truncated complete truncated"
+check "a format it does not know, and a link (never followed): not checked" eq "$(st f15.xyz) $(st f16.jpg)" "unknown unknown"
+check "  ... a path outside the folder is never opened, only answered for (one answer per record, in order)" \
+   bash -c '[ "$(tr "\0" "\n" < "$1" | tail -n 1)" = "unknown	../etc/passwd" ] && [ "$(tr -cd "\0" < "$1" | wc -c)" = 21 ]' _ "$WORK/found.out"
+check "the counts" eq "$(cat "$WORK/found.err")" "complete 7 truncated 7 damaged 4 unknown 3"
+mkdir -p "$BSR_JOBS/20261103-120000-ffff"; cp "$idx" "$BSR_JOBS/20261103-120000-ffff/index"
+printf '%s\n' KIND=carve "DEST=$IG" SOURCE=/dev/null > "$BSR_JOBS/20261103-120000-ffff/job.conf"; printf 'STATE=completed\nFILES_DONE=20\n' > "$BSR_JOBS/20261103-120000-ffff/state.env"
+out="$(run_b --drive check-files 20261103-120000-ffff --json)"
+check "--cli check-files: the counts as JSON" eq "$out" '{"complete":7,"truncated":7,"damaged":4,"unknown":3}'
+res="$(run_b --drive results 20261103-120000-ffff --json)"
+check "  ... and the results say where the verdicts are" bash -c '[[ $1 == *"\"integrity\":\"$2/integrity\""* && $1 == *"\"truncated\":7"* ]]' _ "$res" "$BSR_JOBS/20261103-120000-ffff"
+check "  ... the report says what whole means" bash -c '[[ $1 == *"Look whole"*"7"* && $1 == *"does not prove every byte"* ]]' _ "$(run_b --drive report 20261103-120000-ffff 2>&1)"
+
+begin "a manifest: SHA-256 of what was written, checked later with sha256sum -c"
+MD="$WORK/mdest"; mkdir -p "$MD/sub" "$BSR_JOBS/20261103-130000-aaaa" "$BSR_JOBS/20261103-130000-bbbb"
+printf a > "$MD/a.txt"; printf b > "$MD/sub/b c.txt"; printf c > "$MD/x|y.txt"
+printf '%s\n' KIND=copy "DEST=$MD" SOURCE=/src > "$BSR_JOBS/20261103-130000-aaaa/job.conf"; printf 'STATE=completed\n' > "$BSR_JOBS/20261103-130000-aaaa/state.env"
+{ printf '2026/11/03 10:00:00 [1] >f+++++++++|1|a.txt\n'; printf '2026/11/03 10:00:00 [1] cd+++++++++|0|sub/\n'
+  printf '2026/11/03 10:00:01 [1] >f+++++++++|1|sub/b c.txt\n'; printf '2026/11/03 10:00:02 [1] >f.st......|1|a.txt\n'
+  printf '2026/11/03 10:00:03 [1] >f+++++++++|1|x|y.txt\n'; } > "$BSR_JOBS/20261103-130000-aaaa/events.log"
+out="$(run_b --drive manifest 20261103-130000-aaaa)"; rc=$?
+man="$BSR_JOBS/20261103-130000-aaaa/manifest.sha256"
+check "a copy: each file written, once ($out)" bash -c '[ "$1" = 0 ] && [ "$(grep -vc "^#" "$2")" = 3 ]' _ "$rc" "$man"
+check "  ... and sha256sum -c agrees, in the destination" bash -c 'cd "$1" && sha256sum --quiet -c "$2"' _ "$MD" "$man"
+printf changed > "$MD/a.txt"
+check "  ... a file changed since is caught by that check" bash -c 'cd "$1" && ! sha256sum --quiet -c "$2" 2>/dev/null' _ "$MD" "$man"
+rm -f "$MD/sub/b c.txt"
+run_b --drive manifest 20261103-130000-aaaa >/dev/null 2>&1; check "a file gone from the destination: said, and left out" eq "$?" 1
+mkdir -p "$WORK/mimg"; head -c 4096 /dev/urandom > "$WORK/mimg/disk.img"
+printf '%s\n' KIND=image "DEST=$WORK/mimg/disk.img" DEVICE=/dev/sdc SERIAL=S1 SIZE=4096 > "$BSR_JOBS/20261103-130000-bbbb/job.conf"; printf 'STATE=needs-attention\n' > "$BSR_JOBS/20261103-130000-bbbb/state.env"
+run_b --drive manifest 20261103-130000-bbbb --output "$WORK/img.sha256" >/dev/null
+check "an image: its hash, with where it came from and what its zeros mean" bash -c '[[ $(cat "$1") == *"serial S1, 4096 bytes"*"zeros"* ]] && (cd "$2" && sha256sum --quiet -c "$1")' _ "$WORK/img.sha256" "$WORK/mimg"
+printf 'STATE=running\nPID=%s\n' "$$" > "$BSR_JOBS/20261103-130000-bbbb/state.env"; bsr_proc_state "$$"; printf 'PID_START=%s\n' "$PROC_START" >> "$BSR_JOBS/20261103-130000-bbbb/state.env"
+run_b --drive manifest 20261103-130000-bbbb >/dev/null 2>&1; check "  ... not while it is still being written" eq "$?" 10
+
+begin "the map of a disk image, from a ddrescue map"
+mkdir -p "$BSR_JOBS/20261103-110000-eeee"
+printf '%s\n' KIND=image "MAP=$WORK/img.map" SOURCE=/dev/sdc DEST="$WORK/img" > "$BSR_JOBS/20261103-110000-eeee/job.conf"
+printf '# Mapfile\n0x00080000 + 1\n#  pos  size  status\n0x00000000  0x00040000  +\n0x00040000  0x00008000  -\n0x00048000  0x00008000  /\n0x00050000  0x00030000  +\n0x00080000  0x00080000  ?\n' > "$WORK/img.map"
+out="$(run_b --drive map 20261103-110000-eeee --bins 16 --json)"; printf '%s' "$out" | json_ok
+check "--json: valid" eq "$?" 0
+check "  ... the totals, in bytes" bash -c '[[ $1 == *"\"size\":1048576"* && $1 == *"\"rescued\":458752"* && $1 == *"\"bad\":32768"* && $1 == *"\"slow\":32768"* && $1 == *"\"untried\":524288"* ]]' _ "$out"
+check "  ... each cell shows the worst it holds" grep -q '"cells":"++++-+++????????"' <<< "$out"
+check "  ... and how much of it was read" grep -q '"read":"AAAA0AAA00000000"' <<< "$out"
+out="$(run_b --drive map 20261103-110000-eeee --bins 64)"
+check "the terminal: a grid and a legend" bash -c '[[ $1 == *"################XX~~############....."* && $1 == *"could not be read"* ]]' _ "$out"
+big="$WORK/big.map"
+{ printf '0x0 ? 1\n'; for ((i = 0; i < 20000; i++)); do printf '0x%x 0x200 %s\n' $((i * 1024)) +; printf '0x%x 0x200 -\n' $((i * 1024 + 512)); done; printf '0x%x 0x%x ?\n' $((20000 * 1024)) $((4000 * 1000 ** 4)); } > "$big"
+printf '%s\n' KIND=image "MAP=$big" > "$BSR_JOBS/20261103-110000-eeee/job.conf"
+t0=$SECONDS; out="$(run_b --drive map 20261103-110000-eeee --json)"
+check "a map of 40 000 areas on 4 TB: summed in a few seconds ($((SECONDS - t0)) s)" bash -c '[ "$1" -lt 15 ] && [[ $2 == *"\"bad\":10240000"* ]]' _ "$((SECONDS - t0))" "$out"
+run_b --drive map 20261103-100000-aaaa >/dev/null 2>&1; check "a copy has no map" eq "$?" 2
 
 echo "========================================="
 echo "drive result: $PASS passed, $FAIL failed"

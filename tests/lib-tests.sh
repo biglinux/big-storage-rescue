@@ -974,7 +974,14 @@ bsr_sc_run
 check "  ... a stuck system mount: nothing is invented about it, and it still holds the system" eq "${#SC_KEY[@]}|$SC_SYSTEM" "0|1"
 unset -f bsr_sc_statfs bsr_sc_statfs_fake
 . "$BSR_LIB/system-check.sh"
-check "  ... statfs has a limit of its own" bash -c '[[ $1 == *"timeout "*"stat -f"* ]]' _ "$(declare -f bsr_sc_statfs)"
+# A system mount that hangs, for real: a stat that never answers. In EXE,
+# not in /tmp, which may be mounted noexec
+STUCK_BIN="$(mktemp -d -p "$EXE" stuck-XXXXXX)"
+printf '#!/bin/sh\nexec sleep 30\n' > "$STUCK_BIN/stat"; chmod 755 "$STUCK_BIN/stat"
+t0=$SECONDS
+out="$(export PATH="$STUCK_BIN:$PATH" BSR_STATFS_TIMEOUT=1; bsr_sc_statfs /)"; rc=$?
+check "  ... statfs has a limit of its own: a stuck mount answers nothing after it (exit $rc, the limit's)" eq "$out|$rc|$((SECONDS - t0 < 4))" "|124|1"
+rm -rf -- "$STUCK_BIN"
 unset -f bsr_drive_members
 findmnt() { [ "$1" = --fstab ] && return $((1 - FAKE_FSTAB)); command findmnt "$@"; }
 BSR_SYS_FS=/sys/fs

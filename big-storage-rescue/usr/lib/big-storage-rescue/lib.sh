@@ -775,6 +775,20 @@ bsr_diskseq() {
    { read -r REPLY < "/sys/block/${1##*/}/diskseq"; } 2>/dev/null
 }
 
+# bsr_seq_of DEV: the disk sequence number of the one disk DEV sits on, for
+# the helper to check right before it acts (BSR_SEQ: empty, or one word)
+bsr_seq_of() {
+   local name type disks=()
+   BSR_SEQ=()
+   while read -r name type; do
+      [ "$type" = disk ] && disks+=("$name")
+   done < <(lsblk -s -n -p -r -o NAME,TYPE -- "$1" 2>/dev/null)
+   [ "${#disks[@]}" -eq 1 ] || return 0
+   bsr_diskseq "${disks[0]}"
+   [[ $REPLY =~ ^[0-9]+$ ]] && BSR_SEQ=("$REPLY")
+   return 0
+}
+
 # Read-only by choice: a read-only mount, or writing blocked on a drive, that
 # the person asked Big Storage Rescue for is not reported back to them as a problem.
 # Recorded in the private runtime folder with the disk sequence number, which

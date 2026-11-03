@@ -34,6 +34,93 @@ bsr_rec_map_parse() {
    [ "$seen" = 1 ]
 }
 
+# bsr_rec_map_bins MAP BINS: the map of a disk in BINS cells, in one pass over
+# the map, whatever the size of the disk or the number of areas. Three lines:
+#   SIZE READ BAD SLOW UNTRIED POSITION PASS     (bytes; SLOW: areas ddrescue
+#                                                 left to trim or scrape)
+#   the worst status in each cell: - bad, / hard to read, ? not read yet, + read
+#   how much of each cell was read, in tenths (0-9, A for all of it)
+bsr_rec_map_bins() {
+   LC_ALL=C awk -v bins="$2" '
+      function hex(s,   i, v) { s = tolower(substr(s, 3)); v = 0
+         for (i = 1; i <= length(s); i++) v = v * 16 + index("0123456789abcdef", substr(s, i, 1)) - 1
+         return v }
+      function rank(st) { return st == "-" ? 4 : (st == "*" || st == "/") ? 3 : st == "+" ? 1 : 2 }
+      /^#/ || NF < 2 { next }
+      !seen { seen = 1; pos = hex($1); pass = $3 + 0; next }
+      $1 !~ /^0x[0-9A-Fa-f]+$/ || $2 !~ /^0x[0-9A-Fa-f]+$/ { next }
+      { p = hex($1); n = hex($2); st = $3; k++; P[k] = p; N[k] = n; S[k] = st
+        if (p + n > size) size = p + n
+        if (st == "+") ok += n; else if (st == "-") bad += n; else if (st == "*" || st == "/") slow += n; else todo += n }
+      END {
+         if (!size || bins < 1) exit 1
+         w = size / bins
+         for (i = 1; i <= k; i++) {
+            a = P[i]; b = P[i] + N[i]; r = rank(S[i])
+            c = int(a / w); e = int((b - 1) / w); if (e >= bins) e = bins - 1
+            for (j = c; j <= e; j++) {
+               if (r > W[j]) W[j] = r
+               if (S[i] == "+") { lo = a > j * w ? a : j * w; hi = b < (j + 1) * w ? b : (j + 1) * w; R[j] += hi - lo }
+            }
+         }
+         printf "%.0f %.0f %.0f %.0f %.0f %.0f %d\n", size, ok, bad, slow, todo, pos, pass
+         cells = ""; read = ""
+         for (j = 0; j < bins; j++) {
+            cells = cells substr("+?/-", (W[j] ? W[j] : 2), 1)
+            d = int(R[j] * 10 / w + 1e-9); if (d > 10) d = 10
+            read = read substr("0123456789A", d + 1, 1)
+         }
+         print cells; print read
+      }' "$1" 2>/dev/null
+}
+
+# big-storage-rescue --cli map ID [--bins N] [--json]: what an image has read
+bsr_rec_map_cmd() {
+   local id="" bins="" json=0 a dir head cells done_cells size ok unread slow todo pos pass
+   while [ "$#" -gt 0 ]; do
+      case "$1" in
+         --bins) bins="${2:-}"; shift ;;
+         --json) json=1 ;;
+         -*) bsr_drive_badarg "$1"; return 2 ;;
+         *) id="$1" ;;
+      esac
+      shift
+   done
+   [ -n "$bins" ] || bins=1024
+   if ! [[ $bins =~ ^[0-9]+$ ]] || [ "$bins" -lt 1 ] || [ "$bins" -gt 16384 ]; then
+      bsr_drive_badarg "--bins $bins"
+      return 2
+   fi
+   bsr_job_dir "$id" || { printf $"There is no job '%s'."'\n' "$id" >&2; return 1; }
+   dir="$REPLY"
+   bsr_job_conf_load "$dir"
+   if [ "${JC[KIND]:-}" != image ]; then
+      printf '%s\n' $"Only a disk image has a map." >&2
+      return 2
+   fi
+   { read -r head; read -r cells; read -r done_cells; } < <(bsr_rec_map_bins "${JC[MAP]}" "$bins")
+   if [ -z "${head:-}" ]; then
+      if [ "$json" = 1 ]; then printf '{"size":0,"bins":0,"cells":"","read":""}\n'; return 0; fi
+      printf '%s\n' $"Nothing has been read yet." >&2
+      return 1
+   fi
+   read -r size ok unread slow todo pos pass <<< "$head"
+   if [ "$json" = 1 ]; then
+      printf '{%s,%s}\n' "$(bsr_jn size "$size" rescued "$ok" bad "$unread" slow "$slow" untried "$todo" position "$pos" pass "$pass" bins "$bins")" \
+         "$(bsr_jo_inner cells "$cells" read "$done_cells")"
+      return 0
+   fi
+   local s_ok s_bad s_size
+   bsr_human_size "$ok"; s_ok="$REPLY"
+   bsr_human_size "$unread"; s_bad="$REPLY"
+   bsr_human_size "$size"; s_size="$REPLY"
+   printf $"Read: %s of %s. Could not be read: %s."'\n\n' "$s_ok" "$s_size" "$s_bad"
+   # The terminal gets 64 columns: one line per 64 cells
+   cells="$(tr '+?/-' '#.~X' <<< "$cells")"
+   fold -w 64 <<< "$cells" | sed 's/^/  /'
+   printf '\n  # %s   ~ %s   X %s   . %s\n' $"already read" $"hard to read, to be retried" $"could not be read" $"not read yet"
+}
+
 bsr_rec_image_start() {
    local id="$1" dir
    bsr_job_dir "$id" || return 1
@@ -96,6 +183,8 @@ bsr_rec_warn_text() {
       carve-names) REPLY=$"Files found by content lose their original names and folders." ;;
       source-risk) REPLY=$"This drive reported problems. Reading all of it can make it worse: the disk image is read only once, and only with your consent." ;;
       scan-reads) REPLY=$"Making the list goes through all the folders. On a drive with problems this is extra wear." ;;
+      salvage-holes) REPLY=$"What cannot be read of a file is left as zeros. Files with such areas go to a folder of their own, with a list of what is missing." ;;
+      salvage-retries) REPLY=$"Retries read the damaged areas again. They may save a little more, and wear a failing drive more." ;;
       trim) REPLY=$"This SSD erases deleted blocks by itself (TRIM). Files deleted some time ago may be gone for good, however deep the search." ;;
       *) REPLY="$1" ;;
    esac
@@ -123,7 +212,8 @@ bsr_rec_image_supervise() {
       bsr_job_state_save "$dir"; bsr_job_report_write "$dir"
       return 0
    fi
-   bsr_helper image "$dev" "${JC[DEST]}" "${JC[MAP]}" "${JC[RETRIES]}" "$dir/stop" >> "$dir/ddrescue.out" 2>&1 &
+   bsr_seq_of "$dev"
+   bsr_helper image "$dev" "${JC[DEST]}" "${JC[MAP]}" "${JC[RETRIES]}" "$dir/stop" "${BSR_SEQ[@]}" >> "$dir/ddrescue.out" 2>&1 &
    pid=$!
    while kill -0 "$pid" 2>/dev/null; do
       sleep 2
@@ -153,6 +243,8 @@ bsr_rec_image_supervise() {
    case "$rc" in
       126 | 127) JS[STATE]=failed JS[REASON]=not-authorized ;;
       25) JS[STATE]=failed JS[REASON]=no-ddrescue ;;
+      5) JS[STATE]=needs-attention JS[REASON]=source-gone ;;
+      4) JS[STATE]=failed JS[REASON]=image-system ;;
       *)
          if [ "$ctl" = cancel ]; then JS[STATE]=cancelled
          elif [ "$ctl" = pause ]; then JS[STATE]=paused
@@ -739,6 +831,70 @@ bsr_rec_carve_index() {
    JS[FILES_DONE]="$total" JS[BYTES_DONE]="$bytes"
 }
 
+# bsr_rec_integrity DIR: how whole each file found by content looks, from its
+# structure (integrity.py): DIR/integrity holds status<TAB>path<NUL> in the
+# order of the index, JS[CHECK_*] the counts. Only the destination is read.
+# 1: cancelled
+bsr_rec_integrity() {
+   local dir="$1" pid ctl="" k n
+   [ -s "$dir/index" ] || return 0
+   command -v python3 >/dev/null || return 0
+   ionice -c 2 -n 6 nice -n 5 python3 -I "$BSR_LIB_DIR/integrity.py" "${JC[DEST]}" < "$dir/index" > "$dir/integrity.tmp" 2> "$dir/integrity.count" &
+   pid=$!
+   while kill -0 "$pid" 2>/dev/null; do
+      sleep "$BSR_TICK"
+      { read -r ctl < "$dir/control"; } 2>/dev/null
+      if [ "$ctl" = cancel ]; then kill -TERM "$pid" 2>/dev/null; wait "$pid"; rm -f -- "$dir/integrity.tmp"; return 1; fi
+   done
+   wait "$pid" || { rm -f -- "$dir/integrity.tmp"; return 0; }
+   mv -f -- "$dir/integrity.tmp" "$dir/integrity"
+   local counts=() i
+   read -r -a counts < <(tail -n 1 -- "$dir/integrity.count")
+   for ((i = 0; i + 1 < ${#counts[@]}; i += 2)); do
+      k="${counts[i]}" n="${counts[i + 1]}"
+      case "$k" in complete | truncated | damaged | unknown) [[ $n =~ ^[0-9]+$ ]] && JS[CHECK_${k^^}]="$n" ;; esac
+   done
+   return 0
+}
+
+# big-storage-rescue --cli check-files ID: look again at what a search found
+bsr_rec_check_cmd() {
+   local id="" json=0 a dir
+   for a in "$@"; do
+      case "$a" in
+         --json) json=1 ;;
+         -*) bsr_drive_badarg "$a"; return 2 ;;
+         *) id="$a" ;;
+      esac
+   done
+   bsr_job_dir "$id" || { printf $"There is no job '%s'."'\n' "$id" >&2; return 1; }
+   dir="$REPLY"
+   bsr_job_conf_load "$dir"
+   bsr_job_state_load "$dir"
+   [ "${JC[KIND]:-}" = carve ] || { printf '%s\n' $"Only files found by content are checked this way." >&2; return 2; }
+   case "${JS[STATE]}" in pending | analyzing | running | verifying | stopping) printf '%s\n' $"It is already running." >&2; return 10 ;; esac
+   bsr_job_lock "$dir" || return 10
+   : > "$dir/control"
+   bsr_rec_integrity "$dir"
+   bsr_job_state_save "$dir"
+   bsr_job_report_write "$dir"
+   if [ "$json" = 1 ]; then
+      bsr_jn complete "${JS[CHECK_COMPLETE]:-0}" truncated "${JS[CHECK_TRUNCATED]:-0}" damaged "${JS[CHECK_DAMAGED]:-0}" unknown "${JS[CHECK_UNKNOWN]:-0}" | sed 's/^/{/; s/$/}/'
+      return 0
+   fi
+   bsr_rec_integrity_text
+}
+
+# The counts of bsr_rec_integrity, for a person
+bsr_rec_integrity_text() {
+   [ -n "${JS[CHECK_COMPLETE]:-}" ] || return 0
+   bsr_doc_kv $"Look whole" "${JS[CHECK_COMPLETE]:-0}"
+   bsr_doc_kv $"Cut short" "${JS[CHECK_TRUNCATED]:-0}"
+   bsr_doc_kv $"Damaged" "${JS[CHECK_DAMAGED]:-0}"
+   bsr_doc_kv $"Not checked (format)" "${JS[CHECK_UNKNOWN]:-0}"
+   bsr_doc_p $"Whole means the structure of the file is complete. It does not prove every byte is right: open the files that matter."
+}
+
 bsr_rec_carve_supervise() {
    local id="$1" dir pid rc end=finish ctl now t0 tick=0 line pass="" sector="" total="" found=""
    bsr_job_dir "$id" || return 1
@@ -808,6 +964,12 @@ bsr_rec_carve_supervise() {
    printf -v "JS[FINISHED]" '%(%s)T' -1
    JS[ETA]=""
    bsr_rec_carve_index "$dir" "${JC[DEST]}"
+   # What was found, checked for being whole: the destination only is read
+   if [ "$end" = finish ] && [ "${JS[FILES_DONE]:-0}" -gt 0 ]; then
+      JS[STATE]=verifying
+      bsr_job_state_save "$dir"
+      bsr_rec_integrity "$dir" || end=cancel
+   fi
    JS[BYTES_NOW]="${JS[BYTES_DONE]:-0}"
    JS[BYTES_TOTAL]=0 JS[TOTAL_ESTIMATE]=0
    case "$end" in
@@ -959,6 +1121,7 @@ bsr_rec_report_text() {
       bsr_doc_kv $"Destination" "${JC[DEST]}"
       bsr_doc_kv $"Candidates found" "${JS[FILES_DONE]:-0}"
       bsr_doc_p $"Found by content: their original names and folders could not be kept, and some may be incomplete. Open them to check."
+      bsr_rec_integrity_text
    fi
    bsr_fmt_time "${JS[ELAPSED]:-0}"; bsr_doc_kv $"Elapsed" "$REPLY"
    bsr_ui_show info ""
@@ -991,6 +1154,8 @@ bsr_rec_results() {
       *) printf '%s\n' $"Only a list or a search has results." >&2; return 2 ;;
    esac
    if [ -f "$dir/index" ]; then index="$dir/index"; fi
+   local integrity=""
+   [ -f "$dir/integrity" ] && integrity="$dir/integrity"
    if [ -r "$dir/index.count" ]; then
       while read -r k n b; do
          case "$k" in
@@ -1003,9 +1168,9 @@ bsr_rec_results() {
    fi
    if [ "$json" = 1 ]; then
       printf '{%s,%s,%s,"categories":[%s]}\n' \
-         "$(bsr_jo_inner id "$id" kind "$kind" result_kind "$([ "$kind" = scan ] && echo existing-files || echo carved-candidates)" root "$root" index "$index" state "${JS[STATE]:-}")" \
+         "$(bsr_jo_inner id "$id" kind "$kind" result_kind "$([ "$kind" = scan ] && echo existing-files || echo carved-candidates)" root "$root" index "$index" state "${JS[STATE]:-}" integrity "$integrity")" \
          "$(bsr_jb names_kept "$names" dates_kept "$dates" ready "$([ -n "$index" ] && echo 1)")" \
-         "$(bsr_jn files "${JS[FILES_DONE]:-0}" level "")" "$cats"
+         "$(bsr_jn files "${JS[FILES_DONE]:-0}" level "" complete "${JS[CHECK_COMPLETE]:-0}" truncated "${JS[CHECK_TRUNCATED]:-0}" damaged "${JS[CHECK_DAMAGED]:-0}" unknown "${JS[CHECK_UNKNOWN]:-0}")" "$cats"
    else
       printf '%s\n' "${index:-$"The list is not ready yet."}"
    fi
@@ -1160,6 +1325,7 @@ bsr_rec_cmd() {
       carve) bsr_rec_carve "$@" ;;
       scan) bsr_rec_scan_cmd "$@" ;;
       results) bsr_rec_results "$@" ;;
+      check-files) bsr_rec_check_cmd "$@" ;;
       methods) bsr_rec_methods "$@" ;;
    esac
 }

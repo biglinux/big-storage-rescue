@@ -19,7 +19,7 @@ import zlib
 os.environ["LANGUAGE"] = os.environ.get("SHOTS_LANGUAGE", "C")
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
-from gui_support import (FIX, Adw, GB, REPO, WORK, backup, drive, fix, make_app, pump,  # noqa: E402
+from gui_support import (FIX, Adw, GB, REPO, WORK, backup, drive, fix, fix_text, make_app, pump,  # noqa: E402
                          seagate, shot, system_disk, vol)
 
 DARK = "--dark" in sys.argv
@@ -190,6 +190,57 @@ fix("results", {"id": "20261031-120000-beef", "kind": "carve", "result_kind": "c
 win.open_results("20261031-120000-beef")
 pump(timeout=1.0)
 shot(win, OUT / f"app-results{suffix}.png")
+
+# The same search, with what integrity.py says of each file
+verdicts = WORK / "integrity"
+order = [1, 4, 7, 13, 19, 25] + [10, 22]
+marks = ["complete"] * 40
+for k, i in enumerate(order):
+    marks[i] = "truncated" if k < 6 else "damaged"
+marks[39] = "unknown"
+verdicts.write_bytes(b"".join(m.encode() + b"\t" + r.split(b"\t", 3)[3] + b"\0" for m, r in zip(marks, records)))
+fix("results", {"id": "20261031-120000-beef", "kind": "carve", "result_kind": "carved-candidates", "root": str(carved), "index": str(index), "state": "completed", "names_kept": False, "dates_kept": False, "ready": True,
+                "files": 40, "integrity": str(verdicts), "complete": marks.count("complete"), "truncated": 6, "damaged": 2, "unknown": 1,
+                "categories": [{"id": "photos", "label": "Photos", "files": 14, "bytes": 1000}, {"id": "documents", "label": "Documents", "files": 13, "bytes": 1000}, {"id": "audio", "label": "Audio", "files": 13, "bytes": 1000}]})
+win.show_overview()
+pump(timeout=0.2)
+win.open_results("20261031-120000-beef")
+pump(timeout=1.0)
+shot(win, OUT / f"app-results-checked{suffix}.png")
+
+# A disk image of a failing disk, with its map: read, a damaged band, areas
+# left to retry, the end not reached yet
+def cell(i):
+    if 300 <= i < 316 or i in (512, 517, 530):
+        return "-", "3"
+    if 316 <= i < 330 or 640 <= i < 650:
+        return "/", "6"
+    return ("?", "0") if i >= 900 else ("+", "A")
+
+
+cells, read = zip(*(cell(i) for i in range(1024)))
+fix("map", {"size": 1000 * GB, "rescued": 861 * GB, "bad": 3 * GB, "slow": 17 * GB, "untried": 119 * GB, "position": 0, "pass": 1, "bins": 1024,
+            "cells": "".join(cells), "read": "".join(read)})
+image_job = job(id="20261031-120000-cafe", kind="image", result_kind="disk-image", state_label="Making the disk image", source="/dev/sdb",
+                destination=str(MOUNT / "ST1000DM003.img"), name="ST1000DM003-1CH162", current="", files_done=0, bytes_done=861 * GB, bytes_total=1000 * GB,
+                total_estimate=False, deferred=0, read_errors=0, bad_bytes=3 * GB, rate_now=41 * 1000 * 1000, eta=2900)
+fix("status", image_job)
+win.open_job("20261031-120000-cafe", replace_top=True)
+# The map comes from its own question to the engine
+pump(lambda: win.nav.get_visible_page().damage_map.area.get_height() > 150, 6)
+pump(timeout=0.3)
+shot(win, OUT / f"app-image-map{suffix}.png")
+
+# What a salvage of the files a copy left out saved
+salv = job(id="20261031-120000-face", kind="salvage", result_kind="salvaged-files", state="needs-attention", state_label="Finished, needs your attention",
+           reason="salvage-partial", reason_text="Some files have areas that could not be read. They were saved with everything else, in a folder of their own, with a list of what is missing.",
+           current="", files_done=12, files_total=12, bytes_done=37 * GB // 10, bytes_total=38 * GB // 10, bad_bytes=48 * 1000 * 1000, partial=2,
+           partial_dir=str(SOURCE), rate_now=0, eta=None, deferred=0, read_errors=0, elapsed=1310, finished=1793420000)
+fix("status", salv)
+fix_text("report", "")
+win.open_job("20261031-120000-face", replace_top=True)
+pump(timeout=1.0)
+shot(win, OUT / f"app-salvage{suffix}.png")
 
 win.show_overview()
 pump(timeout=0.1)

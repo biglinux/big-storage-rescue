@@ -74,16 +74,19 @@ expect=(
     "644 usr/lib/big-storage-rescue/drive-diag.sh"
     "644 usr/lib/big-storage-rescue/drive-copy.sh"
     "644 usr/lib/big-storage-rescue/drive-recovery.sh"
+    "644 usr/lib/big-storage-rescue/drive-salvage.sh"
     "644 usr/lib/big-storage-rescue/drive-tui.sh"
     "644 usr/lib/big-storage-rescue/migrate.sh"
     "644 usr/lib/big-storage-rescue/system-check.sh"
     "644 usr/lib/big-storage-rescue/app.py"
     "644 usr/lib/big-storage-rescue/dialog.py"
+    "644 usr/lib/big-storage-rescue/integrity.py"
     "644 usr/lib/big-storage-rescue/gui/__init__.py"
     "644 usr/lib/big-storage-rescue/gui/about.py"
     "644 usr/lib/big-storage-rescue/gui/actions.py"
     "644 usr/lib/big-storage-rescue/gui/application.py"
     "644 usr/lib/big-storage-rescue/gui/common.py"
+    "644 usr/lib/big-storage-rescue/gui/damage_map.py"
     "644 usr/lib/big-storage-rescue/gui/dialogs.py"
     "644 usr/lib/big-storage-rescue/gui/engine.py"
     "644 usr/lib/big-storage-rescue/gui/models.py"
@@ -130,7 +133,7 @@ check "install script restarts nothing by itself" bash -c '! grep -vE "^\s*(#|ec
 check "no configuration file of its own (backup= empty)" grep -qx "backup=" <<< "$pkginfo"
 check "it neither replaces nor conflicts with big-mount" \
     bash -c 'source pkgbuild/PKGBUILD 2>/dev/null; [[ " ${replaces[*]:-} ${conflicts[*]:-} ${provides[*]:-} " != *big-mount* ]]'
-for d in udisks2 util-linux polkit lsof rsync smartmontools python python-gobject gtk4 libadwaita libnotify; do check "depends on $d" grep -qw "$d" <<< "$(grep ^depends= <<< "$pkginfo")"; done
+for d in udisks2 util-linux polkit lsof rsync smartmontools python python-gobject python-cairo gtk4 libadwaita libnotify; do check "depends on $d" grep -qw "$d" <<< "$(grep ^depends= <<< "$pkginfo")"; done
 check "  ... libadwaita 1.5 with its epoch (1:), or any version would do" grep -q "libadwaita>=1:1.5" <<< "$(grep ^depends= <<< "$pkginfo")"
 check "  ... and nothing of the automount (ntfs-3g, big-mount)" bash -c '[[ $1 != *ntfs-3g* && $1 != *big-mount* ]]' _ "$(grep ^depends= <<< "$pkginfo")"
 check "the specialized tools are optional" bash -c 'source pkgbuild/PKGBUILD 2>/dev/null; [[ " ${optdepends[*]} " == *"ddrescue:"* && " ${optdepends[*]} " == *"testdisk:"* && " ${depends[*]} " != *ddrescue* && " ${depends[*]} " != *testdisk* ]]' 
@@ -148,6 +151,14 @@ check "service menu: KIO keys present" bash -c 'grep -q "^Type=Service" "$1" && 
 command -v xmllint >/dev/null && check "polkit policy is well-formed XML" xmllint --noout "$P/usr/share/polkit-1/actions/org.biglinux.big-storage-rescue.policy"
 check "polkit exec.path names the installed helper" grep -q '>/usr/lib/big-storage-rescue/bsr-holders<' "$P/usr/share/polkit-1/actions/org.biglinux.big-storage-rescue.policy"
 check "polkit exec.path names the drive helper" grep -q '>/usr/lib/big-storage-rescue/bsr-drive-helper<' "$P/usr/share/polkit-1/actions/org.biglinux.big-storage-rescue.policy"
+check "a disk image has its own polkit action, which asks every time" python3 -I -c '
+import sys, xml.etree.ElementTree as ET
+acts = {a.get("id"): a for a in ET.parse(sys.argv[1]).getroot().iter("action")}
+a = acts["org.biglinux.big-storage-rescue.image"]
+ann = {x.get("key"): x.text for x in a.iter("annotate")}
+ok = ann.get("org.freedesktop.policykit.exec.argv1") == "image" and a.find("defaults/allow_active").text == "auth_admin"
+ok = ok and list(acts).index("org.biglinux.big-storage-rescue.image") < list(acts).index("org.biglinux.big-storage-rescue.drive-helper")
+sys.exit(not ok)' "$P/usr/share/polkit-1/actions/org.biglinux.big-storage-rescue.policy"
 command -v xmllint >/dev/null && check "icon is a well-formed SVG" xmllint --noout "$P/usr/share/icons/hicolor/scalable/apps/big-storage-rescue.svg"
 check "translation catalog loads" msgunfmt -o /dev/null "$P/usr/share/locale/pt_BR/LC_MESSAGES/big-storage-rescue.mo"
 if command -v appstreamcli >/dev/null; then

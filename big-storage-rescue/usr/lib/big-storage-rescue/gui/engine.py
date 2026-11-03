@@ -241,6 +241,13 @@ class Engine:
         args.append("--dry-run" if dry_run else "--no-wait")
         self.run(args, cb, operation=not dry_run)
 
+    def salvage(self, job_id, cb, dry_run=False):
+        """What can be read of the files copy JOB_ID left out (GNU ddrescue)."""
+        self.run(["salvage", job_id, *(["--dry-run"] if dry_run else [])], cb, operation=not dry_run)
+
+    def damage_map(self, job_id, cb, bins=1024):
+        self.run(["map", job_id, "--bins", str(bins)], cb)
+
     def pause(self, job_id, cb):
         self.run(["pause", job_id], cb, json_output=False, operation=True)
 

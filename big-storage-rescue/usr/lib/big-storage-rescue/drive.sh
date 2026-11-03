@@ -146,6 +146,9 @@ bsr_drive_usage() {
       "status ID [--watch]" $"progress of one of them" \
       "pause ID | cancel ID" $"stop it safely (it can be resumed later)" \
       "resume ID [--retry-deferred]" $"continue it, also after a shutdown; optionally try what was set aside" \
+      "salvage ID [--retries N]" $"read again, with GNU ddrescue, the files a copy left out, and save what can be read of each" \
+      "map ID" $"what a disk image has read so far, as a map of the disk" \
+      "manifest ID [--output FILE]" $"SHA-256 of what a copy, a salvage or an image wrote, to check later with sha256sum -c (reads the destination only)" \
       "report TARGET|ID [--anonymize]" $"report of a drive or of a copy (--output FILE [--replace])" \
       "methods TARGET" $"which ways of recovering files can be used on it, and which is advised" \
       "image --source DEV --image FILE" $"make a disk image with GNU ddrescue" \
@@ -154,6 +157,7 @@ bsr_drive_usage() {
       "carve --source DEV|IMAGE --destination FOLDER" $"search for files by content with PhotoRec" \
       "  --categories LIST" $"only these types: photos,videos,documents,audio,archives (default: all)" \
       "results ID" $"what a search found" \
+      "check-files ID" $"check again whether the files a search found are whole (their structure, not their content)" \
       "--json" $"machine-readable output" \
       "--dry-run" $"say what would be done, change nothing"
    printf '\n%s\n' $"TARGET is a device (/dev/sdb1) or a folder inside a mounted device."
@@ -602,7 +606,8 @@ bsr_drive_protect() {
    local verb="$1" target="${2:-}" rc
    [[ $target == /dev/* ]] || { printf '%s\n' $"Name a device, such as /dev/sdb1." >&2; return 2; }
    bsr_resolve "$target" || { bsr_resolve_fail "$target"; return 24; }
-   bsr_helper "$verb" "$R_DEV"; rc=$?
+   bsr_seq_of "$R_DEV"
+   bsr_helper "$verb" "$R_DEV" "${BSR_SEQ[@]}"; rc=$?
    case "$rc" in
       0)
          [ "$verb" = protect ] && bsr_facts "$R_DEV" && bsr_chosen_ro_add "${F[DISK]}" "${F[DISK]}"
@@ -612,6 +617,7 @@ bsr_drive_protect() {
          ;;
       3) printf '%s\n' $"Another volume of this drive is mounted with writing enabled. Unmount it first." >&2; return 3 ;;
       4) printf '%s\n' $"Refused: this drive holds the running system." >&2; return 4 ;;
+      5) printf '%s\n' $"The device was disconnected or replaced. Nothing was done." >&2; return 24 ;;
       126 | 127) printf '%s\n' $"Permission was not granted." >&2; return 5 ;;
       *) printf $"The helper failed (exit %s)."'\n' "$rc" >&2; return 1 ;;
    esac
@@ -636,6 +642,7 @@ bsr_drive_main() {
       "")
          bsr_load drive-copy.sh
          bsr_load drive-recovery.sh
+         bsr_load drive-salvage.sh
          bsr_load drive-tui.sh
          bsr_tui_main
          ;;
@@ -651,14 +658,16 @@ bsr_drive_main() {
       close-apps) bsr_drive_close_apps "$@" ;;
       protect | unprotect) bsr_drive_protect "$cmd" "$@" ;;
       unlock) bsr_drive_unlock_volume "$@" ;;
-      destinations | copy | jobs | status | pause | cancel | resume | report | __run)
+      destinations | copy | jobs | status | pause | cancel | resume | report | salvage | map | manifest | __run)
          bsr_load drive-copy.sh
          bsr_load drive-recovery.sh
+         bsr_load drive-salvage.sh
          bsr_job_cmd "$cmd" "$@"
          ;;
-      image | partitions | carve | scan | results | methods)
+      image | partitions | carve | scan | results | check-files | methods)
          bsr_load drive-copy.sh
          bsr_load drive-recovery.sh
+         bsr_load drive-salvage.sh
          bsr_rec_cmd "$cmd" "$@"
          ;;
       *) bsr_drive_badarg "$cmd"; return 2 ;;

@@ -69,3 +69,22 @@ the differences are within noise. The split did not make it slower.
 | ShellCheck (CI set), `bash -n`, ruff | clean | clean |
 
 `--cli list --json` (6 drives, warm cache): about 345 ms before, 358 ms after.
+
+## After the work of 00, 20 and 21 (2026-11-03)
+
+| Suite | Before (`146bde8`) | After |
+| --- | --- | --- |
+| lib-tests | 267 | **267 passed** (the stuck-statfs check runs a real hung `stat` again) |
+| drive-tests | 312 | **380 passed** (salvage with real GNU ddrescue, map, integrity, manifests, the helper's opener) |
+| migrate-tests | 41 | **41 passed** |
+| i18n-tests | 37 | **37 passed** |
+| package-check | 102 | **107 passed** (new modules, the image polkit action) |
+| gui-tests | 165 | **173 passed** |
+| gui-e2e | 7 | **7 passed** |
+| ShellCheck (CI set), `bash -n`, ruff | clean | clean |
+
+Stand-ins that a test runs through another program (ionice, timeout) live
+in `/var/tmp`. `/tmp` may be mounted noexec, and an `execvp` then quietly
+runs the real program instead. Salvage tests use GNU ddrescue itself, told
+which areas are bad (`--test-mode`) or how fast it may read
+(`--max-read-rate`). CI installs `ddrescue` for them.

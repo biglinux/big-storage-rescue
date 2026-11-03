@@ -16,15 +16,16 @@ license=('GPL-3.0-or-later')
 # does every copy, smartctl reads the health of a drive and diffutils (cmp)
 # keeps the map of a disk image safe. python, python-gobject, gtk4,
 # libadwaita, pango, gdk-pixbuf2 (previews of found photos) and the hicolor
-# icon theme draw the application and the dialogs; libnotify sends the
+# icon theme draw the application and the dialogs; python-cairo draws the map
+# of a disk image (without it PyGObject cannot hand over the Cairo context); libnotify sends the
 # notifications. Commands of the base system (coreutils, findutils, gawk,
 # grep, sed, procps-ng, gettext, systemd) are not listed.
 # libadwaita has an epoch: without it, ">=1.5" would accept any version.
 depends=('bash' 'util-linux' 'udisks2' 'glib2' 'polkit' 'lsof' 'rsync'
-         'smartmontools' 'diffutils' 'python' 'python-gobject' 'gtk4'
+         'smartmontools' 'diffutils' 'python' 'python-gobject' 'python-cairo' 'gtk4'
          'libadwaita>=1:1.5' 'pango' 'gdk-pixbuf2' 'hicolor-icon-theme'
          'libnotify')
-optdepends=('ddrescue: disk images of a failing drive, before a deep analysis'
+optdepends=('ddrescue: disk images of a failing drive, and saving what can be read of files a copy left out'
             'testdisk: find lost partitions, search files by content (PhotoRec)'
             'dolphin: the Storage device actions of the right-click menu'
             'big-mount: mounts the internal partitions at boot')

@@ -139,13 +139,18 @@ bsr_cp_err_text() {
       no-filesystem) REPLY=$"No filesystem was recognized on it, so its files cannot be listed." ;;
       pick-volume) REPLY=$"Choose one of the volumes of this drive to see its files." ;;
       image-file) REPLY=$"This is already a disk image." ;;
+      salvage-not-copy) REPLY=$"Only the files a copy left out can be salvaged." ;;
+      job-running) REPLY=$"It is still running. Wait for it to finish, or pause it first." ;;
+      no-ddrescue-files) REPLY=$"GNU ddrescue is not installed (package ddrescue). It reads what can be read of each file." ;;
+      nothing-to-salvage) REPLY=$"This copy left out no file that can still be read: every file was copied, or the ones left out are no longer in the source." ;;
       *) REPLY=$"The copy was refused." ;;
    esac
 }
 
 bsr_cp_err_rc() {
    case "$1" in
-      no-rsync | no-ddrescue | no-photorec | no-testdisk) REPLY=25 ;;
+      no-rsync | no-ddrescue | no-ddrescue-files | no-photorec | no-testdisk) REPLY=25 ;;
+      job-running) REPLY=10 ;;
       no-space) REPLY=21 ;;
       not-authorized) REPLY=5 ;;
       cancelled) REPLY=23 ;;
@@ -406,6 +411,14 @@ bsr_job_state_load() {
       k="${l%%=*}" v="${l#*=}"
       [ -n "$k" ] && [ "$k" != "$l" ] && JS[$k]="$v"
    done < "$dir/state.env"
+   # Numbers are used in arithmetic, where bash would also evaluate a name or
+   # an expression: anything but digits is dropped
+   for k in "${!JS[@]}"; do
+      case "$k" in
+         STATE | REASON | CURRENT | VERIFY_RESULT | TOTAL_ESTIMATE) ;;
+         *) [[ ${JS[$k]} =~ ^-?[0-9]*$ ]] || unset -v 'JS[$k]' ;;
+      esac
+   done
    case "${JS[STATE]:-}" in
       pending | analyzing | running | verifying | stopping)
          # Pending without a supervisor is the moment before it starts
@@ -427,6 +440,9 @@ bsr_job_state_label() {
       scan:completed) REPLY=$"List of files complete"; return ;;
       carve:analyzing | carve:running) REPLY=$"Searching by content"; return ;;
       carve:completed) REPLY=$"Search complete"; return ;;
+      carve:verifying) REPLY=$"Checking whether what was found is whole"; return ;;
+      salvage:running) REPLY=$"Saving what can be read of each file"; return ;;
+      salvage:completed) REPLY=$"Every file was read completely"; return ;;
    esac
    case "$1" in
       pending) REPLY=$"Waiting to start" ;;
@@ -461,9 +477,12 @@ bsr_job_reason_text() {
       not-authorized) REPLY=$"Permission was not granted." ;;
       no-ddrescue) REPLY=$"GNU ddrescue is not installed (package ddrescue). It makes the disk image." ;;
       image-error) REPLY=$"GNU ddrescue stopped with an error. See the log." ;;
+      image-system) REPLY=$"A drive of the running system cannot be imaged while it runs. Start the computer from another system (a live USB) to image it." ;;
       image-incomplete) REPLY=$"Some areas of the disk could not be read. The image holds everything that could be." ;;
       read-errors) REPLY=$"Some folders could not be read, so the list may be incomplete. See the log." ;;
       search-error) REPLY=$"PhotoRec stopped with an error. See the log." ;;
+      salvage-partial) REPLY=$"Some files have areas that could not be read. They were saved with everything else, in a folder of their own, with a list of what is missing." ;;
+      salvage-left) REPLY=$"Some files could not be saved. See the list below." ;;
       nothing-found) REPLY=$"No file was recognized by its content. That does not prove there is nothing to recover: another method, or a professional, may find more." ;;
       "") REPLY="" ;;
       *) REPLY="$1" ;;
@@ -714,19 +733,27 @@ bsr_job_pass() {
    # Stopped here, never with SIGKILL: rsync removes its temporary file, and
    # exits as soon as a read stuck in the driver comes back. Its helpers end
    # after it; they are listed first, as they get another parent when it exits
-   local kids="" k
+   local kids=()
    if kill -0 "$pid" 2>/dev/null; then
-      kids="$(pgrep -P "$pid")"
+      mapfile -t kids < <(pgrep -P "$pid")
       kill -TERM "$pid" 2>/dev/null
    fi
    wait "$pid"
    local rc=$?
-   for k in $kids; do
-      while kill -0 "$k" 2>/dev/null; do sleep 1; done
-   done
+   bsr_job_wait_gone "${kids[@]}"
    bsr_job_read_log
    JS[STUCK_SECONDS]=0
    return "$rc"
+}
+
+# bsr_job_wait_gone PID...: wait until processes that are not our children
+# have ended. One whose new parent never reaps it (the init of a container)
+# stays a zombie: it has ended too
+bsr_job_wait_gone() {
+   local k
+   for k in "$@"; do
+      while bsr_proc_state "$k" && [ "$REPLY" != Z ]; do sleep 1; done
+   done
 }
 
 # The rsync that holds source files open is the sender: the one we started
@@ -985,16 +1012,19 @@ bsr_job_json_of() {
       image) result=disk-image pausable=1 ;;
       scan) result=existing-files ;;
       carve) result=carved-candidates ;;
+      salvage) result=salvaged-files pausable=1 ;;
       *) result="" ;;
    esac
    printf '{%s,%s,%s}' \
       "$(bsr_jo_inner id "$id" kind "$kind" result_kind "$result" state "${JS[STATE]}" state_label "$label" reason "${JS[REASON]:-}" reason_text "$reason" \
          source "${JC[SOURCE]:-}" destination "${JC[DEST]:-}" name "${JC[NAME]:-}" current "${JS[CURRENT]:-}" verify "${JC[VERIFY]:-}" \
-         verify_result "${JS[VERIFY_RESULT]:-}" dir "$dir" categories "${JC[CATEGORIES]:-}" then_carve "${JC[THEN_CARVE]:-}" copy_to "${JC[COPY_TO]:-}" map "${JC[MAP]:-}" level "${JC[LEVEL]:-}")" \
+         verify_result "${JS[VERIFY_RESULT]:-}" dir "$dir" categories "${JC[CATEGORIES]:-}" then_carve "${JC[THEN_CARVE]:-}" copy_to "${JC[COPY_TO]:-}" map "${JC[MAP]:-}" level "${JC[LEVEL]:-}" \
+         partial_dir "${JC[OUT_NAME]:+${JC[DEST]}/${JC[OUT_NAME]}}")" \
       "$(bsr_jn files_done "${JS[FILES_DONE]:-0}" files_total "${JS[FILES_TOTAL]:-0}" bytes_done "${JS[BYTES_NOW]:-0}" bytes_total "${JS[BYTES_TOTAL]:-0}" \
          rate_now "${JS[RATE_NOW]:-0}" rate_avg "${JS[RATE_AVG]:-0}" elapsed "${JS[ELAPSED]:-0}" eta "${JS[ETA]:-}" deferred "${JS[DEFERRED]:-0}" \
          failed "${JS[FAILED]:-0}" differ "${JS[DIFFER]:-0}" conflicts "${JS[CONFLICTS]:-0}" read_errors "${JS[READ_FAILS]:-0}" stuck "${JS[STUCK_SECONDS]:-0}" \
-         created "${JC[CREATED]:-0}" finished "${JS[FINISHED]:-}" scanned "${JS[SCANNED]:-0}" pass "${JS[PASS]:-0}" bad_bytes "${JS[BAD_BYTES]:-0}")" \
+         created "${JC[CREATED]:-0}" finished "${JS[FINISHED]:-}" scanned "${JS[SCANNED]:-0}" pass "${JS[PASS]:-0}" bad_bytes "${JS[BAD_BYTES]:-0}" \
+         partial "${JS[PARTIAL]:-0}")" \
       "$(bsr_jb total_estimate "${JS[TOTAL_ESTIMATE]:-0}" pausable "$pausable")"
 }
 
@@ -1110,6 +1140,10 @@ bsr_job_report_text() {
       bsr_rec_report_text "$dir"
       return 0
    fi
+   if [ "${JC[KIND]:-copy}" = salvage ]; then
+      bsr_sv_report_text "$dir"
+      return 0
+   fi
    bsr_doc_kv $"Destination" "${JC[DEST]}"
    bsr_doc_kv $"Files copied" "${JS[FILES_DONE]:-0}"
    bsr_human_size "${JS[BYTES_DONE]:-0}"; bsr_doc_kv $"Data copied" "$REPLY"
@@ -1129,6 +1163,9 @@ bsr_job_report_text() {
       [ "$n" -gt 50 ] && printf '  … %s\n' "$dir/deferred.txt"
       printf $"To try them again, which puts more strain on the disk: big-storage-rescue --cli resume %s --retry-deferred"'\n' "${dir##*/}"
    fi
+   if [ "${JS[DEFERRED]:-0}" -gt 0 ] || [ "${JS[FAILED]:-0}" -gt 0 ]; then
+      printf $"To save what can be read of each file left out, resuming where it stops: big-storage-rescue --cli salvage %s"'\n' "${dir##*/}"
+   fi
    n="${JS[FAILED]:-0}"
    if [ "$n" -gt 0 ] && [ -s "$dir/failed.txt" ]; then
       printf '\n%s\n' $"Not copied:"
@@ -1140,6 +1177,59 @@ bsr_job_report_text() {
       head -n 50 -- "$dir/differences.txt" | bsr_printable_lines
    fi
    printf '\n%s %s\n' $"Log:" "$dir/events.log"
+}
+
+# big-storage-rescue --cli manifest ID [--output FILE]: the SHA-256 of what a
+# copy, a salvage or an image wrote, in the format of sha256sum, so that
+# anyone can check it later with `sha256sum -c` in the destination folder.
+# Only the destination is read: the source, maybe failing, is never read again.
+bsr_job_cmd_manifest() {
+   local id="" out="" a dir root list rc n
+   while [ "$#" -gt 0 ]; do
+      case "$1" in
+         --output) out="${2:-}"; shift ;;
+         -*) bsr_drive_badarg "$1"; return 2 ;;
+         *) id="$1" ;;
+      esac
+      shift
+   done
+   bsr_job_dir "$id" || { printf $"There is no job '%s'."'\n' "$id" >&2; return 1; }
+   dir="$REPLY"
+   bsr_job_conf_load "$dir"
+   bsr_job_state_load "$dir"
+   case "${JS[STATE]}" in
+      pending | analyzing | running | verifying | stopping) printf '%s\n' $"It is still running. Wait for it to finish, or pause it first." >&2; return 10 ;;
+   esac
+   list="$dir/manifest.list0"
+   case "${JC[KIND]:-copy}" in
+      copy)
+         root="${JC[DEST]}"
+         # The files rsync wrote, each once, from its log
+         LC_ALL=C awk -F'|' '$1 ~ /(^|[^|]* )>f/ { sub(/^[^|]*\|[^|]*\|/, ""); if (!seen[$0]++) printf "%s%c", $0, 0 }' "$dir/events.log" > "$list" 2>/dev/null
+         ;;
+      salvage) root="${JC[DEST]}"; cp -f -- "$dir/placed0" "$list" 2>/dev/null || : > "$list" ;;
+      image) root="${JC[DEST]%/*}"; printf '%s\0' "${JC[DEST]##*/}" > "$list" ;;
+      *) printf '%s\n' $"Only a copy, a salvage or an image has files to list in a manifest." >&2; return 2 ;;
+   esac
+   [ -n "$out" ] || out="$dir/manifest.sha256"
+   [[ $out == /* ]] || out="$PWD/$out"
+   n="$(tr -cd '\0' < "$list" | wc -c)"
+   [ "$n" -gt 0 ] || { printf '%s\n' $"There is nothing to list." >&2; rm -f -- "$list"; return 1; }
+   timeout 10 test -d "$root" || { bsr_cp_err_text dest-missing; printf '%s\n' "$REPLY" >&2; rm -f -- "$list"; return 24; }
+   {
+      printf '# Big Storage Rescue %s, %s\n' "${JC[KIND]:-copy}" "$id"
+      printf '# %(%Y-%m-%dT%H:%M:%S%z)T: SHA-256 of what was written, relative to: %s\n' -1 "${root//[[:cntrl:]]/?}"
+      [ "${JC[KIND]:-copy}" = image ] && printf '# source: %s, serial %s, %s bytes; unreadable areas are zeros in the image (see its map)\n' \
+         "${JC[DEVICE]:-?}" "${JC[SERIAL]:-?}" "${JC[SIZE]:-?}"
+      printf '# check with: cd <that folder> && sha256sum -c <this file>\n'
+      (cd -- "$root" && xargs -0 -r ionice -c 2 -n 6 sha256sum -- < "$list")
+   } > "$out.tmp"
+   rc=$?
+   rm -f -- "$list"
+   mv -f -- "$out.tmp" "$out" || return 1
+   printf $"Manifest of %s files: %s"'\n' "$(grep -vc '^#' "$out")" "$out"
+   # 123: a file listed could not be read (moved, deleted): it is not in the manifest
+   [ "$rc" -eq 0 ] || { printf '%s\n' $"Some files could not be read at the destination and are not in the manifest." >&2; return 1; }
 }
 
 bsr_job_report_write() {
@@ -1587,7 +1677,12 @@ bsr_job_cmd_resume() {
    fi
    rm -f -- "$dir/stop"
    case "${JC[KIND]:-copy}" in
-      image | scan | carve) bsr_rec_image_start "$id" || return 1 ;;
+      image | scan | carve | salvage)
+         # Whatever the last state said is over (as in bsr_job_start)
+         JS[STATE]=pending JS[PID]=""
+         bsr_job_state_save "$dir"
+         bsr_rec_image_start "$id" || return 1
+         ;;
       *) bsr_job_start "$id" || return 1 ;;
    esac
    if [ "$json" = 1 ]; then bsr_jo id "$id" dir "$dir"; printf '\n'; return 0; fi
@@ -1608,6 +1703,7 @@ bsr_job_cmd() {
             image) bsr_rec_image_supervise "$id" ;;
             scan) bsr_rec_scan_supervise "$id" ;;
             carve) bsr_rec_carve_supervise "$id" ;;
+            salvage) bsr_sv_supervise "$id" ;;
             *) bsr_job_supervise "$id" ;;
          esac
          ;;
@@ -1618,5 +1714,8 @@ bsr_job_cmd() {
       pause | cancel) bsr_job_cmd_stop "$cmd" "$@" ;;
       resume) bsr_job_cmd_resume "$@" ;;
       report) bsr_job_cmd_report "$@" ;;
+      salvage) bsr_sv_cmd "$@" ;;
+      manifest) bsr_job_cmd_manifest "$@" ;;
+      map) bsr_rec_map_cmd "$@" ;;
    esac
 }

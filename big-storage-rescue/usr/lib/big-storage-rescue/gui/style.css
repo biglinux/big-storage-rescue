@@ -136,3 +136,6 @@ togglebutton.chip { padding: 2px 12px; min-height: 26px; border-radius: 99px; fo
 }
 
 .count-badge.count-idle { background: alpha(currentColor, 0.12); color: inherit; }
+
+/* A file found by content that is cut short or damaged (integrity.py) */
+.check-pill { padding: 1px 8px; border-radius: 99px; background: alpha(@warning_color, 0.18); color: @warning_fg_color; }

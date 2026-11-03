@@ -70,7 +70,7 @@ done
 check "service menu: submenu and actions translated" \
     test "$(grep -c '\[pt_BR\]=' big-storage-rescue/usr/share/kio/servicemenus/big-storage-rescue.desktop)" -eq 6
 check "polkit: description and message translated (pt_BR form)" \
-    test "$(grep -c 'xml:lang="pt_BR"' big-storage-rescue/usr/share/polkit-1/actions/org.biglinux.big-storage-rescue.policy)" -eq 4
+    test "$(grep -c 'xml:lang="pt_BR"' big-storage-rescue/usr/share/polkit-1/actions/org.biglinux.big-storage-rescue.policy)" -eq 6
 
 begin "no user-visible text outside the translation system"
 # Exit 1 only: a match (0) fails, and so does an error of grep (2), which prints nothing
