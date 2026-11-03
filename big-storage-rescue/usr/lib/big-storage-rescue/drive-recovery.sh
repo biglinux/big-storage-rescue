@@ -831,6 +831,70 @@ bsr_rec_carve_index() {
    JS[FILES_DONE]="$total" JS[BYTES_DONE]="$bytes"
 }
 
+# bsr_rec_integrity DIR: how whole each file found by content looks, from its
+# structure (integrity.py): DIR/integrity holds status<TAB>path<NUL> in the
+# order of the index, JS[CHECK_*] the counts. Only the destination is read.
+# 1: cancelled
+bsr_rec_integrity() {
+   local dir="$1" pid ctl="" k n
+   [ -s "$dir/index" ] || return 0
+   command -v python3 >/dev/null || return 0
+   ionice -c 2 -n 6 nice -n 5 python3 -I "$BSR_LIB_DIR/integrity.py" "${JC[DEST]}" < "$dir/index" > "$dir/integrity.tmp" 2> "$dir/integrity.count" &
+   pid=$!
+   while kill -0 "$pid" 2>/dev/null; do
+      sleep "$BSR_TICK"
+      { read -r ctl < "$dir/control"; } 2>/dev/null
+      if [ "$ctl" = cancel ]; then kill -TERM "$pid" 2>/dev/null; wait "$pid"; rm -f -- "$dir/integrity.tmp"; return 1; fi
+   done
+   wait "$pid" || { rm -f -- "$dir/integrity.tmp"; return 0; }
+   mv -f -- "$dir/integrity.tmp" "$dir/integrity"
+   local counts=() i
+   read -r -a counts < <(tail -n 1 -- "$dir/integrity.count")
+   for ((i = 0; i + 1 < ${#counts[@]}; i += 2)); do
+      k="${counts[i]}" n="${counts[i + 1]}"
+      case "$k" in complete | truncated | damaged | unknown) [[ $n =~ ^[0-9]+$ ]] && JS[CHECK_${k^^}]="$n" ;; esac
+   done
+   return 0
+}
+
+# big-storage-rescue --cli check-files ID: look again at what a search found
+bsr_rec_check_cmd() {
+   local id="" json=0 a dir
+   for a in "$@"; do
+      case "$a" in
+         --json) json=1 ;;
+         -*) bsr_drive_badarg "$a"; return 2 ;;
+         *) id="$a" ;;
+      esac
+   done
+   bsr_job_dir "$id" || { printf $"There is no job '%s'."'\n' "$id" >&2; return 1; }
+   dir="$REPLY"
+   bsr_job_conf_load "$dir"
+   bsr_job_state_load "$dir"
+   [ "${JC[KIND]:-}" = carve ] || { printf '%s\n' $"Only files found by content are checked this way." >&2; return 2; }
+   case "${JS[STATE]}" in pending | analyzing | running | verifying | stopping) printf '%s\n' $"It is already running." >&2; return 10 ;; esac
+   bsr_job_lock "$dir" || return 10
+   : > "$dir/control"
+   bsr_rec_integrity "$dir"
+   bsr_job_state_save "$dir"
+   bsr_job_report_write "$dir"
+   if [ "$json" = 1 ]; then
+      bsr_jn complete "${JS[CHECK_COMPLETE]:-0}" truncated "${JS[CHECK_TRUNCATED]:-0}" damaged "${JS[CHECK_DAMAGED]:-0}" unknown "${JS[CHECK_UNKNOWN]:-0}" | sed 's/^/{/; s/$/}/'
+      return 0
+   fi
+   bsr_rec_integrity_text
+}
+
+# The counts of bsr_rec_integrity, for a person
+bsr_rec_integrity_text() {
+   [ -n "${JS[CHECK_COMPLETE]:-}" ] || return 0
+   bsr_doc_kv $"Look whole" "${JS[CHECK_COMPLETE]:-0}"
+   bsr_doc_kv $"Cut short" "${JS[CHECK_TRUNCATED]:-0}"
+   bsr_doc_kv $"Damaged" "${JS[CHECK_DAMAGED]:-0}"
+   bsr_doc_kv $"Not checked (format)" "${JS[CHECK_UNKNOWN]:-0}"
+   bsr_doc_p $"Whole means the structure of the file is complete. It does not prove every byte is right: open the files that matter."
+}
+
 bsr_rec_carve_supervise() {
    local id="$1" dir pid rc end=finish ctl now t0 tick=0 line pass="" sector="" total="" found=""
    bsr_job_dir "$id" || return 1
@@ -900,6 +964,12 @@ bsr_rec_carve_supervise() {
    printf -v "JS[FINISHED]" '%(%s)T' -1
    JS[ETA]=""
    bsr_rec_carve_index "$dir" "${JC[DEST]}"
+   # What was found, checked for being whole: the destination only is read
+   if [ "$end" = finish ] && [ "${JS[FILES_DONE]:-0}" -gt 0 ]; then
+      JS[STATE]=verifying
+      bsr_job_state_save "$dir"
+      bsr_rec_integrity "$dir" || end=cancel
+   fi
    JS[BYTES_NOW]="${JS[BYTES_DONE]:-0}"
    JS[BYTES_TOTAL]=0 JS[TOTAL_ESTIMATE]=0
    case "$end" in
@@ -1051,6 +1121,7 @@ bsr_rec_report_text() {
       bsr_doc_kv $"Destination" "${JC[DEST]}"
       bsr_doc_kv $"Candidates found" "${JS[FILES_DONE]:-0}"
       bsr_doc_p $"Found by content: their original names and folders could not be kept, and some may be incomplete. Open them to check."
+      bsr_rec_integrity_text
    fi
    bsr_fmt_time "${JS[ELAPSED]:-0}"; bsr_doc_kv $"Elapsed" "$REPLY"
    bsr_ui_show info ""
@@ -1083,6 +1154,8 @@ bsr_rec_results() {
       *) printf '%s\n' $"Only a list or a search has results." >&2; return 2 ;;
    esac
    if [ -f "$dir/index" ]; then index="$dir/index"; fi
+   local integrity=""
+   [ -f "$dir/integrity" ] && integrity="$dir/integrity"
    if [ -r "$dir/index.count" ]; then
       while read -r k n b; do
          case "$k" in
@@ -1095,9 +1168,9 @@ bsr_rec_results() {
    fi
    if [ "$json" = 1 ]; then
       printf '{%s,%s,%s,"categories":[%s]}\n' \
-         "$(bsr_jo_inner id "$id" kind "$kind" result_kind "$([ "$kind" = scan ] && echo existing-files || echo carved-candidates)" root "$root" index "$index" state "${JS[STATE]:-}")" \
+         "$(bsr_jo_inner id "$id" kind "$kind" result_kind "$([ "$kind" = scan ] && echo existing-files || echo carved-candidates)" root "$root" index "$index" state "${JS[STATE]:-}" integrity "$integrity")" \
          "$(bsr_jb names_kept "$names" dates_kept "$dates" ready "$([ -n "$index" ] && echo 1)")" \
-         "$(bsr_jn files "${JS[FILES_DONE]:-0}" level "")" "$cats"
+         "$(bsr_jn files "${JS[FILES_DONE]:-0}" level "" complete "${JS[CHECK_COMPLETE]:-0}" truncated "${JS[CHECK_TRUNCATED]:-0}" damaged "${JS[CHECK_DAMAGED]:-0}" unknown "${JS[CHECK_UNKNOWN]:-0}")" "$cats"
    else
       printf '%s\n' "${index:-$"The list is not ready yet."}"
    fi
@@ -1252,6 +1325,7 @@ bsr_rec_cmd() {
       carve) bsr_rec_carve "$@" ;;
       scan) bsr_rec_scan_cmd "$@" ;;
       results) bsr_rec_results "$@" ;;
+      check-files) bsr_rec_check_cmd "$@" ;;
       methods) bsr_rec_methods "$@" ;;
    esac
 }

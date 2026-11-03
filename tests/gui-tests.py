@@ -1436,15 +1436,20 @@ class ResultIndex(unittest.TestCase):
 
 
 class Results(Base):
-    def open(self, kind="carved", dates=False, level=""):
+    def open(self, kind="carved", dates=False, level="", checks=None):
         root = WORK / "results-root"
         (root / "recup_dir.1").mkdir(parents=True, exist_ok=True)
         records = [b"100\t0\tphotos\trecup_dir.1/f1.png", b"200\t0\tdocuments\trecup_dir.1/f2.pdf", b"300\t0\taudio\trecup_dir.1/f3.mp3", b"400\t0\tphotos\tnome\nquebra.jpg"]
         index = write_index(records)
         result_kind = "carved-candidates" if kind == "carved" else "existing-files"
         fix("status", job_json(id="20261031-120000-beef", kind="carve" if kind == "carved" else "scan", state="completed", level=level, copy_to=str(DEST) if kind != "carved" else ""))
+        extra = {}
+        if checks:
+            verdicts = WORK / "results-integrity"
+            verdicts.write_bytes(b"".join(c.encode() + b"\t" + r.split(b"\t", 3)[3] + b"\0" for c, r in zip(checks, records)))
+            extra = {"integrity": str(verdicts), **{k: checks.count(k) for k in ("complete", "truncated", "damaged", "unknown")}}
         fix("results", {"id": "20261031-120000-beef", "kind": "carve", "result_kind": result_kind, "root": str(root), "index": str(index), "state": "completed", "names_kept": kind != "carved", "dates_kept": dates, "ready": True, "files": 4,
-                        "categories": [{"id": "photos", "label": "Photos", "files": 2, "bytes": 500}, {"id": "documents", "label": "Documents", "files": 1, "bytes": 200}, {"id": "audio", "label": "Audio", "files": 1, "bytes": 300}]})
+                        "categories": [{"id": "photos", "label": "Photos", "files": 2, "bytes": 500}, {"id": "documents", "label": "Documents", "files": 1, "bytes": 200}, {"id": "audio", "label": "Audio", "files": 1, "bytes": 300}], **extra})
         self.win.open_results("20261031-120000-beef")
         page = self.win.nav.get_visible_page()
         self.assertTrue(pump(lambda: page.model.get_n_items() == 4, 4))
@@ -1455,6 +1460,20 @@ class Results(Base):
         self.see("Candidates found by content", page)
         self.assertIsNotNone(find_button(page, "Copy selected to another folder"))
         self.assertFalse(page.date_col.get_visible(), "no dates for what has none")
+
+    def test_what_is_cut_short_or_damaged_is_said_by_name(self):
+        page = self.open(checks=["complete", "truncated", "unknown", "damaged"])
+        self.see("1 look whole, 1 are cut short, 1 are damaged", page)
+        self.see("Whole does not prove every byte is right", page)
+        self.see("Cut short", page)
+        self.see("Damaged", page)
+        self.assertEqual(page.model.get_item(0).check, "complete")
+
+    def test_without_verdicts_nothing_is_claimed(self):
+        page = self.open()
+        pump(timeout=0.3)
+        self.assertNotIn("Cut short", text(page))
+        self.assertNotIn("look whole", text(page))
 
     def test_existing_files_are_not_called_deleted(self):
         page = self.open(kind="scan", dates=True)

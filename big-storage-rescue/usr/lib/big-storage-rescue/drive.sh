@@ -156,6 +156,7 @@ bsr_drive_usage() {
       "carve --source DEV|IMAGE --destination FOLDER" $"search for files by content with PhotoRec" \
       "  --categories LIST" $"only these types: photos,videos,documents,audio,archives (default: all)" \
       "results ID" $"what a search found" \
+      "check-files ID" $"check again whether the files a search found are whole (their structure, not their content)" \
       "--json" $"machine-readable output" \
       "--dry-run" $"say what would be done, change nothing"
    printf '\n%s\n' $"TARGET is a device (/dev/sdb1) or a folder inside a mounted device."
@@ -662,7 +663,7 @@ bsr_drive_main() {
          bsr_load drive-salvage.sh
          bsr_job_cmd "$cmd" "$@"
          ;;
-      image | partitions | carve | scan | results | methods)
+      image | partitions | carve | scan | results | check-files | methods)
          bsr_load drive-copy.sh
          bsr_load drive-recovery.sh
          bsr_load drive-salvage.sh

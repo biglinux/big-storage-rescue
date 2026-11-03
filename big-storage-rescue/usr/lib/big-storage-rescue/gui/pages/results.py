@@ -47,6 +47,25 @@ def picture(path, size):
     return Gdk.Texture.new_for_pixbuf(GdkPixbuf.Pixbuf.new_from_file_at_scale(path, size, size, True))
 
 
+# What integrity.py says of each file found by content, by position in the index
+CHECKS = ("", "complete", "truncated", "damaged", "unknown")
+
+
+def load_checks(path, count):
+    """One byte per record, or None when the verdicts do not match the index."""
+    try:
+        with open(path, "rb") as handle:
+            records = handle.read().split(b"\0")
+    except OSError:
+        return None
+    codes = bytearray()
+    for record in records:
+        if record:
+            status = record.split(b"\t", 1)[0].decode("ascii", "replace")
+            codes.append(CHECKS.index(status) if status in CHECKS else 0)
+    return codes if len(codes) == count else None
+
+
 class Index:
     """The file the engine wrote, read without copying its names into memory:
     size<TAB>mtime<TAB>category<TAB>path<NUL>"""
@@ -60,6 +79,7 @@ class Index:
         self.sizes = array("Q")
         self.mtimes = array("q")
         self.cats = array("B")
+        self.checks = None
 
     def load(self, keep_going=lambda: True):
         mm = self.mm
@@ -126,8 +146,9 @@ class Index:
 class FileItem(GObject.Object):
     __gtype_name__ = "BsrFileItem"
 
-    def __init__(self, record, path, size, mtime, category):
+    def __init__(self, record, path, size, mtime, category, check=""):
         super().__init__()
+        self.check = check
         self.record = record
         self.path = path
         self.size = size
@@ -156,7 +177,8 @@ class ResultsModel(GObject.Object, Gio.ListModel):
             return None
         i = self.visible[position]
         ix = self.index
-        return FileItem(i, ix.text(i), ix.sizes[i], ix.mtimes[i], CATEGORIES[ix.cats[i]])
+        check = CHECKS[ix.checks[i]] if ix.checks is not None else ""
+        return FileItem(i, ix.text(i), ix.sizes[i], ix.mtimes[i], CATEGORIES[ix.cats[i]], check)
 
     def show(self, index, visible):
         before = len(self.visible)
@@ -362,6 +384,10 @@ class ResultsPage(Adw.NavigationPage):
         carved = data.get("result_kind") == RESULT_CARVED
         if carved:
             self.banner.append(w.notice(_("Candidates found by content. They are saved in the destination folder, without their names and folders, and some may be incomplete. Check them before deleting anything.")))
+            if data.get("integrity"):
+                self.banner.append(w.notice(_("By their structure: %(whole)d look whole, %(short)d are cut short, %(bad)d are damaged and %(other)d "
+                                              "could not be checked. Whole does not prove every byte is right: open the files that matter.") % {
+                    "whole": data.get("complete", 0), "short": data.get("truncated", 0), "bad": data.get("damaged", 0), "other": data.get("unknown", 0)}))
             self.save_btn.set_child(Adw.ButtonContent(label=_("Copy selected to another folder"), icon_name="document-save-symbolic"))
         else:
             self.banner.append(w.notice(_("These files exist on the volume and have not been copied yet. Deleted files are not on this list.")))
@@ -391,6 +417,7 @@ class ResultsPage(Adw.NavigationPage):
         try:
             index = Index(path)
             index.load(lambda: self._alive)
+            index.checks = load_checks(self.info["integrity"], len(index)) if self.info.get("integrity") else None
         except (OSError, ValueError) as exc:
             GLib.idle_add(self._load_failed, str(exc))
             return
@@ -534,13 +561,18 @@ class ResultsPage(Adw.NavigationPage):
         image.add_css_class("thumb")
         name = w.label("", ellipsize=True)
         name.set_hexpand(True)
+        # Cut short or damaged, said in words next to the name
+        check = w.label("", css=("check-pill", "caption"), wrap=False)
+        check.set_valign(Gtk.Align.CENTER)
         eye = w.icon_button("view-reveal-symbolic", _("Preview"), css=("flat", "circular"))
         eye.set_valign(Gtk.Align.CENTER)
         row.append(image)
         row.append(name)
+        row.append(check)
         row.append(eye)
         cell.set_child(row)
         cell.parts = (image, name, eye)
+        cell.check = check
         cell.eye_handler = 0
         cell.bound_path = None
 
@@ -559,6 +591,9 @@ class ResultsPage(Adw.NavigationPage):
         image.set_from_icon_name(w.category_icon(item.category))
         name.set_text(item.path)
         name.set_tooltip_text(item.path)
+        verdict = {"truncated": _("Cut short"), "damaged": _("Damaged")}.get(item.check, "")
+        cell.check.set_text(verdict)
+        cell.check.set_visible(bool(verdict))
         can = self._can_preview(item)
         eye.set_visible(can)
         full = self._full_path(item)

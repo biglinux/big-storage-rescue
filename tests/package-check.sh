@@ -80,6 +80,7 @@ expect=(
     "644 usr/lib/big-storage-rescue/system-check.sh"
     "644 usr/lib/big-storage-rescue/app.py"
     "644 usr/lib/big-storage-rescue/dialog.py"
+    "644 usr/lib/big-storage-rescue/integrity.py"
     "644 usr/lib/big-storage-rescue/gui/__init__.py"
     "644 usr/lib/big-storage-rescue/gui/about.py"
     "644 usr/lib/big-storage-rescue/gui/actions.py"

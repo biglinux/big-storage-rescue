@@ -99,7 +99,7 @@ msgstr ""
 #: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:123
 #: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:841
 #: big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:441
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:229
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:230
 #: big-storage-rescue/usr/lib/big-storage-rescue/migrate.sh:174
 msgid "big-storage-rescue: unknown option '%s' (see big-storage-rescue --help)"
 msgstr ""
@@ -345,19 +345,19 @@ msgstr ""
 #: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:296
 #: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:594
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:314
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:244
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:245
 msgid "Device"
 msgstr ""
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:297
 #: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:595
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:258
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:259
 msgid "Filesystem"
 msgstr ""
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:299
 #: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:596
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:262
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:263
 msgid "Mounted at"
 msgstr ""
 
@@ -370,7 +370,7 @@ msgid "Writable, but not by your user"
 msgstr ""
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:302
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:261
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:262
 msgid "Status"
 msgstr ""
 
@@ -676,7 +676,7 @@ msgid "They start again by themselves when the device is mounted again."
 msgstr ""
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:847
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:487
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:488
 msgid "Another removal of this drive is in progress. Nothing was done."
 msgstr ""
 
@@ -685,7 +685,7 @@ msgid "Device removed safely. It can be disconnected now."
 msgstr ""
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:865
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:506
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:507
 msgid "Unmounted. Everything was written to the device."
 msgstr ""
 
@@ -712,7 +712,7 @@ msgid "Still running: %s"
 msgstr ""
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:887
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:511
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:512
 msgid "These services use the device and will be stopped when it is unmounted:"
 msgstr ""
 
@@ -729,12 +729,12 @@ msgid "Unmounted, but powering the drive off failed (%s). Wait a moment before d
 msgstr ""
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:902
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:508
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:509
 msgid "Refused: this drive holds the running system (%s)."
 msgstr ""
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:903
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:509
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:510
 msgid "Permission to unmount was not granted."
 msgstr ""
 
@@ -747,7 +747,7 @@ msgid "Unmounted. This drive cannot be powered off by the computer; it can be di
 msgstr ""
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:908
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:515
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:516
 msgid "Could not unmount: %s"
 msgstr ""
 
@@ -769,7 +769,7 @@ msgstr ""
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:936
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:313
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:243
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:244
 msgid "Connection"
 msgstr ""
 
@@ -1142,7 +1142,7 @@ msgid "source:"
 msgstr ""
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:121
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:703
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:704
 msgid "Big Storage Rescue"
 msgstr ""
 
@@ -1554,12 +1554,12 @@ msgid "There is not enough free space at the destination."
 msgstr ""
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:125
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:477
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:478
 msgid "GNU ddrescue is not installed (package ddrescue). It makes the disk image."
 msgstr ""
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:126
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:942
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1012
 msgid "PhotoRec is not installed (package testdisk)."
 msgstr ""
 
@@ -1569,9 +1569,9 @@ msgid "TestDisk is not installed (package testdisk)."
 msgstr ""
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:128
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:476
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:477
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:766
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:619
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:620
 msgid "Permission was not granted."
 msgstr ""
 
@@ -1581,7 +1581,7 @@ msgid "Stopped. Nothing was changed on the disk."
 msgstr ""
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:130
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:949
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1019
 msgid "This device cannot be read by your user. Make a disk image first (big-storage-rescue --cli image), and search in the image: it also spares the disk."
 msgstr ""
 
@@ -1599,7 +1599,7 @@ msgstr ""
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:134
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:414
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:618
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:619
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-tui.sh:78
 msgid "The device was disconnected or replaced. Nothing was done."
 msgstr ""
@@ -1721,367 +1721,373 @@ msgid "Search complete"
 msgstr ""
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:443
-msgid "Saving what can be read of each file"
+msgid "Checking whether what was found is whole"
 msgstr ""
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:444
+msgid "Saving what can be read of each file"
+msgstr ""
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:445
 msgid "Every file was read completely"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:447
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:448
 msgid "Waiting to start"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:448
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:449
 msgid "Measuring what will be copied"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:449
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:450
 msgid "Copying"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:450
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:451
 msgid "Checking the result"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:451
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:452
 msgid "Stopping: waiting for the disk to answer"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:452
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:453
 msgid "Paused"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:453
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:454
 msgid "Completed and checked"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:454
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:455
 msgid "Cancelled"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:455
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:456
 msgid "Failed"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:456
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:457
 msgid "Finished, needs your attention"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:457
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:458
 msgid "Interrupted (it can be resumed)"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:468
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:469
 msgid "The source drive was disconnected or unmounted. Connect and mount it again, then resume."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:469
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:470
 msgid "The destination was disconnected or unmounted. Connect and mount it again, then resume."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:470
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:471
 msgid "The destination ran out of space. Free some space or choose another place, then resume."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:471
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:472
 msgid "%s files were set aside because they did not advance. The drive may be getting worse, so the copy stopped."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:472
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:473
 msgid "Some files were not copied. See the list below."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:473
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:474
 msgid "The check found differences between source and destination."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:474
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:475
 msgid "Everything was copied, but the check did not finish: it was cancelled or failed."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:475
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:476
 msgid "rsync stopped with an error. See the log."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:478
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:479
 msgid "GNU ddrescue stopped with an error. See the log."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:479
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:480
 msgid "A drive of the running system cannot be imaged while it runs. Start the computer from another system (a live USB) to image it."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:480
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:481
 msgid "Some areas of the disk could not be read. The image holds everything that could be."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:481
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:482
 msgid "Some folders could not be read, so the list may be incomplete. See the log."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:482
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:483
 msgid "PhotoRec stopped with an error. See the log."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:483
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:484
 msgid "Some files have areas that could not be read. They were saved with everything else, in a folder of their own, with a list of what is missing."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:484
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:485
 msgid "Some files could not be saved. See the list below."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:485
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:486
 msgid "No file was recognized by its content. That does not prove there is nothing to recover: another method, or a professional, may find more."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:575
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:576
 msgid "its content could not be read"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1048
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1024
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1049
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1094
 msgid "Source:"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1048
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1029
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1049
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1099
 msgid "Destination:"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1050
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1052
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1051
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1053
 msgid "Files:"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1062
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1063
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1064
 msgid "Copied:"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1067
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1068
 msgid "Speed:"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1067
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1068
 msgid "average"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1068
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1037
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1069
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1107
 msgid "Elapsed:"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1069
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1070
 msgid "Remaining:"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1070
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1071
 msgid "Waiting for the disk to answer, for %s seconds"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1071
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1072
 msgid "Current file:"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1072
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1073
 msgid "Set aside:"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1073
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1074
 msgid "Failed:"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1113
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1114
 msgid "Cancelled. Files already copied stay at the destination, and the copy can be resumed."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1129
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1130
 msgid "Source"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1138
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1051
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1139
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1121
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-salvage.sh:368
 msgid "Destination"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1139
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1140
 msgid "Files copied"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1140
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1141
 msgid "Data copied"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1141
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1055
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1142
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1126
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-salvage.sh:373
 msgid "Elapsed"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1143
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1144
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1145
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1146
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1147
 msgid "Check"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1143
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1144
 msgid "source and destination match"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1144
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1145
 msgid "%s files differ"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1145
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1146
 msgid "did not finish"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1146
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1147
 msgid "rsync confirmed each file as it was copied; no second comparison was made"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1148
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1149
 msgid "Already at the destination, with different content"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1152
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1153
 msgid "Set aside because they did not advance (damaged area of the disk):"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1155
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1156
 msgid "To try them again, which puts more strain on the disk: big-storage-rescue --cli resume %s --retry-deferred"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1158
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1159
 msgid "To save what can be read of each file left out, resuming where it stops: big-storage-rescue --cli salvage %s"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1162
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1163
 msgid "Not copied:"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1167
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1168
 msgid "Different at the destination:"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1170
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1171
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-salvage.sh:381
 msgid "Log:"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1194
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:241
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1195
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:242
 msgid "Serial number"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1194
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:257
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1195
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:258
 msgid "Label"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1226
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1227
 msgid "'%s' already exists. Nothing was written."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1242
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1243
 msgid "Kernel messages:"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1250
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1251
 msgid "'%s' is a folder. Nothing was written."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1258
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1259
 msgid "Report written to %s"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1311
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1318
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1312
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1319
 msgid "free"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1314
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1315
 msgid "drive with critical alerts"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1315
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1316
 msgid "same physical disk as the source"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1316
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1317
 msgid "not enough space"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1332
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1333
 msgid "Home folder"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1379
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1532
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1544
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1589
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1380
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1533
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1545
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1590
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:94
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1075
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:870
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1146
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-salvage.sh:59
 msgid "There is no job '%s'."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1382
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1383
 msgid "Only the results of a search by content can be copied this way."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1389
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1390
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:611
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:936
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1006
 msgid "Both --source and --destination are needed."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1457
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1458
 msgid "%s files, %s to copy; %s already exist with different content."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1480
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1481
 msgid "The copy could not be started."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1485
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1627
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1486
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1628
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:382
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-salvage.sh:129
 msgid "Copy started: %s"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1487
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1488
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:384
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-salvage.sh:131
 msgid "To follow it: big-storage-rescue --cli status %s --watch"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1518
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1519
 msgid "No copies or images yet."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1552
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1553
 msgid "A search cannot be paused, only cancelled. What was found stays."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1572
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1573
 msgid "It is not running."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1595
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1596
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:875
 msgid "It is already running."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1599
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1600
 msgid "It is already complete."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1605
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1606
 msgid "Big-Mount is running this job at the moment. Let it finish there, or stop it there first."
 msgstr ""
 
@@ -2171,7 +2177,7 @@ msgstr ""
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-detect.sh:342
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:317
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:247
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:248
 msgid "Health"
 msgstr ""
 
@@ -2292,12 +2298,12 @@ msgid "The last self-test of the drive found an error: some of its sectors canno
 msgstr ""
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:311
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:238
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:239
 msgid "Type"
 msgstr ""
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:312
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:242
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:243
 msgid "Capacity"
 msgstr ""
 
@@ -2506,92 +2512,116 @@ msgid "Word, Excel and LibreOffice files can appear among the results: they are 
 msgstr ""
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:641
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:992
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1062
 msgid "Search started: %s"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:978
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1017
-msgid "%s files found by content in %s. Their original names and folders could not be kept."
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:874
+msgid "Only files found by content are checked this way."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1026
-msgid "Files listed:"
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:891
+msgid "Look whole"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1027
-msgid "Files examined:"
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:892
+msgid "Cut short"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1030
-msgid "Candidates found:"
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:893
+msgid "Damaged"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1034
-msgid "Read:"
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:894
+msgid "Not checked (format)"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1047
-msgid "Files listed"
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:895
+msgid "Whole means the structure of the file is complete. It does not prove every byte is right: open the files that matter."
 msgstr ""
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1048
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1087
+msgid "%s files found by content in %s. Their original names and folders could not be kept."
+msgstr ""
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1096
+msgid "Files listed:"
+msgstr ""
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1097
+msgid "Files examined:"
+msgstr ""
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1100
+msgid "Candidates found:"
+msgstr ""
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1104
+msgid "Read:"
+msgstr ""
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1117
+msgid "Files listed"
+msgstr ""
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1118
 msgid "Files examined"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1049
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1119
 msgid "These files exist on the volume. Files that were deleted are not on this list."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1052
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1122
 msgid "Candidates found"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1053
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1123
 msgid "Found by content: their original names and folders could not be kept, and some may be incomplete. Open them to check."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1058
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1129
 msgid "Could not be read:"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1083
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1154
 msgid "Only a list or a search has results."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1102
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1175
 msgid "The list is not ready yet."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1126
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1199
 msgid "This command only answers with --json."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1204
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1277
 msgid "This is a disk image: searching it does not touch any disk."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1208
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1281
 msgid "The drive reported problems. For the whole drive, a disk image reads it only once. To copy files, choose one of its volumes."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1212
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1285
 msgid "For the whole drive, files are searched by their content. To copy files, choose one of its volumes."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1216
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1289
 msgid "The drive reported problems: copy what matters first, without going through everything."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1220
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1293
 msgid "The drive reported problems and its files cannot be opened: a disk image reads it only once, and the search is done on the image."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1224
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1297
 msgid "The files can be read normally: list them, and choose what to copy."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1228
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1301
 msgid "The files cannot be opened normally: search for them by content."
 msgstr ""
 
@@ -2844,121 +2874,125 @@ msgid "what a search found"
 msgstr ""
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:159
-msgid "machine-readable output"
+msgid "check again whether the files a search found are whole (their structure, not their content)"
 msgstr ""
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:160
-msgid "say what would be done, change nothing"
+msgid "machine-readable output"
 msgstr ""
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:161
+msgid "say what would be done, change nothing"
+msgstr ""
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:162
 msgid "TARGET is a device (/dev/sdb1) or a folder inside a mounted device."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:202
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:203
 msgid "big-storage-rescue: more than one device has this UUID: %s. Name the device."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:224
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:225
 msgid "The list of devices could not be read."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:239
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:240
 msgid "Manufacturer"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:240
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:241
 msgid "Model"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:245
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:246
 msgid "Partition table"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:259
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:260
 msgid "Size"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:266
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:267
 msgid "Space"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:268
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:269
 msgid "Writing"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:268
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:269
 msgid "blocked on the device"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:386
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:387
 msgid "smartctl is not installed (package smartmontools), so SMART details cannot be read."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:391
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:392
 msgid "Permission to read SMART was not granted."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:392
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:393
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-tui.sh:120
 msgid "The drive did not report SMART data. Many USB adapters do not pass it through."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:415
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:416
 msgid "Mounted read-only at %s"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:416
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:417
 msgid "Mounted at %s"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:418
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:419
 msgid "Writing is also blocked on the device itself until it is disconnected."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:441
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:605
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:627
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:442
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:606
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:628
 msgid "Name a device, such as /dev/sdb1."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:513
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:514
 msgid "Nothing was done. Use big-storage-rescue --unmount to confirm stopping them."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:612
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:613
 msgid "Writing is now blocked on this device until it is disconnected."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:613
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:614
 msgid "Writing is allowed on this device again."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:616
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:617
 msgid "Another volume of this drive is mounted with writing enabled. Unmount it first."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:617
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:618
 msgid "Refused: this drive holds the running system."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:620
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:621
 msgid "The helper failed (exit %s)."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:629
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:630
 msgid "Unlocking in the terminal needs an interactive terminal."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:690
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:691
 msgid "big-storage-rescue: the graphical application does not run as administrator. Open it as your user; it asks for the password when it needs it."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:694
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:695
 msgid "big-storage-rescue: there is no graphical session here. Use the manager in the terminal: big-storage-rescue --cli"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:704
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:705
 msgid "The application needs GTK 4, libadwaita 1.5 or later and PyGObject (packages gtk4, libadwaita and python-gobject). The same tools work in the terminal: big-storage-rescue --cli"
 msgstr ""
 
@@ -3913,7 +3947,7 @@ msgstr ""
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:89
 #: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:1054
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:624
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:659
 msgid "The reason could not be determined."
 msgstr ""
 
@@ -3968,8 +4002,8 @@ msgid "Export diagnosis…"
 msgstr ""
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:170
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:258
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:296
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:280
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:318
 msgid "What was found"
 msgstr ""
 
@@ -4310,7 +4344,7 @@ msgid "Search this image for files"
 msgstr ""
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:104
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:326
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:348
 msgid "Open destination"
 msgstr ""
 
@@ -4376,7 +4410,7 @@ msgstr ""
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:300
 #: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:1054
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:624
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:659
 msgid "It did not start"
 msgstr ""
 
@@ -4740,7 +4774,7 @@ msgid "Looking for places…"
 msgstr ""
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:795
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:633
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:668
 msgid "Choose another folder…"
 msgstr ""
 
@@ -4943,122 +4977,127 @@ msgstr ""
 msgid "The partition table is empty or unreadable. Analyzing the whole disk may find what it no longer lists."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:234
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:256
 msgid "This picture cannot be shown"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:235
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:257
 msgid "It may be incomplete. That is common with files found by content."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:280
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:281
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:302
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:303
 msgid "Search by name"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:283
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:305
 msgid "As found"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:283
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:305
 msgid "Largest first"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:283
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:305
 msgid "By name"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:284
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:306
 msgid "Order"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:298
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:320
 msgid "Name"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:302
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:324
 msgid "Date"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:307
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:329
 msgid "Reading the list…"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:309
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:331
 msgid "Nothing to show"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:310
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:332
 msgid "No file matches what you asked for."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:317
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:339
 msgid "Recover selected"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:319
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:341
 msgid "Select all shown"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:320
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:342
 msgid "Clear selection"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:327
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:645
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:349
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:680
 msgid "Save report"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:328
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:350
 msgid "Try another method"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:364
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:386
 msgid "Candidates found by content. They are saved in the destination folder, without their names and folders, and some may be incomplete. Check them before deleting anything."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:365
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:388
+#, python-format
+msgid "By their structure: %(whole)d look whole, %(short)d are cut short, %(bad)d are damaged and %(other)d could not be checked. Whole does not prove every byte is right: open the files that matter."
+msgstr ""
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:391
 msgid "Copy selected to another folder"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:367
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:393
 msgid "These files exist on the volume and have not been copied yet. Deleted files are not on this list."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:380
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:406
 #, python-format
 msgid "All (%d)"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:400
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:427
 msgid "The list could not be read."
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:498
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:525
 #, python-format
 msgid "%(shown)d shown, %(sel)d selected (%(size)s)"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:515
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:542
 msgid "Select"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:537
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:567
 msgid "Preview"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:603
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:638
 msgid "It cannot be copied"
 msgstr ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:606
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:641
 #, python-format
 msgid "%d file with a line break in its name was left out. It cannot be handled safely."
 msgid_plural "%d files with a line break in their names were left out. They cannot be handled safely."
 msgstr[0] ""
 msgstr[1] ""
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:632
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:667
 msgid "It cannot be saved here"
 msgstr ""
 

@@ -855,6 +855,49 @@ check "the helper refuses to image the running system" bash -c 'sed -n "/^   ima
 check "  ... and checks again, with the files open" bash -c 'sed -n "/^   __image-opened)/,/^      ;;/p" "$1" | grep -q "^      refuse_system"' _ "$L/bsr-drive-helper"
 check "  ... no file of the user is opened by name as root any more" bash -c '! grep -qE "exec \{FD\}[<>]" "$1"' _ "$L/bsr-drive-helper"
 
+begin "files found by content: whole, cut short or damaged, from their structure (integrity.py)"
+IG="$WORK/found"; mkdir -p "$IG/recup_dir.1"
+python3 -I - "$IG/recup_dir.1" <<'PY'
+import io, struct, sys, zipfile, zlib
+d = sys.argv[1]
+def put(name, data): open(f"{d}/{name}", "wb").write(data)
+jpeg = b"\xff\xd8" + b"\xff\xe0\x00\x10JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00" + b"\xff\xda\x00\x08\x01\x01\x00\x00\x3f\x00" + b"\x12" * 500 + b"\xff\xd9"
+put("f1.jpg", jpeg); put("f2.jpg", jpeg[:300])
+def chunk(t, b): return struct.pack(">I", len(b)) + t + b + struct.pack(">I", zlib.crc32(t + b))
+png = b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", 1, 1, 8, 2, 0, 0, 0)) + chunk(b"IDAT", zlib.compress(b"\x00\x00\x00\x00")) + chunk(b"IEND", b"")
+put("f3.png", png); put("f4.png", png[:-12]); bad = bytearray(png); bad[40] ^= 0xFF; put("f5.png", bytes(bad))
+z = io.BytesIO(); zf = zipfile.ZipFile(z, "w"); zf.writestr("word/document.xml", "x" * 2000); zf.close()
+put("f6.docx", z.getvalue()); put("f7.docx", z.getvalue()[:-30])
+box = lambda t, b: struct.pack(">I", 8 + len(b)) + t + b
+mp4 = box(b"ftyp", b"isom\x00\x00\x02\x00") + box(b"moov", b"\x00" * 40) + box(b"mdat", b"\x01" * 1000)
+put("f8.mp4", mp4); put("f9.mp4", mp4[:-100]); put("f10.mp4", box(b"ftyp", b"isom\x00\x00\x02\x00") + box(b"mdat", b"\x01" * 100))
+put("f11.pdf", b"%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF\n"); put("f12.pdf", b"%PDF-1.4\n1 0 obj\n<<>>\n")
+wav = b"RIFF" + struct.pack("<I", 36 + 100) + b"WAVEfmt " + b"\x00" * 24 + b"data" + struct.pack("<I", 100) + b"\x00" * 100
+put("f13.wav", wav); put("f14.wav", wav[:80]); put("f15.xyz", b"whatever")
+PY
+ln -s /etc/passwd "$IG/recup_dir.1/f16.jpg"
+idx="$WORK/found.index"
+(cd "$IG" && for f in recup_dir.1/*; do printf '1\t0\tother\t%s\0' "$f"; done) > "$idx"
+printf '1\t0\tother\t../etc/passwd\0' >> "$idx"
+python3 -I "$L/integrity.py" "$IG" < "$idx" > "$WORK/found.out" 2> "$WORK/found.err"
+st() { tr '\0' '\n' < "$WORK/found.out" | awk -F'\t' -v f="recup_dir.1/$1" '$2 == f { print $1 }'; }
+check "a whole JPEG, and one cut short" eq "$(st f1.jpg) $(st f2.jpg)" "complete truncated"
+check "a whole PNG, one cut short, one with a bad chunk (CRC)" eq "$(st f3.png) $(st f4.png) $(st f5.png)" "complete truncated damaged"
+check "a whole document (zip inside), and one without its directory" eq "$(st f6.docx) $(st f7.docx)" "complete truncated"
+check "a whole video, one cut short, one without its index (moov)" eq "$(st f8.mp4) $(st f9.mp4) $(st f10.mp4)" "complete truncated damaged"
+check "a whole PDF and one cut short; a whole WAV and one cut short" eq "$(st f11.pdf) $(st f12.pdf) $(st f13.wav) $(st f14.wav)" "complete truncated complete truncated"
+check "a format it does not know, and a link (never followed): not checked" eq "$(st f15.xyz) $(st f16.jpg)" "unknown unknown"
+check "  ... a path outside the folder is never opened, only answered for (one answer per record, in order)" \
+   bash -c '[ "$(tr "\0" "\n" < "$1" | tail -n 1)" = "unknown	../etc/passwd" ] && [ "$(tr -cd "\0" < "$1" | wc -c)" = 17 ]' _ "$WORK/found.out"
+check "the counts" eq "$(cat "$WORK/found.err")" "complete 6 truncated 6 damaged 2 unknown 3"
+mkdir -p "$BSR_JOBS/20261103-120000-ffff"; cp "$idx" "$BSR_JOBS/20261103-120000-ffff/index"
+printf '%s\n' KIND=carve "DEST=$IG" SOURCE=/dev/null > "$BSR_JOBS/20261103-120000-ffff/job.conf"; printf 'STATE=completed\nFILES_DONE=16\n' > "$BSR_JOBS/20261103-120000-ffff/state.env"
+out="$(run_b --drive check-files 20261103-120000-ffff --json)"
+check "--cli check-files: the counts as JSON" eq "$out" '{"complete":6,"truncated":6,"damaged":2,"unknown":3}'
+res="$(run_b --drive results 20261103-120000-ffff --json)"
+check "  ... and the results say where the verdicts are" bash -c '[[ $1 == *"\"integrity\":\"$2/integrity\""* && $1 == *"\"truncated\":6"* ]]' _ "$res" "$BSR_JOBS/20261103-120000-ffff"
+check "  ... the report says what whole means" bash -c '[[ $1 == *"Look whole"*"6"* && $1 == *"does not prove every byte"* ]]' _ "$(run_b --drive report 20261103-120000-ffff 2>&1)"
+
 begin "the map of a disk image, from a ddrescue map"
 mkdir -p "$BSR_JOBS/20261103-110000-eeee"
 printf '%s\n' KIND=image "MAP=$WORK/img.map" SOURCE=/dev/sdc DEST="$WORK/img" > "$BSR_JOBS/20261103-110000-eeee/job.conf"

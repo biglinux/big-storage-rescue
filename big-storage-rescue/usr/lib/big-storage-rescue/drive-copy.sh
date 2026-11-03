@@ -440,6 +440,7 @@ bsr_job_state_label() {
       scan:completed) REPLY=$"List of files complete"; return ;;
       carve:analyzing | carve:running) REPLY=$"Searching by content"; return ;;
       carve:completed) REPLY=$"Search complete"; return ;;
+      carve:verifying) REPLY=$"Checking whether what was found is whole"; return ;;
       salvage:running) REPLY=$"Saving what can be read of each file"; return ;;
       salvage:completed) REPLY=$"Every file was read completely"; return ;;
    esac
