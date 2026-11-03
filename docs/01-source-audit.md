@@ -26,7 +26,7 @@ Audit made on 2026-11-02, before any change.
 | Desktop | launcher, Dolphin service menu, notifier autostart entry, polkit policy (2 actions), icon | |
 | Translations | `locale/` (pot, `pt_BR.po` with 1231 messages, templates, ITS rules) | one gettext domain, `big-mount` |
 | Tests | 16 files | stubs, real loop devices, Broadway GUI tests, packaging, i18n |
-| CI | `tests.yml` (Arch container), `build-package.yml` (BigLinux build service) | |
+| CI | `tests.yml` (Arch container), `build-package.yml` (the BigLinux package template's, which no longer requests a build) | |
 
 ## Findings
 

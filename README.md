@@ -827,12 +827,13 @@ locale/update-pot.sh && locale/compile.sh                   # after translating 
 
 ### Packages
 
-`.github/workflows/build-package.yml`, from the BigLinux package template,
-asks the BigLinux build service to build the package and send it to the
-repository, on every push to a branch without a `/` (`main`, `stable-…`).
-Work branches (`feature/x`, `fix/y`) never trigger it. There is no machine
-translation in CI: the catalogs are translated and reviewed in `locale/`, and
-`locale/compile.sh` puts them in the package tree. Besides English and
+BigLinux builds the package from the `testing-…` and `stable-…` branches
+that its release flow creates after a merge to `main`.
+`.github/workflows/build-package.yml` is the one of the BigLinux package
+template, byte for byte: the old request to the build service is commented
+out there, as its organization and token no longer answer (401). There is no
+machine translation in CI: the catalogs are translated and reviewed in
+`locale/`, and `locale/compile.sh` puts them in the package tree. Besides English and
 Brazilian Portuguese: Spanish, German, French, Italian, Russian, Simplified
 Chinese, Japanese, Polish and Turkish (docs/13).
 
