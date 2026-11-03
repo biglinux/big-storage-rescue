@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN" "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<policyconfig>
+  <vendor>BigLinux</vendor>
+  <vendor_url>https://www.biglinux.com.br</vendor_url>
+  <!-- Read-only: lists the processes of every user that keep one mount point busy -->
+  <action id="org.biglinux.big-storage-rescue.inspect-processes">
+    <description>Show the programs of all users that keep a storage device busy</description>
+    <description xml:lang="pt_BR">Mostrar os programas de todos os usuários que mantêm um dispositivo de armazenamento ocupado</description>
+    <message>Authentication is required to see the programs of all users that are using this device</message>
+    <message xml:lang="pt_BR">É necessário autenticar-se para ver os programas de todos os usuários que estão usando este dispositivo</message>
+    <icon_name>big-storage-rescue</icon_name>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/lib/big-storage-rescue/bsr-holders</annotate>
+  </action>
+  <!-- A disk image is a raw copy of everything on a drive, the files of every
+       user included: the password is asked every time, never kept. pkexec
+       picks an action by the path of the program alone, so it has a program
+       of its own (bsr-drive-helper refuses "image" without it) -->
+  <action id="org.biglinux.big-storage-rescue.image">
+    <description>Make a disk image of a storage device</description>
+    <description xml:lang="pt_BR">Fazer uma imagem de disco de um dispositivo de armazenamento</description>
+    <message>Authentication is required to make a disk image of this storage device. The image holds everything on it.</message>
+    <message xml:lang="pt_BR">É necessário autenticar-se para fazer uma imagem de disco deste dispositivo de armazenamento. A imagem contém tudo o que há nele.</message>
+    <icon_name>big-storage-rescue</icon_name>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/lib/big-storage-rescue/bsr-image-helper</annotate>
+  </action>
+  <!-- Blocks or allows writing on a device, reads SMART, lists partitions: never changes data on it -->
+  <action id="org.biglinux.big-storage-rescue.drive-helper">
+    <description>Protect a storage device, read its health or its partitions</description>
+    <description xml:lang="pt_BR">Proteger um dispositivo de armazenamento, ler a saúde dele ou as partições dele</description>
+    <message>Authentication is required to protect this storage device, read its health or its partitions</message>
+    <message xml:lang="pt_BR">É necessário autenticar-se para proteger este dispositivo de armazenamento, ler a saúde dele ou as partições dele</message>
+    <icon_name>big-storage-rescue</icon_name>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/lib/big-storage-rescue/bsr-drive-helper</annotate>
+  </action>
+</policyconfig>

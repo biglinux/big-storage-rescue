@@ -1,0 +1,337 @@
+#!/bin/bash
+# shellcheck disable=SC2015  # "check && check || die" on purpose: die does not return
+#
+# bsr-drive-helper - privileged helper of the Big Storage Rescue drive manager.
+#
+# Started through pkexec (polkit action org.biglinux.big-storage-rescue.drive-helper).
+# It does five small things and nothing else, with its arguments treated as
+# untrusted:
+#
+#   protect DEV     block writing on a device and everything it sits on
+#   unprotect DEV   allow writing again
+#   smart DEV       print `smartctl -H -A -i -l selftest` (read-only, never starts a test)
+#   partitions DEV STOPFILE [search i386|gpt]
+#                   print what `testdisk /list` finds, or what its analysis of
+#                   the disk finds, until STOPFILE appears. Fixed commands:
+#                   never one that writes
+#   image DEV FILE MAP RETRIES STOPFILE [DISKSEQ]
+#                   read DEV into FILE with GNU ddrescue, its map in MAP (and
+#                   the previous one in MAP.bak). Never a drive of the running
+#                   system, never onto the disk being read. Only through
+#                   bsr-image-helper, which has its own polkit action, which
+#                   always asks
+#
+# pkexec gives it a clean environment. Exit codes: 0 done, 1 failed, 2 bad
+# arguments, 3 another volume of the drive is mounted with writing enabled,
+# 4 refused: the running system, 5 the device was replaced, 25 tool missing.
+
+BSR_LIB="/usr/lib/big-storage-rescue"
+export PATH=/usr/bin:/bin:/usr/sbin:/sbin
+
+die() { printf 'bsr-drive-helper: %s\n' "$1" >&2; exit "${2:-2}"; }
+
+[ "$#" -ge 2 ] || die "usage: bsr-drive-helper protect|unprotect|smart|image DEV ..."
+[ "$EUID" -eq 0 ] || die "must run as root" 1
+# shellcheck source=lib.sh
+. "$BSR_LIB/lib.sh" || exit 1
+
+verb="$1" dev="$2"
+[[ $dev =~ ^/dev/[A-Za-z0-9._/:+-]+$ ]] && [[ $dev != *..* ]] || die "not a device name"
+dev="$(readlink -f -- "$dev")"
+[ -b "$dev" ] || die "not a block device"
+
+# The chain the device sits on: itself, its partition, LUKS, LVM, its disks
+chain=() disks=()
+while read -r name type; do
+   chain+=("$name")
+   case "$type" in disk | loop) disks+=("$name") ;; esac
+done < <(lsblk -s -n -p -r -o NAME,TYPE -- "$dev" 2>/dev/null)
+[ "${#chain[@]}" -gt 0 ] || die "unknown device"
+
+# A path root reads or writes for the user: only in a real folder of theirs
+# (root's own when started directly by root, as with sudo over SSH: a person
+# who can do that needs no helper to read a disk)
+uid="${PKEXEC_UID:-0}"
+[[ $uid =~ ^[0-9]+$ ]] || die "bad user"
+user_path() {
+   local parent="${1%/*}"
+   [[ $1 == /* && $1 != *..* && $1 != *$'\n'* ]] || die "bad path"
+   [ "$(readlink -f -- "$parent")" = "$parent" ] && [ "$(stat -c %u -- "$parent")" = "$uid" ] || die "$parent is not a folder of the user"
+   [ ! -L "$1" ] || die "$1 is a link"
+}
+
+refuse_system() {
+   local d
+   for d in "${disks[@]}"; do
+      bsr_system_use "$d" && die "refused: $d holds the running system ($REPLY)" 4
+   done
+}
+
+# never_on_source PATH...: the image and its map are never written on the disk
+# being read, whatever holds them: a partition, LVM, a Btrfs of several disks,
+# a loop device over a file on that disk. A folder whose disk cannot be told
+# (FUSE without a device, an overlay, a share of this computer) is refused
+never_on_source() {
+   local p b d
+   for p in "$@"; do
+      bsr_path_disks "$p" || die "refused: it cannot be told which disk holds $p"
+      for b in "${BK_DISKS[@]}"; do
+         for d in "${disks[@]}"; do [ "$b" != "$d" ] || die "the image cannot be on the disk being read"; done
+      done
+   done
+}
+
+# same_disk DISKSEQ: the disk is still the one the caller chose. The password
+# dialog can stay open for minutes, and another drive can take its name
+same_disk() {
+   local d seq
+   [[ $1 =~ ^[0-9]+$ ]] || die "bad disk sequence number"
+   [ "${#disks[@]}" -eq 1 ] || die "not a single drive"
+   d="${disks[0]##*/}"
+   { read -r seq < "/sys/block/$d/diskseq"; } 2>/dev/null
+   [ "${seq:-}" = "$1" ] || die "the device was replaced: nothing was done" 5
+}
+
+# Opens the files of an image for root, as python3 -I -c "$BSR_OPEN_OWN" UID
+# FILE... -- COMMAND...: every folder from / is opened without following a
+# link, and the last one must be the user's; each file is first opened as a
+# path only (O_PATH: a device or a FIFO is never really opened), must be a
+# regular file with one name, the user's (or new: created with O_EXCL and
+# given to the user), and is then opened through that path. COMMAND runs
+# with the descriptors open, their numbers added at the end, and with
+# BSR_IMAGE_OPENED=1 (pkexec never passes that on: only this step sets it).
+BSR_OPEN_OWN='
+import os, stat, sys
+uid = int(sys.argv[1]); sep = sys.argv.index("--")
+names, cmd = sys.argv[2:sep], sys.argv[sep + 1:]
+made, fds, seen = [], [], set()
+def fail(msg):
+    for d, n in made:
+        try: os.unlink(n, dir_fd=d)
+        except OSError: pass
+    sys.exit("bsr-drive-helper: " + msg)
+def open_one(name):
+    parts = name.split("/")
+    if parts[0] != "" or len(parts) < 3 or any(p in ("", ".", "..") for p in parts[1:]):
+        fail("bad path " + repr(name))
+    d = os.open("/", os.O_PATH | os.O_DIRECTORY)
+    try:
+        for p in parts[1:-1]:
+            n = os.open(p, os.O_PATH | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=d); os.close(d); d = n
+    except OSError:
+        fail(name + ": a folder on the way is missing or is a link")
+    if os.fstat(d).st_uid != uid:
+        fail(name + ": not in a folder of the user")
+    leaf = parts[-1]
+    try:
+        p = os.open(leaf, os.O_PATH | os.O_NOFOLLOW, dir_fd=d)
+    except FileNotFoundError:
+        try:
+            f = os.open(leaf, os.O_RDWR | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600, dir_fd=d)
+        except OSError:
+            fail("cannot create " + name)
+        made.append((d, leaf)); os.fchown(f, uid, -1); os.close(f)
+        p = os.open(leaf, os.O_PATH | os.O_NOFOLLOW, dir_fd=d)
+    st = os.fstat(p)
+    if not stat.S_ISREG(st.st_mode) or st.st_nlink != 1 or st.st_uid != uid:
+        fail(name + " is not a file of the user")
+    f = os.open("/proc/self/fd/%d" % p, os.O_RDWR)
+    if (os.fstat(f).st_dev, os.fstat(f).st_ino) != (st.st_dev, st.st_ino):
+        fail(name + " changed while it was opened")
+    if (st.st_dev, st.st_ino) in seen:
+        fail("the image and its map must be different files")
+    seen.add((st.st_dev, st.st_ino))
+    if len(fds) == 0:
+        os.fchmod(f, 0o600)
+    os.close(p)
+    os.set_inheritable(f, True); fds.append(f)
+for name in names:
+    try:
+        open_one(name)
+    except OSError as e:
+        fail(name + ": " + (e.strerror or "cannot open"))
+os.environ["BSR_IMAGE_OPENED"] = "1"
+os.execv(cmd[0], cmd + [str(f) for f in fds])
+'
+
+case "$verb" in
+   protect)
+      [ "$#" -eq 2 ] || [ "$#" -eq 3 ] || die "protect DEV [DISKSEQ]"
+      refuse_system
+      [ "$#" -eq 3 ] && same_disk "$3"
+      # Blocking a disk also blocks its other partitions: never under a
+      # volume that is writing
+      for d in "${disks[@]}"; do
+         bsr_drive_members "$d"
+         for m in "${DRIVE_DEVS[@]}"; do
+            bsr_mounts "$m"
+            for i in "${!M_TARGET[@]}"; do
+               bsr_has_opt "${M_VFSOPT[i]}" ro || die "$m is mounted with writing enabled at ${M_TARGET[i]}" 3
+            done
+         done
+      done
+      for d in "${chain[@]}"; do blockdev --setro "$d" || die "blockdev failed on $d" 1; done
+      ;;
+   unprotect)
+      [ "$#" -eq 2 ] || [ "$#" -eq 3 ] || die "unprotect DEV [DISKSEQ]"
+      refuse_system
+      [ "$#" -eq 3 ] && same_disk "$3"
+      for d in "${chain[@]}"; do blockdev --setrw "$d" || die "blockdev failed on $d" 1; done
+      ;;
+   smart)
+      [ "$#" -eq 2 ] || die "smart DEV"
+      command -v smartctl >/dev/null || exit 25
+      # Whole disks only, whatever partition was named
+      [ "${#disks[@]}" -eq 1 ] || die "not a single drive"
+      out="$(timeout 180 smartctl -H -A -i -l selftest -- "${disks[0]}" 2>&1)"
+      if [[ $out != *"SMART"*"Attributes"* && $out != *"SMART/Health Information"* ]]; then
+         # USB bridges usually need the SAT pass-through named
+         out="$(timeout 180 smartctl -d sat -H -A -i -l selftest -- "${disks[0]}" 2>&1)"
+      fi
+      printf '%s\n' "$out"
+      [[ $out == *"overall-health"* || $out == *"SMART Health Status"* || $out == *"SMART/Health Information"* ]]
+      exit
+      ;;
+   partitions)
+      command -v testdisk >/dev/null || exit 25
+      [ "$#" -ge 3 ] || die "partitions DEV STOPFILE [search i386|gpt]"
+      stop="$3"
+      user_path "$stop"
+      cd /tmp || exit 1
+      # Its own session: TestDisk passes a SIGTERM on to its whole process
+      # group, which is also the window that started it
+      if [ "$#" -eq 3 ]; then
+         setsid testdisk /nolog /list "$dev" &
+      else
+         [ "$#" -eq 5 ] && [ "$4" = search ] || die "partitions DEV STOPFILE [search i386|gpt]"
+         case "$5" in i386 | gpt) ;; *) die "partitions DEV STOPFILE [search i386|gpt]" ;; esac
+         TERM=xterm setsid testdisk /nolog /cmd "$dev" "partition_$5,analyze" &
+      fi
+      pid=$!
+      trap 'kill -TERM "$pid" 2>/dev/null' TERM INT HUP
+      # Woken by the end of testdisk or every second, to look for the stop file
+      while :; do
+         sleep 1 &
+         wait -n "$pid" "$!"
+         kill "$!" 2>/dev/null
+         kill -0 "$pid" 2>/dev/null || break
+         [ -e "$stop" ] && kill -TERM "$pid" 2>/dev/null
+      done
+      wait "$pid"
+      exit
+      ;;
+   image)
+      [ "$#" -eq 6 ] || [ "$#" -eq 7 ] || die "image DEV FILE MAP RETRIES STOPFILE [DISKSEQ]"
+      # Set by bsr-image-helper, the program of the image action. pkexec gives
+      # a clean environment, so "pkexec bsr-drive-helper image", authorized by
+      # the action of the other verbs (which keeps the password), lacks it
+      [ "${BSR_IMAGE_ACTION:-}" = 1 ] || die "a disk image is started by bsr-image-helper"
+      file="$3" map="$4" retries="$5" stop="$6"
+      command -v ddrescue >/dev/null || exit 25
+      [[ $retries =~ ^[0-9]+$ ]] && [ "$retries" -le 5 ] || die "bad retries"
+      # A raw copy of the running system would hand the user every file of
+      # every user, and what its encrypted volumes hold
+      refuse_system
+      # A loop device is read only when the file behind it is the user's
+      for d in "${disks[@]}"; do
+         [[ $d == /dev/loop* ]] || continue
+         backing="$(cat "/sys/block/${d##*/}/loop/backing_file" 2>/dev/null)"
+         [ -n "$backing" ] && [ "$(stat -c %u -- "$backing" 2>/dev/null)" = "$uid" ] || die "refused: $d is not over a file of the user" 4
+      done
+      [ "$#" -eq 7 ] && same_disk "$7"
+      for p in "$file" "$map" "$stop"; do user_path "$p"; done
+      # The map is written over: never over the image
+      [ "$file" != "$map" ] && [ "$file" != "$map.bak" ] || die "the image and its map must be different files"
+      # Never onto the disk that is being read
+      never_on_source "${file%/*}" "${map%/*}"
+      # The folders belong to the user, who can swap a name for a link at any
+      # moment. The three files are opened by a small step that cannot be
+      # led astray (BSR_OPEN_OWN, above): from then on only what was opened is
+      # used, through /proc/PID/fd/N, never a name. It runs this helper again
+      # with the files open.
+      exec python3 -I -c "$BSR_OPEN_OWN" "$uid" "$file" "$map" "$map.bak" -- \
+         "$0" __image-opened "$dev" "$file" "$map" "$retries" "$stop"
+      die "cannot open the files" 1
+      ;;
+   __image-opened)
+      # Reached only through the step above, which leaves the descriptors of
+      # the three files open; each is checked again here all the same. pkexec
+      # gives a clean environment, so the mark of that step cannot come with
+      # "pkexec bsr-drive-helper __image-opened": the action of every other
+      # verb, which keeps the password a while, never reaches an image
+      [ "${BSR_IMAGE_OPENED:-}" = 1 ] || die "internal"
+      [ "$#" -eq 9 ] || die "internal"
+      file="$3" map="$4" retries="$5" stop="$6"
+      [[ $retries =~ ^[0-9]+$ ]] && [ "$retries" -le 5 ] || die "bad retries"
+      refuse_system
+      fds=("$7" "$8" "$9") opened=()
+      for fd in "${fds[@]}"; do
+         [[ $fd =~ ^[0-9]+$ ]] || die "internal"
+         f="/proc/$$/fd/$fd"
+         [ -f "$f" ] || die "not a file"
+         [ "$(stat -L -c '%h %u' -- "$f")" = "1 $uid" ] || die "not a file of the user"
+         opened+=("$f")
+      done
+      ofile="${opened[0]}" omap="${opened[1]}" obak="${opened[2]}"
+      ids="$(stat -L -c '%d:%i' -- "$ofile" "$omap" "$obak" | sort -u | wc -l)"
+      [ "$ids" = 3 ] || die "the image and its map must be different files"
+      # Again with what was opened: a folder renamed meanwhile counts for nothing
+      never_on_source "$ofile" "$omap" "$obak"
+      # A loop device is read from its file: never written over by its own image
+      for d in "${disks[@]}"; do
+         [[ $d == /dev/loop* ]] || continue
+         backing="$(cat "/sys/block/${d##*/}/loop/backing_file" 2>/dev/null)"
+         id="$(stat -L -c '%d:%i' -- "$backing" 2>/dev/null)" || die "refused: the file behind $d is gone" 4
+         for f in "${opened[@]}"; do
+            [ "$(stat -L -c '%d:%i' -- "$f")" != "$id" ] || die "the image cannot be written over the file being read"
+         done
+      done
+      # ddrescue renames and creates files next to its map (MAP.bak, kept in case
+      # a save is cut): it works on a copy in a folder of root, and that copy goes
+      # to the user's map through what was opened above
+      work="$(mktemp -d /run/big-storage-rescue-image.XXXXXXXX)" || die "no working folder" 1
+      trap 'rm -rf -- "$work"' EXIT
+      # A whole map: it ends with a line break, has the status line and ends with a block
+      whole_map() {
+         # A map of a large failing disk is a few MiB; anything else is not a map
+         [ -s "$1" ] && [ "$(stat -L -c %s -- "$1")" -le $((64 * 1024 * 1024)) ] &&
+            ! grep -qvE '^(#.*|[[:space:]]*|0x[0-9A-Fa-f]+[[:space:]]+[-?*%/+FG]([[:space:]]+[0-9]+)?[[:space:]]*|0x[0-9A-Fa-f]+[[:space:]]+0x[0-9A-Fa-f]+[[:space:]]+[-?*/+][[:space:]]*)$' -- "$1" &&
+            [ "$(tail -c 1 -- "$1" | wc -l)" = 1 ] &&
+            grep -qE '^0x[0-9A-Fa-f]+[[:space:]]+[-?*%/+FG]([[:space:]]+[0-9]+)?[[:space:]]*$' -- "$1" &&
+            [[ $(tail -n 1 -- "$1") =~ ^0x[0-9A-Fa-f]+[[:space:]]+0x[0-9A-Fa-f]+[[:space:]]+[-?*/+][[:space:]]*$ ]]
+      }
+      # Resuming: from the map, or from its backup when the map was cut
+      if whole_map "$omap"; then cat -- "$omap" > "$work/map"
+      elif whole_map "$obak"; then cat -- "$obak" > "$work/map"
+      fi
+      # The previous map goes to MAP.bak before the map is overwritten, as ddrescue
+      # does. 1: the map could not be saved (MAP.bak, when written, holds the one before)
+      mirror() {
+         cp -- "$work/map" "$work/snap" 2>/dev/null && whole_map "$work/snap" || return 0
+         cmp -s -- "$work/snap" "$omap" && return 0
+         if whole_map "$omap"; then
+            { cat -- "$omap" >| "$obak" && sync -- "$obak"; } || return 1
+         fi
+         { cat -- "$work/snap" >| "$omap" && sync -- "$omap"; } || return 1
+      }
+      # The map is saved every 5 s: by default ddrescue waits 30 s to 5 min,
+      # and the progress shown and a resume after a power cut come from it
+      args=(--idirect --mapfile-interval=5 --no-scrape)
+      [ "$retries" -gt 0 ] && args=(--idirect --mapfile-interval=5 "--retry-passes=$retries")
+      ddrescue "${args[@]}" -- "$dev" "$ofile" "$work/map" &
+      pid=$!
+      trap 'kill -TERM "$pid" 2>/dev/null' TERM INT HUP
+      while kill -0 "$pid" 2>/dev/null; do
+         [ -e "$stop" ] && kill -TERM "$pid" 2>/dev/null
+         mirror
+         sleep 2
+      done
+      wait "$pid"; rc=$?
+      if ! mirror; then
+         printf 'bsr-drive-helper: the map could not be saved to %s\n' "$map" >&2
+         [ "$rc" -ne 0 ] || rc=1
+      fi
+      exit "$rc"
+      ;;
+   *) die "unknown command" ;;
+esac

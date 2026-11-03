@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>org.biglinux.big-storage-rescue</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>Big Storage Rescue</name>
+  <summary>Diagnose drives and rescue files from them</summary>
+  <summary xml:lang="pt_BR">Diagnostique unidades e resgate arquivos delas</summary>
+  <developer id="org.biglinux">
+    <name>BigLinux</name>
+  </developer>
+  <description>
+    <p>
+      Big Storage Rescue explains what is wrong with a storage device and helps to
+      save the files on it, without writing to the device that is failing.
+    </p>
+    <ul>
+      <li>Shows every drive with its health (SMART and NVMe), including drives that are not mounted</li>
+      <li>Explains why a device cannot be written to: Windows Fast Startup, filesystem errors, write protection, permissions</li>
+      <li>Shows which programs keep a device busy, and removes it safely without forcing anything</li>
+      <li>Copies files off a failing disk with real progress, pause and resume, also after a power cut</li>
+      <li>Makes a disk image with GNU ddrescue, finds lost partitions with TestDisk and files by content with PhotoRec</li>
+      <li>Every tool also works in the terminal, through SSH, with JSON output for scripts</li>
+    </ul>
+    <p xml:lang="pt_BR">
+      O Big Storage Rescue explica o que há de errado com um dispositivo de armazenamento e
+      ajuda a salvar os arquivos dele, sem gravar no dispositivo que está falhando.
+    </p>
+  </description>
+  <launchable type="desktop-id">org.biglinux.big-storage-rescue.desktop</launchable>
+  <url type="homepage">https://github.com/biglinux/big-storage-rescue</url>
+  <url type="bugtracker">https://github.com/biglinux/big-storage-rescue/issues</url>
+  <categories>
+    <category>System</category>
+    <category>Filesystem</category>
+  </categories>
+  <provides>
+    <binary>big-storage-rescue</binary>
+  </provides>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+    <control>touch</control>
+  </supports>
+  <requires>
+    <display_length compare="ge">360</display_length>
+  </requires>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="1.0.0" date="2026-11-02">
+      <description>
+        <p>First release as an application of its own. The drive manager, file rescue, diagnosis and safe removal of Big-Mount 2.6 now live here; Big-Mount only mounts internal partitions at boot. Copies started in Big-Mount are brought over and can be resumed.</p>
+      </description>
+    </release>
+  </releases>
+</component>

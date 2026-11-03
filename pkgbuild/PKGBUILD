@@ -1,0 +1,76 @@
+# Maintainer: Bruno Goncalves <bigbruno@gmail.com>
+# Maintainer: Rafael Ruscher <rruscher@gmail.com>
+
+pkgname=big-storage-rescue
+# The build date and time, as every BigLinux package: each build of the build
+# service is newer than the last. The commit it was built from goes into
+# /usr/lib/big-storage-rescue/version, shown by "big-storage-rescue --version".
+pkgver=$(date +%y.%m.%d)
+pkgrel=$(date +%H%M)
+arch=('any')
+license=('GPL-3.0-or-later')
+# Everything runs as the user. What each dependency is for:
+#   bash, util-linux    the engine; lsblk, findmnt, blkid, flock, setpriv,
+#                       setsid, ionice, mountpoint
+#   udisks2, glib2      mount, unmount and power drives off as the user
+#                       (udisksctl, gdbus)
+#   polkit              pkexec starts the two small helpers
+#   lsof                what keeps a device busy
+#   rsync               every copy of files
+#   smartmontools       the health of a drive (smartctl)
+#   diffutils           keeps the map of a disk image safe (cmp)
+#   python, python-gobject, gtk4, libadwaita, pango, gdk-pixbuf2 (previews of
+#   found photos), hicolor-icon-theme
+#                       the application and its dialogs
+#   python-cairo        draws the map of a disk image: without it PyGObject
+#                       cannot hand the drawing its Cairo context
+#   libnotify           notifications (notify-send)
+# Commands of the base system (coreutils, findutils, gawk, grep, sed,
+# procps-ng, systemd) are not listed.
+# libadwaita has an epoch: without it, ">=1.5" would accept any version. It
+# needs a GTK 4 newer than every GTK call of the application.
+depends=('bash' 'util-linux' 'udisks2' 'glib2' 'polkit' 'lsof' 'rsync'
+         'smartmontools' 'diffutils'
+         'python' 'python-gobject' 'python-cairo' 'gtk4' 'libadwaita>=1:1.5'
+         'pango' 'gdk-pixbuf2' 'hicolor-icon-theme'
+         'libnotify')
+optdepends=('ddrescue: disk images of a failing drive, and saving what can be read of files a copy left out'
+            'testdisk: find lost partitions, search files by content (PhotoRec)'
+            'dolphin: the Storage device actions of the right-click menu'
+            'big-mount: mounts the internal partitions at boot')
+# A separate program from big-mount: both can be installed, neither needs the
+# other, and no file of one belongs to the other.
+url="https://github.com/biglinux/big-storage-rescue"
+pkgdesc="Diagnoses storage devices, explains why they cannot be written to or removed, and rescues files from failing drives"
+source=("git+https://github.com/biglinux/big-storage-rescue.git")
+makedepends=("git")
+md5sums=(SKIP)
+install=big-storage-rescue.install
+
+package() {
+    # Verify default folder
+    if [ -d "${srcdir}/${pkgname}/${pkgname}" ]; then
+        InternalDir="${srcdir}/${pkgname}/${pkgname}"
+    else
+        InternalDir="${srcdir}/${pkgname}"
+    fi
+
+    # Only /usr: the application keeps no configuration in /etc
+    cp -r "${InternalDir}/usr" "${pkgdir}/"
+
+    # The revision this package was built from (--version, --doctor)
+    local rev
+    if rev="$(git -C "${srcdir}/${pkgname}" rev-parse HEAD 2>/dev/null)"; then
+        # Built from a checkout with changes that are not committed yet
+        # (pkgbuild/build-local.sh): the revision says so
+        if [ -n "$(git -C "${srcdir}/${pkgname}" status --porcelain 2>/dev/null)" ]; then
+            rev+="-dirty"
+        fi
+        {
+            printf 'revision=%s\n' "$rev"
+            printf 'date=%s\n' "$(TZ=UTC git -C "${srcdir}/${pkgname}" log -1 --date=format-local:%Y-%m-%dT%H:%M:%SZ --format=%cd)"
+            printf 'source=%s\n' "$url"
+        } > "${pkgdir}/usr/lib/big-storage-rescue/version"
+        chmod 644 "${pkgdir}/usr/lib/big-storage-rescue/version"
+    fi
+}

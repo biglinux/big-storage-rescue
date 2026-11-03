@@ -1,0 +1,14 @@
+# Big Storage Rescue install messages. Nothing runs at boot and nothing is
+# started: the application opens when the person asks for it.
+
+post_install() {
+    echo ":: Big Storage Rescue: open it from the menu, or run big-storage-rescue"
+    echo "   In the terminal (also through SSH): big-storage-rescue --cli"
+    echo "   Dolphin: right-click a folder > Storage device"
+}
+
+post_upgrade() {
+    # Copies that were started in Big-Mount 2.x are brought over the first
+    # time the application or the terminal manager opens, by each user
+    :
+}

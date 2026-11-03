@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 24 24">
+  <title>Big Storage Rescue</title>
+  <defs>
+    <linearGradient id="bg" x1="2" y1="1" x2="22" y2="23" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2f86ee"/>
+      <stop offset="1" stop-color="#103a78"/>
+    </linearGradient>
+    <linearGradient id="drive" x1="0" y1="14" x2="0" y2="20.5" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f4f6f8"/>
+      <stop offset="1" stop-color="#b6c0cb"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="1" x2="0" y2="12" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff" stop-opacity=".22"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <!-- Background: the rounded square of the BigLinux icons -->
+  <rect x="1" y="1" width="22" height="22" rx="6.6" fill="url(#bg)"/>
+  <rect x="1" y="1" width="22" height="11" rx="6.6" fill="url(#shine)"/>
+  <!-- The drive -->
+  <rect x="4.4" y="14" width="15.2" height="6.4" rx="1.7" fill="#0b2a57" opacity=".35" transform="translate(0 .45)"/>
+  <rect x="4.4" y="14" width="15.2" height="6.4" rx="1.7" fill="url(#drive)"/>
+  <rect x="6.3" y="16.85" width="7.4" height=".75" rx=".375" fill="#7d8a99"/>
+  <circle cx="17.1" cy="17.2" r=".85" fill="#2ecc71"/>
+  <!-- The lifebuoy: rescue -->
+  <circle cx="12" cy="8.9" r="3.65" fill="none" stroke="#0b2a57" stroke-opacity=".35" stroke-width="3.1"/>
+  <circle cx="12" cy="8.9" r="3.65" fill="none" stroke="#fff" stroke-width="2.4"/>
+  <circle cx="12" cy="8.9" r="3.65" fill="none" stroke="#f6a623" stroke-width="2.4"
+          stroke-dasharray="2.867 2.867" stroke-dashoffset="1.43" transform="rotate(-45 12 8.9)"/>
+</svg>

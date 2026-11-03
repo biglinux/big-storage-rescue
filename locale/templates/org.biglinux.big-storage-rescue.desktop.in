@@ -1,0 +1,23 @@
+[Desktop Entry]
+Type=Application
+Name=Big Storage Rescue
+GenericName=Storage diagnosis and file rescue
+Comment=Find out what is wrong with a drive, why it cannot be written to or removed, and rescue your files from it
+Exec=/usr/bin/big-storage-rescue --gui
+StartupWMClass=org.biglinux.big-storage-rescue
+StartupNotify=true
+Icon=big-storage-rescue
+Terminal=false
+Categories=System;Filesystem;
+Keywords=disk;drive;usb;ssd;nvme;sd;read-only;busy;eject;unmount;recover;recovery;rescue;backup;image;ddrescue;testdisk;photorec;smart;health;storage;diagnostics;
+Actions=storageDiagnostics;recoverFiles;
+
+[Desktop Action storageDiagnostics]
+Name=Why can't I write to a device?
+Icon=dialog-information
+Exec=/usr/bin/big-storage-rescue --gui-diagnose
+
+[Desktop Action recoverFiles]
+Name=Recover files
+Icon=document-save
+Exec=/usr/bin/big-storage-rescue --gui-rescue
