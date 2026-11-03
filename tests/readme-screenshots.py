@@ -9,6 +9,7 @@ appears on the screen.
 Usage: python3 tests/readme-screenshots.py [DIR] [--dark]     (default: docs/images)
 """
 
+import json
 import os
 import pathlib
 import struct
@@ -18,7 +19,7 @@ import zlib
 os.environ["LANGUAGE"] = os.environ.get("SHOTS_LANGUAGE", "C")
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
-from gui_support import (Adw, GB, REPO, WORK, backup, drive, fix, make_app, pump,  # noqa: E402
+from gui_support import (FIX, Adw, GB, REPO, WORK, backup, drive, fix, make_app, pump,  # noqa: E402
                          seagate, shot, system_disk, vol)
 
 DARK = "--dark" in sys.argv
@@ -110,6 +111,26 @@ shot(win, OUT / f"app-drive{suffix}.png")
 win.show_device(SEA_UNMOUNTED["stable_id"], "health")
 pump(timeout=0.6)
 shot(win, OUT / f"app-health{suffix}.png")
+
+# The drive the computer started from: healthy, but the system on it is
+# running out of room (docs/18)
+SEA_DIAG = json.loads((FIX / "diagnose.json").read_text())
+fix("diagnose", {"device": SYS, "tools": {"smartctl": True}, "kernel": [], "volumes": [], "holds_system": True, "advice": [],
+                 "system": [{"key": "space-low", "level": "attention",
+                             "text": "The system is running out of space on /, /home: 38 GB free of 999 GB.",
+                             "help": "Free space: empty the trash, move large files to another drive and remove programs you do not use. "
+                                     "With Btrfs, old snapshots (Timeshift, Snapper) keep deleted files: removing old snapshots gives that space back."},
+                            {"key": "btrfs-unallocated", "level": "attention",
+                             "text": "The Btrfs filesystem of /, /home has almost no unallocated space left (612 MB). "
+                                     "It can then report 'no space left' even when free space is shown.",
+                             "help": "Remove old snapshots and files first. Then, if the drive itself reports no problems, an administrator "
+                                     "can compact the filesystem while the system runs: sudo btrfs balance start -dusage=50 /"}]})
+win.show_device(SYS["stable_id"], "health")
+pump(timeout=0.6)
+shot(win, OUT / f"app-health-system{suffix}.png")
+fix("diagnose", SEA_DIAG)
+win.show_device(SEA_UNMOUNTED["stable_id"], "health")
+pump(timeout=0.4)
 
 win.open_wizard(win.device_by_id(SEA_UNMOUNTED["stable_id"]), win.device_by_id(SEA_UNMOUNTED["stable_id"]).content_volumes[0])
 pump(timeout=0.3)
