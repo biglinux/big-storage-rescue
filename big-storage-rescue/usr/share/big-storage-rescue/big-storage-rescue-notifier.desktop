@@ -1,8 +1,26 @@
 [Desktop Entry]
 Type=Application
+Name[de]=Benachrichtigungsdienst von Big Storage Rescue
+Name[es]=Notificador de Big Storage Rescue
+Name[fr]=Notificateur de Big Storage Rescue
+Name[it]=Servizio di notifica di Big Storage Rescue
+Name[ja]=Big Storage Rescue 通知機能
+Name[pl]=Powiadamianie Big Storage Rescue
 Name[pt_BR]=Notificador do Big Storage Rescue
+Name[ru]=Служба уведомлений Big Storage Rescue
+Name[tr]=Big Storage Rescue bildiricisi
+Name[zh_CN]=Big Storage Rescue 通知程序
 Name=Big Storage Rescue notifier
+Comment[de]=Erklärt, warum auf ein Speichergerät nicht geschrieben werden kann
+Comment[es]=Explica por qué no se puede escribir en un dispositivo de almacenamiento
+Comment[fr]=Explique pourquoi il est impossible d’écrire sur un périphérique de stockage
+Comment[it]=Spiega perché non è possibile scrivere su un dispositivo di archiviazione
+Comment[ja]=ストレージデバイスに書き込めない理由を説明します
+Comment[pl]=Wyjaśnia, dlaczego nie można zapisywać na urządzeniu pamięci masowej
 Comment[pt_BR]=Explica por que um dispositivo de armazenamento não aceita gravação
+Comment[ru]=Объясняет, почему на устройство хранения нельзя записывать
+Comment[tr]=Bir depolama aygıtına neden yazılamadığını açıklar
+Comment[zh_CN]=解释存储设备为何无法写入
 Comment=Explains why a storage device cannot be written to
 Exec=/usr/bin/big-storage-rescue --notifier
 Icon=big-storage-rescue

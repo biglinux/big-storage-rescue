@@ -1,0 +1,64 @@
+source	translation	where the choice comes from
+drive	ドライブ	udisks2 ja, gtk40 (ドライブの安全な取り出し), big-mount ja
+device	デバイス	kio6/devicenotifier/udisks2 ja
+disk	ディスク	gtk40/udisks2 ja
+volume	ボリューム	gtk40 ja (ボリュームをアンマウントできません)
+partition	パーティション	gparted/big-mount ja
+filesystem	ファイルシステム	udisks2/gparted ja
+mount / mounted	マウント / マウント済み	big-mount ja, gparted ja
+unmount	アンマウント	gtk40/kio6/udisks2/gparted ja
+read-only	読み取り専用	gparted/big-mount ja
+writing enabled / mount with writing	書き込み可能 / 書き込みを有効にして (再マウント)	GNOME ja usage of 書き込み
+write-protect / block writing on the device (protect)	書き込み禁止 / デバイスへの書き込みを禁止 / 保護	common Japanese UI (書き込み禁止スイッチ); policy text uses 保護
+safely remove / safe removal	安全に取り外す / 安全な取り外し	kio6 (安全に取り外す), devicenotifier (安全に取り外せます)
+disconnect (physically)	取り外す	devicenotifier ja
+power off	電源を切る	udisks2 ja
+busy (kept busy by programs)	使用中 (使用中にしている)	chosen over KDE ビジー for plain language
+health	健康状態	big-mount ja (ドライブの健康状態)
+Healthy / Good / Poor / Critical	正常 / 良好 / 不良 / 危険	one-word levels; plain Japanese status words
+Attention	注意	common UI
+critical alerts	重大な警告	udisks2/NVMe 'critical warning' wording
+SMART	SMART (SMART ステータス)	brand, untranslated
+rescue (file rescue)	救出 (ファイル救出)	big-mount ja (ファイル救出)
+recover / recovery	復元	common Japanese data-recovery UI (ファイルの復元)
+data recovery professional	データ復旧の専門業者	common Japanese phrase
+copy	コピー	gtk40 ja
+source	コピー元	common Japanese file UI
+destination	保存先	common Japanese file UI
+resume	再開	gtk40 ja
+pause / paused	一時停止 / 一時停止中	gtk40 ja
+cancel / cancelled	キャンセル / キャンセル済み	gtk40 ja
+job	ジョブ	gtk40 ja (ジョブ)
+work (in progress)	作業	plain Japanese
+disk image	ディスクイメージ	common Japanese UI
+map (of a disk image)	マップ (ディスクのマップ)	ddrescue mapfile
+unreadable areas	読み取れない領域	plain Japanese
+retries / retry	再試行	gtk/kio ja
+salvage / Save what can be read	読み取れる部分を保存	plain Japanese, matches action label
+partly recovered files	一部復元されたファイル	plain Japanese
+search by content	内容による検索 / 内容で検索	plain Japanese
+found files / candidates	見つかったファイル / 候補	plain Japanese
+lost partitions	失われたパーティション	plain Japanese
+Quick analysis / Deep analysis	クイック分析 / 詳細分析	common Japanese recovery-tool UI
+manifest	マニフェスト	technical term kept (SHA-256 list)
+set aside (stalled files)	保留	plain Japanese
+stalled / does not advance	進まない	plain Japanese
+verify / check (copy result)	検証	common Japanese UI
+check (filesystem)	チェック	KDE Partition Manager ja (チェック), big-mount ja
+dry run	テスト実行 (--dry-run)	plain Japanese
+encrypted	暗号化された / 暗号化済み	udisks2 ja
+unlock / lock	ロック解除 / ロック	udisks2/GNOME ja
+passphrase	パスフレーズ	GNOME ja
+running system	実行中のシステム	plain Japanese
+notifier	通知機能	plain Japanese
+password prompt / authentication	パスワード / 認証が必要です	udisks2 ja (〜するには、認証が必要です)
+terminal	端末	GNOME ja
+file manager	ファイルマネージャー	GNOME/KDE ja
+folder / home folder	フォルダー / ホームフォルダー	GNOME/KDE ja (長音付き)
+swap space	スワップ領域	common Japanese UI
+kernel log	カーネルログ	common
+log	ログ	gtk ja
+report	レポート	common
+Usage:	使い方:	big-mount ja
+(none)	(なし)	big-mount ja
+quotes	「」	big-mount ja / GNOME ja

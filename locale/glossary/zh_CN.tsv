@@ -1,0 +1,66 @@
+source	translation	where the choice comes from
+drive	驱动器	udisks2 zh_CN ("Power off drive" = 驱动器断电), gnome-disk-utility convention, devicenotifier "_Safely Remove Drive" = 安全移除驱动器
+device	设备	devicenotifier/kded_devicenotifications ("Device mounted" = 设备已挂载)
+disk	磁盘	udisks2/gparted; "hard disk" = 硬盘 (devicenotifier)
+volume	卷	gparted/udisks2 ("Storage Volume" = 存储卷, "LVM2 Physical Volume" = LVM2 物理卷)
+partition	分区	gparted, udisks2
+partition table	分区表	gparted
+filesystem	文件系统	gparted/udisks2 ("File System" = 文件系统)
+mount	挂载	udisks2, devicenotifier, kio6
+unmount	卸载	udisks2 ("mount/unmount" = 挂载/卸载), udiskie "Unmount {0}" = 卸载 {0}
+mounted / not mounted	已挂载 / 未挂载	kded_devicenotifications ("Device mounted" = 设备已挂载)
+read-only	只读	gparted/kio6 ("Read-only" = 只读)
+mount with writing enabled	以可写方式挂载	project choice (pairs with 以只读方式挂载)
+write-protect / block writing on the device	写保护 / 在设备上禁止写入	project choice; "writing blocked on the device" = 设备已禁止写入
+safely remove / safe removal	安全移除	devicenotifier ("Safely remove" = 安全移除), kded_devicenotifications
+power off (a drive)	断电 / 为驱动器断电	udisks2 ("Power off drive" = 驱动器断电)
+disconnect	断开连接 / 断开	common desktop usage
+busy (device kept busy)	正忙 / 占用	devicenotifier ("as it is busy" = 正忙); "programs that keep it busy" = 占用它的程序
+in use	正在使用	gparted ("In Use" = 正在使用)
+health	健康状况	project choice (no peer); Healthy 健康, Good 良好, Poor 较差, Critical 危急
+Attention (label)	注意	project choice
+SMART	SMART	brand/acronym kept (udisks2 "Run SMART self-test" = 运行 SMART 自检)
+SMART verdict / Overall verdict	SMART 结论 / 总体结论	project choice
+sector	扇区	gparted
+rescue (files)	抢救	project choice ("data rescue" = 数据抢救); app name kept in English
+recover / recovery	恢复	gparted/kio6 usage
+copy	复制	gtk40/dolphin
+source / destination	源 / 目标	gparted ("source partition" = 源分区), kio6/dolphin ("Destination" = 目标)
+resume	继续	kio6 ("Could Not Resume File Transfer" = 无法继续文件传输); "Interrupted (it can be resumed)" = 已中断（可以继续）
+pause / paused	暂停 / 已暂停	kio6, cups ("Paused" = 已暂停)
+cancel / cancelled	取消 / 已取消	gtk40
+job	任务	kio6/cups ("Rejecting Jobs" = 拒绝任务)
+disk image	磁盘映像	gnome-disk-utility convention (创建磁盘映像); udiskie uses 镜像 for disc images, GNOME term preferred
+map (ddrescue mapfile)	映射文件 / 磁盘映射	project choice: "Map of the disk" = 磁盘映射
+unreadable areas	无法读取的区域	project choice
+retries / try again	重试	gtk40/kio6 ("Retry" = 重试)
+salvage / Save what can be read	保存可读部分	project choice; "Readable parts of files" = 文件的可读部分
+partly recovered files	部分恢复的文件	project choice
+search by content (PhotoRec carving)	按内容搜索	project choice
+found files / Files found	找到的文件	project choice
+candidates found	找到的候选文件	project choice
+lost partitions	丢失的分区	project choice
+manifest (SHA-256 list)	清单	project choice ("Manifest of %s files" = %s 个文件的清单)
+set aside (files that did not advance)	搁置 / 已搁置	project choice
+stalled / does not advance	停滞 / 没有进展	project choice
+verify / check (result)	校验	project choice for rsync/content checks; generic "check" = 检查 (gparted "Check" = 检查)
+dry run	试运行	project choice (--dry-run kept in English)
+encrypted	已加密	udisks2/gparted ("Encrypted" = 已加密)
+unlock / locked	解锁 / 锁定	udisks2 ("Unlock an encrypted device" = 解锁加密设备)
+passphrase	密码	udisks2 style (加密设备的密钥/密码); 密码 is the plain everyday word
+running system	当前运行的系统	project choice
+notifier (read-only notifier)	通知程序	project choice
+password prompt / authentication	身份验证	polkit/udisks2 ("…需要身份验证")
+administrator password	管理员密码	common desktop usage
+swap space	交换空间	gparted ("Activating swap on %1" = 正在激活 %1 上的交换空间)
+free space / free	可用空间 / 可用	devicenotifier ("Free Space" = 剩余空间); GNOME Files uses 可用, chosen for "%s free"
+home folder	主文件夹	GNOME/KDE zh_CN
+file manager	文件管理器	KDE/GNOME zh_CN
+kernel log	内核日志	common usage
+storage stack	存储组件	project choice (plain wording)
+package	软件包	pacman/KDE zh_CN
+repository	软件仓库	pacman/Discover zh_CN
+migrate / bring over (Big-Mount 2.x)	迁移	project choice
+Fast Startup (Windows)	快速启动	Microsoft Windows zh_CN UI term
+KDE Partition Manager (Check)	KDE 分区管理器（检查）	partitionmanager zh_CN app name and "Check" = 检查 (gparted)
+Keywords (.desktop)	English keywords kept + Chinese words added	CONTEXT.md allows keeping English search words

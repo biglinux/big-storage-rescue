@@ -109,8 +109,9 @@ expect=(
     "644 usr/share/polkit-1/actions/org.biglinux.big-storage-rescue.policy"
     "644 usr/share/icons/hicolor/scalable/apps/big-storage-rescue.svg"
     "644 usr/share/metainfo/org.biglinux.big-storage-rescue.metainfo.xml"
-    "644 usr/share/locale/pt_BR/LC_MESSAGES/big-storage-rescue.mo"
 )
+# One catalog per language of locale/LINGUAS
+while read -r l; do expect+=("644 usr/share/locale/$l/LC_MESSAGES/big-storage-rescue.mo"); done < locale/LINGUAS
 for e in "${expect[@]}"; do
     mode="${e%% *}" f="${e#* }"
     check "$f ($mode)" bash -c '[ -f "$1/$2" ] && [ "$(stat -c %a "$1/$2")" = "$3" ]' _ "$P" "$f" "$mode"

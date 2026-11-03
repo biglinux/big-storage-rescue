@@ -15,7 +15,7 @@
   <a href="https://www.biglinux.com.br"><img src="https://img.shields.io/badge/made%20for-BigLinux-0c7bdc" alt="Made for BigLinux"></a>
   <img src="https://img.shields.io/badge/Arch%20%7C%20Manjaro-any-1793d1" alt="Arch and Manjaro">
   <img src="https://img.shields.io/badge/GTK%204-Libadwaita-4a86cf" alt="GTK 4 and Libadwaita">
-  <img src="https://img.shields.io/badge/languages-English%20%7C%20Portugu%C3%AAs%20(BR)-success" alt="English and Brazilian Portuguese">
+  <img src="https://img.shields.io/badge/languages-11-success" alt="11 languages: English, Brazilian Portuguese, Spanish, German, French, Italian, Russian, Simplified Chinese, Japanese, Polish, Turkish">
 </p>
 
 <p align="center">
@@ -827,13 +827,14 @@ locale/update-pot.sh && locale/compile.sh                   # after translating 
 
 ### Packages
 
-`.github/workflows/translate-and-build-package.yml` is the workflow of
-BigLinux packages, as in biglinux-settings. On every push to a branch without
-a `/` (`main`, `stable-…`), the BigLinux translator machine-translates the
-messages into its languages and commits them. Then the BigLinux build service
-is asked to build the package and send it to the repository. Work branches
-(`feature/x`, `fix/y`) never trigger it. pt_BR is translated by hand here
-(`locale/`) and is not replaced.
+`.github/workflows/build-package.yml`, from the BigLinux package template,
+asks the BigLinux build service to build the package and send it to the
+repository, on every push to a branch without a `/` (`main`, `stable-…`).
+Work branches (`feature/x`, `fix/y`) never trigger it. There is no machine
+translation in CI: the catalogs are translated and reviewed in `locale/`, and
+`locale/compile.sh` puts them in the package tree. Besides English and
+Brazilian Portuguese: Spanish, German, French, Italian, Russian, Simplified
+Chinese, Japanese, Polish and Turkish (docs/13).
 
 Architecture and decisions: [docs/03](docs/03-architecture.md). The history of
 the code, from Big-Mount 2.0 to 2.6, is kept in git and in

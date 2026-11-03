@@ -28,10 +28,12 @@ desktop org.biglinux.big-storage-rescue.desktop.in usr/share/applications/org.bi
 # of the person who turns the notifier on
 desktop big-storage-rescue-notifier.desktop.in usr/share/big-storage-rescue/big-storage-rescue-notifier.desktop
 desktop big-storage-rescue-servicemenu.desktop.in usr/share/kio/servicemenus/big-storage-rescue.desktop
-# msgfmt writes BCP 47 tags (pt-BR); polkit matches POSIX locale names
-# (pt_BR, then pt), which is also what the policy always used
+# msgfmt writes BCP 47 tags (pt-BR, zh-Hans-CN with the script); polkit
+# matches POSIX locale names (pt_BR, then pt), which is also what the policy
+# always used
 policy="$dest/usr/share/polkit-1/actions/org.biglinux.big-storage-rescue.policy"
 # locale/its holds the polkit ITS rules, for systems without polkit (CI)
 GETTEXTDATADIRS="$PWD/locale${GETTEXTDATADIRS:+:$GETTEXTDATADIRS}" \
     msgfmt --xml --template locale/templates/org.biglinux.big-storage-rescue.policy.in -d locale -o "$policy"
-sed -i -E 's/xml:lang="([a-z]{2,3})-([A-Z]{2})"/xml:lang="\1_\2"/g' "$policy"
+sed -i -E -e 's/xml:lang="([a-z]{2,3})-[A-Z][a-z]{3}-([A-Z]{2})"/xml:lang="\1_\2"/g' \
+    -e 's/xml:lang="([a-z]{2,3})-([A-Z]{2})"/xml:lang="\1_\2"/g' "$policy"

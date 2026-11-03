@@ -6,9 +6,27 @@
   <!-- Read-only: lists the processes of every user that keep one mount point busy -->
   <action id="org.biglinux.big-storage-rescue.inspect-processes">
     <description>Show the programs of all users that keep a storage device busy</description>
+    <description xml:lang="zh_CN">显示所有用户中占用存储设备的程序</description>
+    <description xml:lang="tr">Bir depolama aygıtını meşgul eden, tüm kullanıcılara ait programları göster</description>
+    <description xml:lang="ru">Просмотр программ всех пользователей, которые занимают устройство хранения</description>
     <description xml:lang="pt_BR">Mostrar os programas de todos os usuários que mantêm um dispositivo de armazenamento ocupado</description>
+    <description xml:lang="pl">Wyświetlenie programów wszystkich użytkowników, które zajmują urządzenie pamięci masowej</description>
+    <description xml:lang="ja">ストレージデバイスを使用中にしている、すべてのユーザーのプログラムを表示</description>
+    <description xml:lang="it">Mostra i programmi di tutti gli utenti che tengono occupato un dispositivo di archiviazione</description>
+    <description xml:lang="fr">Afficher les programmes de tous les utilisateurs qui maintiennent un périphérique de stockage occupé</description>
+    <description xml:lang="es">Mostrar los programas de todos los usuarios que mantienen ocupado un dispositivo de almacenamiento</description>
+    <description xml:lang="de">Die Programme aller Benutzer anzeigen, die ein Speichergerät belegen</description>
     <message>Authentication is required to see the programs of all users that are using this device</message>
+    <message xml:lang="zh_CN">查看所有用户中正在使用此设备的程序需要身份验证</message>
+    <message xml:lang="tr">Bu aygıtı kullanan, tüm kullanıcılara ait programları görmek için kimlik doğrulaması gerekli</message>
+    <message xml:lang="ru">Для просмотра программ всех пользователей, использующих это устройство, требуется аутентификация</message>
     <message xml:lang="pt_BR">É necessário autenticar-se para ver os programas de todos os usuários que estão usando este dispositivo</message>
+    <message xml:lang="pl">Wymagane jest uwierzytelnienie, aby zobaczyć programy wszystkich użytkowników, które używają tego urządzenia</message>
+    <message xml:lang="ja">このデバイスを使用している、すべてのユーザーのプログラムを表示するには、認証が必要です</message>
+    <message xml:lang="it">È richiesto autenticarsi per vedere i programmi di tutti gli utenti che stanno usando questo dispositivo</message>
+    <message xml:lang="fr">Une authentification est nécessaire pour voir les programmes de tous les utilisateurs qui utilisent ce périphérique</message>
+    <message xml:lang="es">Se requiere autenticación para ver los programas de todos los usuarios que están usando este dispositivo</message>
+    <message xml:lang="de">Legitimierung ist erforderlich, um die Programme aller Benutzer zu sehen, die dieses Gerät verwenden</message>
     <icon_name>big-storage-rescue</icon_name>
     <defaults>
       <allow_any>auth_admin</allow_any>
@@ -23,9 +41,27 @@
        of its own (bsr-drive-helper refuses "image" without it) -->
   <action id="org.biglinux.big-storage-rescue.image">
     <description>Make a disk image of a storage device</description>
+    <description xml:lang="zh_CN">制作存储设备的磁盘映像</description>
+    <description xml:lang="tr">Bir depolama aygıtının disk görüntüsünü oluştur</description>
+    <description xml:lang="ru">Создание образа диска устройства хранения</description>
     <description xml:lang="pt_BR">Fazer uma imagem de disco de um dispositivo de armazenamento</description>
+    <description xml:lang="pl">Utworzenie obrazu dysku urządzenia pamięci masowej</description>
+    <description xml:lang="ja">ストレージデバイスのディスクイメージを作成</description>
+    <description xml:lang="it">Crea un'immagine disco di un dispositivo di archiviazione</description>
+    <description xml:lang="fr">Créer une image disque d’un périphérique de stockage</description>
+    <description xml:lang="es">Crear una imagen de disco de un dispositivo de almacenamiento</description>
+    <description xml:lang="de">Ein Datenträgerabbild eines Speichergeräts erstellen</description>
     <message>Authentication is required to make a disk image of this storage device. The image holds everything on it.</message>
+    <message xml:lang="zh_CN">制作此存储设备的磁盘映像需要身份验证。映像会包含其中的全部内容。</message>
+    <message xml:lang="tr">Bu depolama aygıtının disk görüntüsünü oluşturmak için kimlik doğrulaması gerekli. Görüntü, aygıttaki her şeyi içerir.</message>
+    <message xml:lang="ru">Для создания образа диска этого устройства хранения требуется аутентификация. Образ содержит всё, что есть на устройстве.</message>
     <message xml:lang="pt_BR">É necessário autenticar-se para fazer uma imagem de disco deste dispositivo de armazenamento. A imagem contém tudo o que há nele.</message>
+    <message xml:lang="pl">Wymagane jest uwierzytelnienie, aby utworzyć obraz dysku tego urządzenia pamięci masowej. Obraz zawiera wszystko, co się na nim znajduje.</message>
+    <message xml:lang="ja">このストレージデバイスのディスクイメージを作成するには、認証が必要です。イメージにはデバイス上のすべてが含まれます。</message>
+    <message xml:lang="it">È richiesto autenticarsi per creare un'immagine disco di questo dispositivo di archiviazione. L'immagine contiene tutto il suo contenuto.</message>
+    <message xml:lang="fr">Une authentification est nécessaire pour créer une image disque de ce périphérique de stockage. L’image contient tout ce qu’il renferme.</message>
+    <message xml:lang="es">Se requiere autenticación para crear una imagen de disco de este dispositivo de almacenamiento. La imagen contiene todo lo que hay en él.</message>
+    <message xml:lang="de">Legitimierung ist erforderlich, um ein Datenträgerabbild dieses Speichergeräts zu erstellen. Das Abbild enthält alles, was sich darauf befindet.</message>
     <icon_name>big-storage-rescue</icon_name>
     <defaults>
       <allow_any>auth_admin</allow_any>
@@ -37,9 +73,27 @@
   <!-- Blocks or allows writing on a device, reads SMART, lists partitions: never changes data on it -->
   <action id="org.biglinux.big-storage-rescue.drive-helper">
     <description>Protect a storage device, read its health or its partitions</description>
+    <description xml:lang="zh_CN">保护存储设备，读取其健康状况或分区</description>
+    <description xml:lang="tr">Bir depolama aygıtını koru, sağlık durumunu ya da bölümlerini oku</description>
+    <description xml:lang="ru">Защита устройства хранения, чтение сведений о его здоровье или разделах</description>
     <description xml:lang="pt_BR">Proteger um dispositivo de armazenamento, ler a saúde dele ou as partições dele</description>
+    <description xml:lang="pl">Ochrona urządzenia pamięci masowej, odczyt jego stanu zdrowia lub partycji</description>
+    <description xml:lang="ja">ストレージデバイスの保護、健康状態またはパーティションの読み取り</description>
+    <description xml:lang="it">Proteggi un dispositivo di archiviazione, leggine lo stato di salute o le partizioni</description>
+    <description xml:lang="fr">Protéger un périphérique de stockage, lire sa santé ou ses partitions</description>
+    <description xml:lang="es">Proteger un dispositivo de almacenamiento, leer su salud o sus particiones</description>
+    <description xml:lang="de">Ein Speichergerät schützen, seinen Zustand oder seine Partitionen lesen</description>
     <message>Authentication is required to protect this storage device, read its health or its partitions</message>
+    <message xml:lang="zh_CN">保护此存储设备、读取其健康状况或分区需要身份验证</message>
+    <message xml:lang="tr">Bu depolama aygıtını korumak, sağlık durumunu ya da bölümlerini okumak için kimlik doğrulaması gerekli</message>
+    <message xml:lang="ru">Для защиты этого устройства хранения или чтения сведений о его здоровье или разделах требуется аутентификация</message>
     <message xml:lang="pt_BR">É necessário autenticar-se para proteger este dispositivo de armazenamento, ler a saúde dele ou as partições dele</message>
+    <message xml:lang="pl">Wymagane jest uwierzytelnienie, aby chronić to urządzenie pamięci masowej, odczytać jego stan zdrowia lub partycje</message>
+    <message xml:lang="ja">このストレージデバイスを保護したり、健康状態やパーティションを読み取ったりするには、認証が必要です</message>
+    <message xml:lang="it">È richiesto autenticarsi per proteggere questo dispositivo di archiviazione, leggerne lo stato di salute o le partizioni</message>
+    <message xml:lang="fr">Une authentification est nécessaire pour protéger ce périphérique de stockage, lire sa santé ou ses partitions</message>
+    <message xml:lang="es">Se requiere autenticación para proteger este dispositivo de almacenamiento, leer su salud o sus particiones</message>
+    <message xml:lang="de">Legitimierung ist erforderlich, um dieses Speichergerät zu schützen, seinen Zustand oder seine Partitionen zu lesen</message>
     <icon_name>big-storage-rescue</icon_name>
     <defaults>
       <allow_any>auth_admin</allow_any>
