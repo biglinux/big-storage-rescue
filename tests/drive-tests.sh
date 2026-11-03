@@ -547,6 +547,14 @@ JS=([STATE]=running [PID]="$$" [PID_START]=1); bsr_job_state_save "$d"
 bsr_job_state_load "$d"; check "a reused PID is not the supervisor" eq "${JS[STATE]}" interrupted
 JS=([STATE]=pending [PID]=""); bsr_job_state_save "$d"
 bsr_job_state_load "$d"; check "pending, before the supervisor starts" eq "${JS[STATE]}" pending
+# A helper of rsync left to an init that never reaps it (a container) is a
+# zombie: a pause must not wait for it forever
+bash -c 'sleep 0.1 & echo "$!" > "$1"; exec sleep 6' _ "$WORK/zombie" & holder=$!
+sleep 0.5; zpid="$(cat "$WORK/zombie")"
+bsr_proc_state "$zpid"; check "a helper nobody reaps is a zombie" eq "$REPLY" Z
+t0=$SECONDS; bsr_job_wait_gone "$zpid"
+check "  ... and waiting for it ends at once" test $((SECONDS - t0)) -le 2
+kill "$holder" 2>/dev/null; wait "$holder" 2>/dev/null
 JS=([STATE]=completed); bsr_job_exit; check "exit: completed 0" eq "$?" 0
 JS=([STATE]=needs-attention [REASON]=files-left); bsr_job_exit; check "exit: files left 22" eq "$?" 22
 JS=([STATE]=needs-attention [REASON]=no-space); bsr_job_exit; check "exit: no space 21" eq "$?" 21

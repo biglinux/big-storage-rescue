@@ -733,19 +733,27 @@ bsr_job_pass() {
    # Stopped here, never with SIGKILL: rsync removes its temporary file, and
    # exits as soon as a read stuck in the driver comes back. Its helpers end
    # after it; they are listed first, as they get another parent when it exits
-   local kids="" k
+   local kids=()
    if kill -0 "$pid" 2>/dev/null; then
-      kids="$(pgrep -P "$pid")"
+      mapfile -t kids < <(pgrep -P "$pid")
       kill -TERM "$pid" 2>/dev/null
    fi
    wait "$pid"
    local rc=$?
-   for k in $kids; do
-      while kill -0 "$k" 2>/dev/null; do sleep 1; done
-   done
+   bsr_job_wait_gone "${kids[@]}"
    bsr_job_read_log
    JS[STUCK_SECONDS]=0
    return "$rc"
+}
+
+# bsr_job_wait_gone PID...: wait until processes that are not our children
+# have ended. One whose new parent never reaps it (the init of a container)
+# stays a zombie: it has ended too
+bsr_job_wait_gone() {
+   local k
+   for k in "$@"; do
+      while bsr_proc_state "$k" && [ "$REPLY" != Z ]; do sleep 1; done
+   done
 }
 
 # The rsync that holds source files open is the sender: the one we started
