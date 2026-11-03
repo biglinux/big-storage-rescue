@@ -518,6 +518,9 @@ check "a line break is refused" eq "$?" 1
 bsr_job_conf_load "$WORK"; check "  ... and the saved job is unchanged" eq "${JC[DEST]}" '/x/backup='
 
 begin "an image job finds its source again"
+has_block_check() { declare -F bsr_is_block > /dev/null && ! bsr_is_block /dev/null && ! bsr_is_block "$WORK"; }
+check "the engine has its own block device check" has_block_check
+real_is_block="$(declare -f bsr_is_block)"
 bsr_is_block() { :; }
 JC=([DEVICE]=/dev/sdz1 [SERIAL]=WD1 [PART]=1 [SIZE]=500000000000); bsr_rec_image_device
 check "a renamed partition is found again" eq "$REPLY" /dev/sda1
@@ -525,10 +528,20 @@ JC=([DEVICE]=/dev/sda [SERIAL]=WD1 [PART]="" [SIZE]=1000000000000); bsr_rec_imag
 check "the whole disk" eq "$REPLY" /dev/sda
 JC=([DEVICE]=/dev/sda1 [SERIAL]=GONE [PART]=1 [SIZE]=500000000000); bsr_rec_image_device
 check "a missing serial: no name fallback" eq "$REPLY" ""
-bsr_is_block() { [ -b "$1" ]; }
+eval "$real_is_block"
 out="$(ddrescue() { :; }; bsr_resolve() { R_DEV="$1"; }; bsr_rec_check_dest() { REC_ERR=""; }
    : > "$WORK/old.img"; bsr_rec_image_cmd --source /dev/sda1 --image "$WORK/old.img" --dry-run --json)"
 check "an existing file is never imaged over" grep -q '"error":"image-exists"' <<< "$out"
+bsr_dv_scan; bsr_dv_disks_of /dev/sda1; srcdisk="${DV_DISKS[0]}"
+out="$(ddrescue() { :; }; bsr_resolve() { R_DEV="$1"; }; bsr_rec_check_dest() { REC_ERR=""; }; bsr_path_disks() { BK_DISKS=(/dev/sdq "$srcdisk"); }
+   bsr_rec_image_cmd --source /dev/sda1 --image "$WORK/new.img" --dry-run --json)"
+check "an image on a folder stored on the disk being read (a loop device, LVM): refused" grep -q '"error":"image-same-disk"' <<< "$out"
+out="$(ddrescue() { :; }; bsr_resolve() { R_DEV="$1"; }; bsr_rec_check_dest() { REC_ERR=""; }; bsr_path_disks() { [ "$1" = "$WORK" ]; }
+   bsr_rec_image_cmd --source /dev/sda1 --image "$WORK/new.img" --map /srv/fuse/new.map --dry-run --json)"
+check "  ... and a map on a folder whose disk cannot be told" grep -q '"error":"image-dest-unknown"' <<< "$out"
+out="$(ddrescue() { :; }; bsr_resolve() { R_DEV="$1"; }; bsr_rec_check_dest() { REC_ERR=""; }; bsr_path_disks() { BK_DISKS=(/dev/sdq); }
+   bsr_rec_image_cmd --source /dev/sda1 --image "$WORK/new.img" --dry-run --json)"
+check "  ... another disk goes on to the next check" bash -c '[[ $1 == *'"'"'"error":"no-space"'"'"'* ]]' _ "$out"
 
 begin "jobs: state on disk"
 d="$BSR_JOBS/20261030-140000-abcd"; mkdir -p "$d"
@@ -865,6 +878,9 @@ check "the helper refuses to image the running system" bash -c 'sed -n "/^   ima
 check "  ... and checks again, with the files open" bash -c 'sed -n "/^   __image-opened)/,/^      ;;/p" "$1" | grep -q "^      refuse_system"' _ "$L/bsr-drive-helper"
 check "the step hands its mark to what it runs" eq "$(python3 -I -c "$BSR_OPEN_OWN" "$(id -u)" "$OD/real/h.img" "$OD/real/h.map" "$OD/real/h.map.bak" -- /bin/sh -c 'echo "$BSR_IMAGE_OPENED"')" 1
 check "  ... and the inner verb refuses to run without it (pkexec through the action of the other verbs)" bash -c 'sed -n "/^   __image-opened)/,/^      ;;/p" "$1" | grep -A1 "^      # verb, which keeps" | grep -q "^      \[ \"\${BSR_IMAGE_OPENED:-}\" = 1 \] || die"' _ "$L/bsr-drive-helper"
+check "  ... only when bsr-image-helper started it (the image action)" bash -c 'sed -n "/^   image)/,/^      ;;/p" "$1" | grep -q "^      \[ \"\${BSR_IMAGE_ACTION:-}\" = 1 \] || die"' _ "$L/bsr-drive-helper"
+check "  ... never onto the disk being read: by name, then with the files open" bash -c '[ "$(sed -n "/^   image)/,/^      ;;/p" "$1" | grep -c "^      never_on_source ")" = 1 ] && [ "$(sed -n "/^   __image-opened)/,/^      ;;/p" "$1" | grep -c "^      never_on_source ")" = 1 ]' _ "$L/bsr-drive-helper"
+check "  ... and a disk image goes through bsr-image-helper" bash -c 'grep -q "\[ \"\${1:-}\" = image \] && .*exe=\"\$BSR_LIB_DIR/bsr-image-helper\"" "$1" || grep -q "if \[ \"\${1:-}\" = image \]; then exe=\"\$BSR_LIB_DIR/bsr-image-helper\"; shift; fi" "$1"' _ "$L/drive.sh"
 check "  ... no file of the user is opened by name as root any more" bash -c '! grep -qE "exec \{FD\}[<>]" "$1"' _ "$L/bsr-drive-helper"
 
 begin "files found by content: whole, cut short or damaged, from their structure (integrity.py)"

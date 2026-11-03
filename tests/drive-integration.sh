@@ -653,7 +653,7 @@ STUB
 chmod +x "$SB/ddrescue"
 H="$WORK/ihelper"
 sed -e "s|^BSR_LIB=.*|BSR_LIB=$REPO/big-storage-rescue/usr/lib/big-storage-rescue|" -e "s|^export PATH=.*|export PATH=$SB:/usr/bin:/bin:/usr/sbin:/sbin|" "$REPO/big-storage-rescue/usr/lib/big-storage-rescue/bsr-drive-helper" > "$H"; chmod +x "$H"
-W="$WORK/isudo"; printf '#!/bin/bash\nexec sudo -n env PKEXEC_UID=%s "%s" "$@"\n' "$EUID" "$H" > "$W"; chmod +x "$W"
+W="$WORK/isudo"; printf '#!/bin/bash\nexec sudo -n env BSR_IMAGE_ACTION=1 PKEXEC_UID=%s "%s" "$@"\n' "$EUID" "$H" > "$W"; chmod +x "$W"
 new_img im 32M mkfs.ext4 -q -F -L T_IMG; d="$REPLY"
 need_pair; mkdir -p "$DSTMP/img"
 (
@@ -680,7 +680,7 @@ check "the map belongs to the user" eq "$(stat -c %u "$DSTMP/img/disco.img.map")
 check "cancelling reaches the root process, through the stop file" eq "$(json state < "$WORK/image2.json")" cancelled
 SF="$WORK/fail-bin"; mkdir -p "$SF"; printf '#!/bin/bash\necho "ddrescue: read error" >&2\nexit 1\n' > "$SF/ddrescue"; chmod +x "$SF/ddrescue"
 sed -e "s|^export PATH=.*|export PATH=$SF:/usr/bin:/bin:/usr/sbin:/sbin|" "$H" > "$H.fail"; chmod +x "$H.fail"
-printf '#!/bin/bash\nexec sudo -n env PKEXEC_UID=%s "%s" "$@"\n' "$EUID" "$H.fail" > "$W.fail"; chmod +x "$W.fail"
+printf '#!/bin/bash\nexec sudo -n env BSR_IMAGE_ACTION=1 PKEXEC_UID=%s "%s" "$@"\n' "$EUID" "$H.fail" > "$W.fail"; chmod +x "$W.fail"
 (
    export PATH="$SB:$PATH" BSR_HELPER_CMD="$W.fail"
    out="$("$B" --drive image --source "$d" --image "$DSTMP/img/f.img" --no-wait --json)"; id3="$(job_id <<< "$out")"
@@ -694,8 +694,11 @@ check "dry run" eq "$rc" 0
 new_img tiny 8M mkfs.ext4 -q -F -m 0 -L T_TINY; t="$REPLY"; tm="$(mnt_rw "$t")"; sudo -n chown "$EUID" "$tm"
 PATH="$SB:$PATH" "$B" --drive image --source "$d" --image "$tm/x.img" --dry-run >/dev/null 2>&1; check "no room for the image: exit 21" eq "$?" 21
 umnt "$t"
-sudo -n "$H" image "$d" /etc/x.img /etc/x.map 0 /etc/stop >/dev/null 2>&1; check "the helper refuses a folder that is not the user's" eq "$?" 2
-sudo -n "$H" image "$d" "$DSTMP/img/l.img" "$DSTMP/img/l.map" 9 "$DSTMP/img/s" >/dev/null 2>&1; check "  ... and absurd retries" eq "$?" 2
+sudo -n env PKEXEC_UID="$EUID" "$H" image "$d" "$DSTMP/img/n.img" "$DSTMP/img/n.map" 0 "$DSTMP/img/s" > "$WORK/noact.out" 2>&1
+check "the helper refuses an image not started by bsr-image-helper (the action of the other verbs)" \
+   bash -c '[ "$1" = 2 ] && grep -q "started by bsr-image-helper" "$2" && [ ! -e "$3" ]' _ "$?" "$WORK/noact.out" "$DSTMP/img/n.img"
+sudo -n env BSR_IMAGE_ACTION=1 PKEXEC_UID="$EUID" "$H" image "$d" /etc/x.img /etc/x.map 0 /etc/stop >/dev/null 2>&1; check "the helper refuses a folder that is not the user's" eq "$?" 2
+sudo -n env BSR_IMAGE_ACTION=1 PKEXEC_UID="$EUID" "$H" image "$d" "$DSTMP/img/l.img" "$DSTMP/img/l.map" 9 "$DSTMP/img/s" >/dev/null 2>&1; check "  ... and absurd retries" eq "$?" 2
 # The folder is the user's: while root works, the names become links to a file of root
 victim="$WORK/victim"; sudo -n sh -c 'umask 077; echo secret > "$1"' _ "$victim"
 SR="$WORK/race-bin"; mkdir -p "$SR"
@@ -703,7 +706,7 @@ SR="$WORK/race-bin"; mkdir -p "$SR"
 printf '#!/bin/bash\nfor n in "%s" "%s" "%s"; do rm -f -- "$n"; ln -s -- "%s" "$n"; done\necho pwned >> "${@: -2:1}"; echo pwned >> "${@: -1}"\nsleep 3\n' \
    "$DSTMP/img/race.img" "$DSTMP/img/race.img.map" "$DSTMP/img/race.img.map.bak" "$victim" > "$SR/ddrescue"; chmod +x "$SR/ddrescue"
 sed -e "s|^export PATH=.*|export PATH=$SR:/usr/bin:/bin:/usr/sbin:/sbin|" "$H" > "$H.race"; chmod +x "$H.race"
-sudo -n env PKEXEC_UID="$EUID" "$H.race" image "$d" "$DSTMP/img/race.img" "$DSTMP/img/race.img.map" 0 "$DSTMP/img/race.stop" >/dev/null 2>&1
+sudo -n env BSR_IMAGE_ACTION=1 PKEXEC_UID="$EUID" "$H.race" image "$d" "$DSTMP/img/race.img" "$DSTMP/img/race.img.map" 0 "$DSTMP/img/race.stop" >/dev/null 2>&1
 check "names swapped for links during the run: root's file keeps its owner and mode" \
    eq "$(sudo -n stat -c '%u %a' -- "$victim")" "0 600"
 check "  ... and its content" eq "$(sudo -n cat -- "$victim")" secret
@@ -714,18 +717,18 @@ sed -e "s|^export PATH=.*|export PATH=$SS:/usr/bin:/bin:/usr/sbin:/sbin|" "$H" >
 printf '# Mapfile\n0x00100000     ?               1\n0x00000000  0x00100000  +\n0x00100000  0x01F00000  ?\n' > "$DSTMP/img/cut.img.map.bak"
 printf '# Mapfile\n0x00200000     ?               1\n0x00000000  0x002' > "$DSTMP/img/cut.img.map"
 : > "$DSTMP/img/cut.img"
-sudo -n env PKEXEC_UID="$EUID" "$H.seen" image "$d" "$DSTMP/img/cut.img" "$DSTMP/img/cut.img.map" 0 "$DSTMP/img/cut.stop" >/dev/null 2>&1
+sudo -n env BSR_IMAGE_ACTION=1 PKEXEC_UID="$EUID" "$H.seen" image "$d" "$DSTMP/img/cut.img" "$DSTMP/img/cut.img.map" 0 "$DSTMP/img/cut.stop" >/dev/null 2>&1
 check "a map that was cut: ddrescue resumes from MAP.bak" cmp -s "$WORK/seen-map" "$DSTMP/img/cut.img.map.bak"
 check "  ... and the map is whole again, the user's" \
    bash -c 'cmp -s "$1" "$2" && [ "$(stat -c %u "$1")" = "$3" ]' _ "$DSTMP/img/cut.img.map" "$DSTMP/img/cut.img.map.bak" "$EUID"
 # While sweeping, ddrescue writes % as the status: a whole map too
 printf '# Mapfile\n0x00300000     %%               1\n0x00000000  0x00300000  +\n0x00300000  0x01D00000  ?\n' > "$DSTMP/img/sweep.img.map"
 : > "$DSTMP/img/sweep.img"; rm -f "$WORK/seen-map"
-sudo -n env PKEXEC_UID="$EUID" "$H.seen" image "$d" "$DSTMP/img/sweep.img" "$DSTMP/img/sweep.img.map" 0 "$DSTMP/img/sweep.stop" >/dev/null 2>&1
+sudo -n env BSR_IMAGE_ACTION=1 PKEXEC_UID="$EUID" "$H.seen" image "$d" "$DSTMP/img/sweep.img" "$DSTMP/img/sweep.img.map" 0 "$DSTMP/img/sweep.stop" >/dev/null 2>&1
 check "a map saved while sweeping (%) is resumed" cmp -s "$WORK/seen-map" "$DSTMP/img/sweep.img.map"
 # The image named as its own map: refused before anything is written
 printf 'keep' > "$DSTMP/img/same.img"
-sudo -n env PKEXEC_UID="$EUID" "$H.seen" image "$d" "$DSTMP/img/same.img" "$DSTMP/img/same.img" 0 "$DSTMP/img/same.stop" >/dev/null 2>&1
+sudo -n env BSR_IMAGE_ACTION=1 PKEXEC_UID="$EUID" "$H.seen" image "$d" "$DSTMP/img/same.img" "$DSTMP/img/same.img" 0 "$DSTMP/img/same.stop" >/dev/null 2>&1
 check "the image as its own map: refused (exit 2), the image untouched" \
    bash -c '[ "$1" = 2 ] && [ "$(cat "$2")" = keep ]' _ "$?" "$DSTMP/img/same.img"
 # The map cannot be saved at the end (made immutable): a failure, and MAP.bak keeps the one before
@@ -735,14 +738,25 @@ printf '#!/bin/bash\nprintf "# Mapfile\\n0x02000000     +               1\\n0x00
 sed -e "s|^export PATH=.*|export PATH=$SL:/usr/bin:/bin:/usr/sbin:/sbin|" "$H" > "$H.lock"; chmod +x "$H.lock"
 printf '# Mapfile\n0x00100000     ?               1\n0x00000000  0x00100000  +\n0x00100000  0x01F00000  ?\n' > "$DSTMP/img/lock.img.map"
 cp "$DSTMP/img/lock.img.map" "$WORK/lock.before"; : > "$DSTMP/img/lock.img"
-sudo -n env PKEXEC_UID="$EUID" "$H.lock" image "$d" "$DSTMP/img/lock.img" "$DSTMP/img/lock.img.map" 0 "$DSTMP/img/lock.stop" >"$WORK/lock.out" 2>&1; rc=$?
+sudo -n env BSR_IMAGE_ACTION=1 PKEXEC_UID="$EUID" "$H.lock" image "$d" "$DSTMP/img/lock.img" "$DSTMP/img/lock.img.map" 0 "$DSTMP/img/lock.stop" >"$WORK/lock.out" 2>&1; rc=$?
 sudo -n chattr -i -- "$DSTMP/img/lock.img.map"
 check "the map could not be saved: the helper fails (got $rc)" bash -c '[ "$1" -ne 0 ] && grep -q "map could not be saved" "$2"' _ "$rc" "$WORK/lock.out"
 check "  ... and MAP.bak holds the map before" cmp -s "$WORK/lock.before" "$DSTMP/img/lock.img.map.bak"
 ln -s /etc/bm-should-not-exist "$DSTMP/img/dangling.map"
-sudo -n env PKEXEC_UID="$EUID" "$H" image "$d" "$DSTMP/img/dangling.img" "$DSTMP/img/dangling.map" 0 "$DSTMP/img/s" >/dev/null 2>&1
+sudo -n env BSR_IMAGE_ACTION=1 PKEXEC_UID="$EUID" "$H" image "$d" "$DSTMP/img/dangling.img" "$DSTMP/img/dangling.map" 0 "$DSTMP/img/s" >/dev/null 2>&1
 check "a map that is a link: refused (exit 2), nothing created through it" \
    bash -c '[ "$1" = 2 ] && [ ! -e /etc/bm-should-not-exist ]' _ "$?"
+# A folder on a loop device whose file lies on the disk being read: the image
+# would land on that disk, though the folder's own device is another one
+truncate -s 16M "$DSTMP/inner.img"; mkfs.ext4 -q -F -L T_INNER "$DSTMP/inner.img" >/dev/null 2>&1
+loop_up "$DSTMP/inner.img"; inner="$REPLY"; im="$(mnt_rw "$inner")"; sudo -n chown "$EUID" "$im"
+sudo -n env BSR_IMAGE_ACTION=1 PKEXEC_UID="$EUID" "$H" image "$DST" "$im/x.img" "$im/x.map" 0 "$im/s" > "$WORK/inner.out" 2>&1
+check "an image onto a loop device over a file of the disk being read: refused, nothing written" \
+   bash -c '[ "$1" = 2 ] && grep -q "cannot be on the disk being read" "$2" && [ ! -e "$3" ]' _ "$?" "$WORK/inner.out" "$im/x.img"
+out="$(PATH="$SB:$PATH" "$B" --drive image --source "$DST" --image "$im/y.img" --dry-run --json)"
+check "  ... and the engine says so first" grep -q '"error":"image-same-disk"' <<< "$out"
+# Its file is on T_DST: gone before T_DST is unmounted at the end
+umnt "$inner"; sudo -n losetup -d "$inner"; LOOPS=("${LOOPS[@]/$inner}"); udevadm settle
 fi
 
 if want recovery; then

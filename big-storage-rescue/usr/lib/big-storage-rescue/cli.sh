@@ -71,7 +71,7 @@ bsr_main() {
       # shellcheck disable=SC2034  # read by drive.sh
       BSR_CWD="$PWD"
       cd / || return 1
-      bsr_migrate_quietly "${1:-}"
+      bsr_migrate_quietly "$@"
       bsr_load drive.sh && bsr_drive_main "$@"
       return
    fi
@@ -129,9 +129,12 @@ bsr_main() {
 # The copies of Big-Mount 2.x come over the first time they are needed. Only a
 # look at two folders when there is nothing to do; a question about the state
 # of a job (status, jobs, the window) then finds them. Never for __run: a
-# supervisor that is starting must not wait for anything.
+# supervisor that is starting must not wait for anything, and never for a
+# --dry-run, which changes nothing.
 bsr_migrate_quietly() {
+   local a
    [ "${1:-}" = __run ] && return 0
+   for a in "$@"; do [ "$a" = --dry-run ] && return 0; done
    [ -d "${XDG_STATE_HOME:-$HOME/.local/state}/big-mount" ] || [ -d "${XDG_CONFIG_HOME:-$HOME/.config}/big-mount" ] || return 0
    [ -e "${XDG_STATE_HOME:-$HOME/.local/state}/big-storage-rescue/migrated-from-big-mount" ] && return 0
    bsr_load migrate.sh && bsr_migrate_run auto >/dev/null 2>&1

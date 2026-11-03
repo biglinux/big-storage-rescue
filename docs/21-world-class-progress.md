@@ -25,12 +25,12 @@ development machine.
   the drives of the running system. It refuses a loop device unless the file
   behind it belongs to the user. Both checks run again once the files are open.
 - **Own polkit action for `image`.** `image` has its own polkit action,
-  `org.biglinux.big-storage-rescue.image`, selected by
-  `org.freedesktop.policykit.exec.argv1`. It is `auth_admin` with no `_keep`,
-  and it comes first in the file. The generic action keeps `auth_admin_keep`
-  for protect, smart and partitions. **Not validated with a real polkit
-  agent:** pkexec's documented behaviour was relied on (`man pkexec`; this
-  pkexec has the annotation).
+  `org.biglinux.big-storage-rescue.image`, `auth_admin` with no `_keep`. The
+  generic action keeps `auth_admin_keep` for protect, smart and partitions.
+  It was first selected by `org.freedesktop.policykit.exec.argv1`; the second
+  review showed that this was not enough (see below), and the action now has a
+  program of its own, `bsr-image-helper`. **Not validated with a real polkit
+  agent.**
 - **User files opened safely.** A small `python3 -I` step
   (`BSR_OPEN_OWN` in the helper) opens the user's files:
   - it walks every folder from `/` with `O_PATH|O_NOFOLLOW`;
@@ -54,13 +54,70 @@ development machine.
   - The GObject types were renamed.
 
 Not done, with the reason:
-- **Destination over FUSE/overlay or a loop backed on the source.** The review
-  pointed out that "never onto the disk being read" cannot be checked when the
-  destination is on FUSE, overlay or a loop over a file of the source. Refusing
-  destinations that are not block devices would also refuse network shares,
-  which are legitimate. It is documented as a user-error case.
 - **Decoding thumbnails in a subprocess.** The pixel limit covers decompression
   bombs. Running gdk-pixbuf in a subprocess with an rlimit is on the roadmap.
+
+## Second review (CodeRabbit on biglinux PR #1)
+
+Each finding was checked against the code first. Fixed:
+
+- **Disk images never started.** The image supervisor called `bsr_is_block`,
+  which only the tests defined: every image job ended at once as "source
+  gone", before ddrescue. The engine defines it now, and a test checks that the
+  engine itself has it.
+- **The image action could be authorized by the other action.** pkexec takes
+  the first action that matches the path, in an order that is not fixed, and
+  `exec.argv1` only narrows the action that has it. A disk image now has its
+  own program, `bsr-image-helper`, so no two actions share a path.
+  `bsr-drive-helper` refuses `image` without the mark it sets, and pkexec gives
+  a clean environment. Checked: `pkexec`'s `find_action_for_path` in polkit's
+  source; the refusal was run in a user namespace.
+- **Destination over FUSE, overlay or a loop backed on the source.** Done this
+  time, without refusing network shares: `bsr_path_disks` works out the disks
+  under any folder (partitions, LUKS, LVM, RAID, every device of a Btrfs, loop
+  devices to the disks of their file). Memory and shares of another computer
+  hold no disk here. A folder whose disk cannot be told is refused: an overlay,
+  FUSE without a device, a share of this computer. The helper checks before and
+  after opening the files, and never images a loop device over its own file.
+- **`sudo` over SSH could not make an image** (the helper wanted
+  `PKEXEC_UID`). Started directly by root, it now uses root's own folders, as
+  `partitions` already did.
+- **Migration:**
+  - its lock is released when it ends, so the window that started it does not
+    hold every other start for 30 s;
+  - a job that failed to copy (a full disk) is tried again on the next start,
+    instead of being marked as done for good.
+- **Smaller fixes:**
+  - the terminal menu was still titled "BIG-MOUNT DRIVE MANAGER";
+  - the welcome screen promised mounting at boot, which is Big-Mount's;
+  - `build-local.sh` could stop silently on a deleted file;
+  - the "no erase function" test ran in a new shell, so it always passed;
+  - `manual-check.sh --after-boot` checked Big-Mount's boot unit and lock;
+  - image links in `docs/big-mount-history`;
+  - the README on manifests, pausing searches, root's lifetime,
+    `--allow-rw-source` and SSH.
+
+Its review on ruscher PR #3 found six more, all fixed:
+- a share mounted through one of this computer's own addresses (not only
+  `localhost`) was taken for another computer's; every address of the name
+  is now compared with this computer's, and a name that does not resolve is
+  refused;
+- a job whose `job.conf` cannot be read is tried again, not dropped as
+  invalid;
+- when `--migrate-state` finds a job that must be tried again after the
+  migration was marked done, the mark goes;
+- no automatic migration on a `--dry-run`;
+- the README example makes a manifest for the salvage job too (its own ID);
+- `manual-check.sh` no longer passes when `systemctl` fails.
+
+Validated: every suite (docs/15), and `tests/drive-integration.sh image
+protect` as root on loop devices, the first real run of the helper's image
+path: 36 passed, among them a folder on a loop device over a file of the disk
+being read, refused by the helper and by the engine.
+
+Not changed: the welcome screen keeps "fixes them when that is safe". The
+read-only diagnosis does offer to remount a UDisks mount or take ownership
+of the root of a filesystem, after confirmation. Neither touches data.
 
 ## Salvage (commit `77dd913`, GUI `832cb5d`)
 

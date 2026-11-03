@@ -9,8 +9,8 @@ from .common import _, save_setting, setting
 def features():
     """(icon, title, description), in the order a person meets them."""
     return [
-        ("drive-harddisk-symbolic", _("Drives mounted at boot"),
-         _("The partitions of internal disks are mounted at every boot, ready to use.")),
+        ("drive-harddisk-symbolic", _("Every drive at a glance"),
+         _("Internal and external drives, also the ones that are not mounted.")),
         ("security-high-symbolic", _("Health in one word"),
          _("Critical, Poor, Good or Healthy, from SMART, errors, age and temperature.")),
         ("document-save-symbolic", _("Rescue your files"),

@@ -141,7 +141,7 @@ bsr_dr_install() {
 
    if [ -e /usr/bin/big-storage-rescue ]; then
       for f in cli.sh lib.sh ui.sh doctor.sh migrate.sh system-check.sh drive.sh drive-detect.sh drive-diag.sh drive-copy.sh \
-         drive-recovery.sh drive-salvage.sh drive-tui.sh app.py dialog.py integrity.py bsr-holders bsr-drive-helper; do
+         drive-recovery.sh drive-salvage.sh drive-tui.sh app.py dialog.py integrity.py bsr-holders bsr-drive-helper bsr-image-helper; do
          f="/usr/lib/big-storage-rescue/$f"
          [ -e "$f" ] && continue
          bsr_fmt $"Missing file of the package: %s" "$f"

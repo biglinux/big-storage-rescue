@@ -23,21 +23,23 @@ ask() { # QUESTION -> records y/n
 }
 say() { printf '\n\033[36m== %s\033[0m\n%s\n' "$1" "$2"; }
 
+# Mounting at boot belongs to Big-Mount, whose own manual check covers it.
+# This package has no boot unit: only its notifier, when turned on, starts
+# with the session
 after_boot() {
     : > "$OUT"
-    say "Boot time" "$(systemd-analyze blame 2>/dev/null | grep big-storage-rescue)"
-    say "Journal of this boot" "$(journalctl -b -u big-storage-rescue --no-pager -o cat 2>/dev/null | tail -n 20)"
-    say "Status file" "$(cat /run/big-mount/status 2>/dev/null)"
-    local pid ok=yes
-    for pid in $(pgrep -f 'mount.lowntfs-3g|mount.ntfs-3g'); do
-        if sudo ls -l "/proc/$pid/fd" 2>/dev/null | grep -q big-storage-rescue.lock; then ok=NO; fi
-    done
-    say "NTFS FUSE daemons holding the big-storage-rescue lock (must be none)" "$ok"
-    printf '%-4s %s\n' "$ok" "no FUSE daemon holds the big-storage-rescue lock" >> "$OUT"
-    say "USB disks" "Plug a USB disk in BEFORE rebooting next time: it must appear in Dolphin, not under /mnt."
-    lsblk -o NAME,TRAN,RM,HOTPLUG,MOUNTPOINTS
-    ask "Is every USB disk mounted by Dolphin/UDisks (under /run/media), none under /mnt?"
-    ask "If you use Windows with Fast Startup: did you get ONE notification explaining it after login?"
+    local units ok=yes
+    # Every unit, then a filter: with a pattern that matches nothing, systemctl fails too
+    if units="$(systemctl list-unit-files --no-legend 2>&1)"; then
+        units="$(grep '^big-storage-rescue' <<< "$units")"
+    else
+        units="systemctl failed: $units"
+    fi
+    [ -z "$units" ] || ok=NO
+    say "Boot units of this package (must be none)" "${units:-none}"
+    printf '%-4s %s\n' "$ok" "big-storage-rescue has no boot unit" >> "$OUT"
+    say "Notifier" "$(pgrep -a -f 'big-storage-rescue --notifier' || echo 'not running: it is off unless turned on in the menu')"
+    ask "If you turned the notifier on: is it running, and did a drive with problems give ONE notification after login?"
     echo; echo "Answers saved to $OUT"
 }
 
@@ -67,7 +69,7 @@ device() { # LABEL [ro] -> DEV, MP
 }
 
 : > "$OUT"
-echo "Big Storage Rescue manual check: $("$BM" --help >/dev/null && echo "$BM") ($(pacman -Q big-mount 2>/dev/null))"
+echo "Big Storage Rescue manual check: $("$BM" --help >/dev/null && echo "$BM") ($(pacman -Q big-storage-rescue 2>/dev/null))"
 echo "Theme, scale and language are the ones of your session: run it again after changing them"
 echo "(System Settings > Colors, Display > Scale 125/150/200 %) to check each case."
 

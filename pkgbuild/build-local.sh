@@ -20,7 +20,10 @@ git clone -q --no-hardlinks -- "$REPO" "$WORK/src/big-storage-rescue"
 cd "$REPO"
 { git ls-files -z --modified; git ls-files -z --others --exclude-standard; } |
     while IFS= read -r -d '' f; do
-        [ -e "$f" ] && cp --parents -a -t "$WORK/src/big-storage-rescue" -- "$f"
+        # A deleted file is listed as modified too: an if, or set -e would end here
+        if [ -e "$f" ]; then
+            cp --parents -a -t "$WORK/src/big-storage-rescue" -- "$f"
+        fi
     done
 git ls-files -z --deleted | while IFS= read -r -d '' f; do
     rm -f -- "$WORK/src/big-storage-rescue/$f"

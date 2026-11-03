@@ -17,7 +17,9 @@
 #   image DEV FILE MAP RETRIES STOPFILE [DISKSEQ]
 #                   read DEV into FILE with GNU ddrescue, its map in MAP (and
 #                   the previous one in MAP.bak). Never a drive of the running
-#                   system; its own polkit action, which always asks
+#                   system, never onto the disk being read. Only through
+#                   bsr-image-helper, which has its own polkit action, which
+#                   always asks
 #
 # pkexec gives it a clean environment. Exit codes: 0 done, 1 failed, 2 bad
 # arguments, 3 another volume of the drive is mounted with writing enabled,
@@ -47,7 +49,8 @@ done < <(lsblk -s -n -p -r -o NAME,TYPE -- "$dev" 2>/dev/null)
 [ "${#chain[@]}" -gt 0 ] || die "unknown device"
 
 # A path root reads or writes for the user: only in a real folder of theirs
-# (root's own when started directly by root)
+# (root's own when started directly by root, as with sudo over SSH: a person
+# who can do that needs no helper to read a disk)
 uid="${PKEXEC_UID:-0}"
 [[ $uid =~ ^[0-9]+$ ]] || die "bad user"
 user_path() {
@@ -61,6 +64,20 @@ refuse_system() {
    local d
    for d in "${disks[@]}"; do
       bsr_system_use "$d" && die "refused: $d holds the running system ($REPLY)" 4
+   done
+}
+
+# never_on_source PATH...: the image and its map are never written on the disk
+# being read, whatever holds them: a partition, LVM, a Btrfs of several disks,
+# a loop device over a file on that disk. A folder whose disk cannot be told
+# (FUSE without a device, an overlay, a share of this computer) is refused
+never_on_source() {
+   local p b d
+   for p in "$@"; do
+      bsr_path_disks "$p" || die "refused: it cannot be told which disk holds $p"
+      for b in "${BK_DISKS[@]}"; do
+         for d in "${disks[@]}"; do [ "$b" != "$d" ] || die "the image cannot be on the disk being read"; done
+      done
    done
 }
 
@@ -205,9 +222,12 @@ case "$verb" in
       ;;
    image)
       [ "$#" -eq 6 ] || [ "$#" -eq 7 ] || die "image DEV FILE MAP RETRIES STOPFILE [DISKSEQ]"
+      # Set by bsr-image-helper, the program of the image action. pkexec gives
+      # a clean environment, so "pkexec bsr-drive-helper image", authorized by
+      # the action of the other verbs (which keeps the password), lacks it
+      [ "${BSR_IMAGE_ACTION:-}" = 1 ] || die "a disk image is started by bsr-image-helper"
       file="$3" map="$4" retries="$5" stop="$6"
       command -v ddrescue >/dev/null || exit 25
-      [[ ${PKEXEC_UID:-} =~ ^[0-9]+$ ]] || die "no user"
       [[ $retries =~ ^[0-9]+$ ]] && [ "$retries" -le 5 ] || die "bad retries"
       # A raw copy of the running system would hand the user every file of
       # every user, and what its encrypted volumes hold
@@ -223,12 +243,7 @@ case "$verb" in
       # The map is written over: never over the image
       [ "$file" != "$map" ] && [ "$file" != "$map.bak" ] || die "the image and its map must be different files"
       # Never onto the disk that is being read
-      target="$(findmnt -n -o SOURCE -T "${file%/*}" 2>/dev/null)"; target="${target%%\[*}"
-      if [ -b "$target" ]; then
-         while read -r name _; do
-            for d in "${disks[@]}"; do [ "$name" != "$d" ] || die "the image cannot be on the disk being read"; done
-         done < <(lsblk -s -n -p -r -o NAME,TYPE -- "$target" 2>/dev/null)
-      fi
+      never_on_source "${file%/*}" "${map%/*}"
       # The folders belong to the user, who can swap a name for a link at any
       # moment. The three files are opened by a small step that cannot be
       # led astray (BSR_OPEN_OWN, above): from then on only what was opened is
@@ -260,6 +275,17 @@ case "$verb" in
       ofile="${opened[0]}" omap="${opened[1]}" obak="${opened[2]}"
       ids="$(stat -L -c '%d:%i' -- "$ofile" "$omap" "$obak" | sort -u | wc -l)"
       [ "$ids" = 3 ] || die "the image and its map must be different files"
+      # Again with what was opened: a folder renamed meanwhile counts for nothing
+      never_on_source "$ofile" "$omap" "$obak"
+      # A loop device is read from its file: never written over by its own image
+      for d in "${disks[@]}"; do
+         [[ $d == /dev/loop* ]] || continue
+         backing="$(cat "/sys/block/${d##*/}/loop/backing_file" 2>/dev/null)"
+         id="$(stat -L -c '%d:%i' -- "$backing" 2>/dev/null)" || die "refused: the file behind $d is gone" 4
+         for f in "${opened[@]}"; do
+            [ "$(stat -L -c '%d:%i' -- "$f")" != "$id" ] || die "the image cannot be written over the file being read"
+         done
+      done
       # ddrescue renames and creates files next to its map (MAP.bak, kept in case
       # a save is cut): it works on a copy in a folder of root, and that copy goes
       # to the user's map through what was opened above

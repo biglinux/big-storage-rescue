@@ -9,21 +9,30 @@ pkgver=$(date +%y.%m.%d)
 pkgrel=$(date +%H%M)
 arch=('any')
 license=('GPL-3.0-or-later')
-# Everything runs as the user: bash and util-linux (lsblk, findmnt, blkid,
-# flock, setpriv, setsid, ionice), udisks2 mounts, unmounts and powers drives
-# off, glib2 (gdbus) talks to UDisks2 also in a terminal, polkit (pkexec)
-# starts the two small helpers, lsof finds what keeps a device busy, rsync
-# does every copy, smartctl reads the health of a drive and diffutils (cmp)
-# keeps the map of a disk image safe. python, python-gobject, gtk4,
-# libadwaita, pango, gdk-pixbuf2 (previews of found photos) and the hicolor
-# icon theme draw the application and the dialogs; python-cairo draws the map
-# of a disk image (without it PyGObject cannot hand over the Cairo context); libnotify sends the
-# notifications. Commands of the base system (coreutils, findutils, gawk,
-# grep, sed, procps-ng, gettext, systemd) are not listed.
-# libadwaita has an epoch: without it, ">=1.5" would accept any version.
+# Everything runs as the user. What each dependency is for:
+#   bash, util-linux    the engine; lsblk, findmnt, blkid, flock, setpriv,
+#                       setsid, ionice, mountpoint
+#   udisks2, glib2      mount, unmount and power drives off as the user
+#                       (udisksctl, gdbus)
+#   polkit              pkexec starts the two small helpers
+#   lsof                what keeps a device busy
+#   rsync               every copy of files
+#   smartmontools       the health of a drive (smartctl)
+#   diffutils           keeps the map of a disk image safe (cmp)
+#   python, python-gobject, gtk4, libadwaita, pango, gdk-pixbuf2 (previews of
+#   found photos), hicolor-icon-theme
+#                       the application and its dialogs
+#   python-cairo        draws the map of a disk image: without it PyGObject
+#                       cannot hand the drawing its Cairo context
+#   libnotify           notifications (notify-send)
+# Commands of the base system (coreutils, findutils, gawk, grep, sed,
+# procps-ng, systemd) are not listed.
+# libadwaita has an epoch: without it, ">=1.5" would accept any version. It
+# needs a GTK 4 newer than every GTK call of the application.
 depends=('bash' 'util-linux' 'udisks2' 'glib2' 'polkit' 'lsof' 'rsync'
-         'smartmontools' 'diffutils' 'python' 'python-gobject' 'python-cairo' 'gtk4'
-         'libadwaita>=1:1.5' 'pango' 'gdk-pixbuf2' 'hicolor-icon-theme'
+         'smartmontools' 'diffutils'
+         'python' 'python-gobject' 'python-cairo' 'gtk4' 'libadwaita>=1:1.5'
+         'pango' 'gdk-pixbuf2' 'hicolor-icon-theme'
          'libnotify')
 optdepends=('ddrescue: disk images of a failing drive, and saving what can be read of files a copy left out'
             'testdisk: find lost partitions, search files by content (PhotoRec)'

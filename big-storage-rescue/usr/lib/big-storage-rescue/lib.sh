@@ -851,6 +851,100 @@ bsr_system_use() {
    return 1
 }
 
+# bsr_path_disks PATH: the whole disks that store the filesystem PATH is on,
+# in BK_DISKS: through partitions, LUKS, LVM and RAID, every device of a
+# Btrfs, and from a loop device on to the disks of the file behind it. 0 when
+# that is known (BK_DISKS stays empty for memory, or a share of another
+# computer); 1 when it cannot be told, as for FUSE without a device, an
+# overlay or a share served by this computer: what must never be written on
+# a drive refuses those.
+bsr_path_disks() {
+   BK_DISKS=()
+   _bsr_path_disks "$1" 0
+}
+
+_bsr_path_disks() {
+   local out src fstype host uuid m
+   [ "$2" -lt 8 ] || return 1
+   out="$(timeout 10 findmnt -n -P -o SOURCE,FSTYPE -T "$1" 2>/dev/null)" && [ -n "$out" ] || return 1
+   bsr_parse_pairs "${out%%$'\n'*}"
+   src="${KV[SOURCE]%%\[*}" fstype="${KV[FSTYPE]}"
+   case "$fstype" in
+      tmpfs | ramfs) return 0 ;;
+      nfs | nfs4 | cifs | smb3)
+         # //host/share or host:/path; a share of this computer can be on any of its disks
+         if [[ $src == //* ]]; then host="${src#//}"; host="${host%%/*}"; else host="${src%%:/*}"; fi
+         host="${host#[}"; host="${host%]}"
+         bsr_share_is_remote "$host"
+         return
+         ;;
+   esac
+   [[ $src == /dev/* ]] || return 1
+   _bsr_dev_disks "$src" "$2" || return 1
+   # findmnt names one device of a Btrfs that may span several
+   if [ "$fstype" = btrfs ]; then
+      uuid="$(lsblk -n -d -o UUID -- "$src" 2>/dev/null)"
+      [ -n "$uuid" ] || return 1
+      for m in "/sys/fs/btrfs/$uuid/devices/"*; do
+         [ -e "$m" ] || continue
+         _bsr_dev_disks "/dev/${m##*/}" "$2" || return 1
+      done
+   fi
+   return 0
+}
+
+# bsr_share_is_remote HOST: a share is served by another computer. Every
+# address the name has is compared with the addresses of this one (a share
+# through 192.168.1.10 can be served from here); a name that does not
+# resolve, or addresses that cannot be read, count as this computer
+BSR_SHARE_HOST_PY='
+import ipaddress, socket, sys
+mine, a = set(), None
+try:
+    for line in open("/proc/net/fib_trie"):
+        f = line.split()
+        if f[:1] == ["|--"]: a = f[1]
+        elif "/32 host LOCAL" in line and a: mine.add(ipaddress.ip_address(a))
+except (OSError, ValueError):
+    sys.exit(1)
+try:
+    for line in open("/proc/net/if_inet6"):
+        h = line.split()[0]
+        mine.add(ipaddress.ip_address(":".join(h[i:i + 4] for i in range(0, 32, 4))))
+except (OSError, ValueError):
+    pass
+try:
+    found = {ipaddress.ip_address(i[4][0].split("%")[0]) for i in socket.getaddrinfo(sys.argv[1], None)}
+except (OSError, ValueError, UnicodeError):
+    sys.exit(1)
+def here(x):
+    return x.is_loopback or x.is_unspecified or x in mine or (x.version == 6 and x.ipv4_mapped in mine)
+sys.exit(0 if found and not any(here(x) for x in found) else 1)
+'
+bsr_share_is_remote() {
+   local mine
+   [ -n "$1" ] || return 1
+   { read -r mine < /proc/sys/kernel/hostname; } 2>/dev/null
+   [ "${1,,}" != "${mine,,}" ] || return 1
+   timeout 10 python3 -I -c "$BSR_SHARE_HOST_PY" "$1" 2>/dev/null
+}
+
+_bsr_dev_disks() {
+   local name type backing found=0
+   while read -r name type; do
+      found=1
+      case "$type" in
+         disk) BK_DISKS+=("$name") ;;
+         loop)
+            BK_DISKS+=("$name")
+            backing="$(cat "/sys/block/${name##*/}/loop/backing_file" 2>/dev/null)"
+            [ -n "$backing" ] && _bsr_path_disks "$backing" "$(($2 + 1))" || return 1
+            ;;
+      esac
+   done < <(lsblk -s -n -p -r -o NAME,TYPE -- "$1" 2>/dev/null)
+   [ "$found" = 1 ]
+}
+
 # FUSE daemons serving DEV (ntfs-3g, lowntfs-3g, exfat-fuse...): umount
 # returns as soon as the kernel detaches the mount, but the daemon then
 # still writes the final metadata to the device. Fills FUSE_PIDS.

@@ -82,7 +82,7 @@ dialog that cannot be shown (no display, run as root, GTK missing) is never an
 answer: the question goes to the terminal. `tests/gui-tests.py` and
 `tests/lib-tests.sh` cover the document, the defaults and the answers.
 
-![Read-only device diagnosis, in the GTK dialog](images/app-dialog-read-only.png)
+![Read-only device diagnosis, in the GTK dialog](../images/app-dialog-read-only.png)
 
 ### Before 2.6.0: KDialog and Zenity
 
@@ -95,7 +95,7 @@ scale 2, light and dark palettes, English and Portuguese). That review made
 the technical name a second line under the friendly name, kept only the PID
 on one line (long text used to be cut off), and removed an empty gap.
 
-![Read-only device diagnosis, KDialog (real Plasma screenshot)](images/read-only-device.png)
+![Read-only device diagnosis, KDialog (real Plasma screenshot)](../images/read-only-device.png)
 
 **Verified on the real desktop (rounds 4 and 6, KDialog):**
 
