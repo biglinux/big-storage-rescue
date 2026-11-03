@@ -9,10 +9,18 @@ run as root. What needs more goes through:
 | --- | --- | --- |
 | UDisks2 (D-Bus, `udisksctl`, `gdbus`) | polkit, UDisks2's own actions | mount, unmount, unlock, lock, power off |
 | `pkexec /usr/lib/big-storage-rescue/bsr-holders MOUNTPOINT` | `org.biglinux.big-storage-rescue.inspect-processes` (`auth_admin_keep`) | `lsof` of every user, one mount point of a local block device, never the running system |
-| `pkexec /usr/lib/big-storage-rescue/bsr-drive-helper image DEV …` | `org.biglinux.big-storage-rescue.image` (`auth_admin`, asked every time; picked by `exec.argv1`) | `image` (ddrescue): a raw copy of a whole drive holds the files of every user |
+| `pkexec /usr/lib/big-storage-rescue/bsr-image-helper DEV …` | `org.biglinux.big-storage-rescue.image` (`auth_admin`, asked every time) | a disk image (ddrescue): a raw copy of a whole drive holds the files of every user. It runs `bsr-drive-helper image` |
 | `pkexec /usr/lib/big-storage-rescue/bsr-drive-helper VERB DEV …` | `org.biglinux.big-storage-rescue.drive-helper` (`auth_admin_keep`) | `protect`/`unprotect` (blockdev), `smart` (`smartctl -H -A -i -l selftest`: reads, never starts a test), `partitions` (TestDisk, read-only commands) |
 
-No daemon, no setuid file, no systemd unit, nothing permanent. Both helpers
+pkexec picks the action by the path of the program alone, and takes the first
+action that matches in an order that is not fixed. So no two actions share a
+program: a disk image has `bsr-image-helper`, which sets a mark and runs
+`bsr-drive-helper image`. `bsr-drive-helper` refuses `image` without that mark,
+and pkexec gives a clean environment, so `pkexec bsr-drive-helper image …`,
+authorized by the action that keeps the password, never makes an image.
+`tests/package-check.sh` checks that no two actions name the same program.
+
+No daemon, no setuid file, no systemd unit, nothing permanent. The helpers
 get a clean environment from pkexec and treat every argument as untrusted:
 device names must match `^/dev/[A-Za-z0-9._/:+-]+$` without `..` and resolve
 to a block device.
@@ -23,7 +31,8 @@ image. A loop device is imaged only when the file behind it is the user's.
 The files of an image (image, map, map.bak) are opened by a small
 `python3 -I` step:
 - it walks every folder from `/` without following a link (`O_PATH|O_NOFOLLOW`);
-- the last folder must be the user's (`PKEXEC_UID`);
+- the last folder must be the user's (`PKEXEC_UID`; root's own when root
+  started the helper directly, as with `sudo` over SSH);
 - it opens each file as a path first, so a device or a FIFO is never really opened;
 - each file must be a regular file with one name that belongs to the user, or is created with `O_EXCL`;
 - from then on only `/proc/PID/fd/N` is used, so a link swapped in afterwards changes nothing;
@@ -31,7 +40,21 @@ The files of an image (image, map, map.bak) are opened by a small
 
 A map over 64 MiB, or with a line that is not map grammar, is not used.
 protect, unprotect and image take the disk sequence number and check it right
-before acting. The image is never written to the disk being read.
+before acting.
+
+The image and its map are never written to the disk being read
+(`bsr_path_disks` in `lib.sh`). The disks that hold a folder are worked out
+from its filesystem, whatever it is:
+- a partition, LUKS, LVM or RAID: the disks under it (`lsblk -s`);
+- a Btrfs: every device it spans, not only the one `findmnt` names;
+- a loop device: on to the disks of the file behind it;
+- memory (tmpfs) or a share of another computer (NFS, SMB): no disk here.
+
+A folder whose disk cannot be told is refused: an overlay, FUSE without a
+device, a share served by this computer. The helper checks before opening the
+files and again through what it opened, so a folder renamed meanwhile counts
+for nothing. A loop device is also never imaged over the file behind it. The
+engine makes the same check first, to say why before the password is asked.
 
 ## What is never done to the source
 

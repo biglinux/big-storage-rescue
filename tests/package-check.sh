@@ -69,6 +69,7 @@ expect=(
     "644 usr/lib/big-storage-rescue/ui.sh"
     "644 usr/lib/big-storage-rescue/doctor.sh"
     "755 usr/lib/big-storage-rescue/bsr-drive-helper"
+    "755 usr/lib/big-storage-rescue/bsr-image-helper"
     "644 usr/lib/big-storage-rescue/drive.sh"
     "644 usr/lib/big-storage-rescue/drive-detect.sh"
     "644 usr/lib/big-storage-rescue/drive-diag.sh"
@@ -156,9 +157,14 @@ import sys, xml.etree.ElementTree as ET
 acts = {a.get("id"): a for a in ET.parse(sys.argv[1]).getroot().iter("action")}
 a = acts["org.biglinux.big-storage-rescue.image"]
 ann = {x.get("key"): x.text for x in a.iter("annotate")}
-ok = ann.get("org.freedesktop.policykit.exec.argv1") == "image" and a.find("defaults/allow_active").text == "auth_admin"
-ok = ok and list(acts).index("org.biglinux.big-storage-rescue.image") < list(acts).index("org.biglinux.big-storage-rescue.drive-helper")
-sys.exit(not ok)' "$P/usr/share/polkit-1/actions/org.biglinux.big-storage-rescue.policy"
+ok = ann.get("org.freedesktop.policykit.exec.path") == "/usr/lib/big-storage-rescue/bsr-image-helper"
+sys.exit(not (ok and all(a.find("defaults/" + k).text == "auth_admin" for k in ("allow_any", "allow_inactive", "allow_active"))))' "$P/usr/share/polkit-1/actions/org.biglinux.big-storage-rescue.policy"
+# pkexec takes the first action that matches, in no fixed order: one path, one action
+check "  ... no two actions share a program" python3 -I -c '
+import sys, xml.etree.ElementTree as ET
+paths = [x.text for x in ET.parse(sys.argv[1]).getroot().iter("annotate") if x.get("key") == "org.freedesktop.policykit.exec.path"]
+sys.exit(len(paths) != len(set(paths)))' "$P/usr/share/polkit-1/actions/org.biglinux.big-storage-rescue.policy"
+check "  ... and bsr-image-helper starts only that verb" bash -c 'grep -qx "exec /usr/lib/big-storage-rescue/bsr-drive-helper image \"\$@\"" "$1"' _ "$P/usr/lib/big-storage-rescue/bsr-image-helper"
 command -v xmllint >/dev/null && check "icon is a well-formed SVG" xmllint --noout "$P/usr/share/icons/hicolor/scalable/apps/big-storage-rescue.svg"
 check "translation catalog loads" msgunfmt -o /dev/null "$P/usr/share/locale/pt_BR/LC_MESSAGES/big-storage-rescue.mo"
 if command -v appstreamcli >/dev/null; then
@@ -166,7 +172,7 @@ if command -v appstreamcli >/dev/null; then
 fi
 check "  ... its id is the one of the launcher and of the window" bash -c 'grep -q "<id>org.biglinux.big-storage-rescue</id>" "$1" && grep -q "^StartupWMClass=org.biglinux.big-storage-rescue$" "$2" && grep -q "APP_ID = \"org.biglinux.big-storage-rescue\"" "$3"' _ \
     "$P/usr/share/metainfo/org.biglinux.big-storage-rescue.metainfo.xml" "$P/usr/share/applications/org.biglinux.big-storage-rescue.desktop" "$P/usr/lib/big-storage-rescue/gui/application.py"
-for f in usr/bin/big-storage-rescue usr/lib/big-storage-rescue/*.sh usr/lib/big-storage-rescue/bsr-holders usr/lib/big-storage-rescue/bsr-drive-helper; do
+for f in usr/bin/big-storage-rescue usr/lib/big-storage-rescue/*.sh usr/lib/big-storage-rescue/bsr-holders usr/lib/big-storage-rescue/bsr-drive-helper usr/lib/big-storage-rescue/bsr-image-helper; do
     for g in "$P"/$f; do check "syntax: ${g#"$P"/}" bash -n "$g"; done
 done
 

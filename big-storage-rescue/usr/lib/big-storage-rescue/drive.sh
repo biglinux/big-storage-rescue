@@ -96,13 +96,19 @@ bsr_tui_paint() {
 # The privileged helper (polkit decides; nothing else here runs as root)
 
 bsr_helper() {
+   local exe="$BSR_LIB_DIR/bsr-drive-helper"
    if [ -n "${BSR_HELPER_CMD:-}" ]; then
       "$BSR_HELPER_CMD" "$@"
-   elif [ "$EUID" -eq 0 ]; then
-      "$BSR_LIB_DIR/bsr-drive-helper" "$@"
+      return
+   fi
+   # A disk image has a polkit action of its own, which always asks. pkexec
+   # picks the action by the path alone: it needs a program of its own
+   if [ "${1:-}" = image ]; then exe="$BSR_LIB_DIR/bsr-image-helper"; shift; fi
+   if [ "$EUID" -eq 0 ]; then
+      "$exe" "$@"
    else
       command -v pkexec >/dev/null || return 127
-      pkexec "$BSR_LIB_DIR/bsr-drive-helper" "$@"
+      pkexec "$exe" "$@"
    fi
 }
 
@@ -144,8 +150,8 @@ bsr_drive_usage() {
       "  --no-wait" $"start and return, the copy continues in the background" \
       "jobs" $"copies and images, running and past" \
       "status ID [--watch]" $"progress of one of them" \
-      "pause ID | cancel ID" $"stop it safely (it can be resumed later)" \
-      "resume ID [--retry-deferred]" $"continue it, also after a shutdown; optionally try what was set aside" \
+      "pause ID | cancel ID" $"stop it safely (it can be resumed later; a search can only be cancelled)" \
+      "resume ID [--retry-deferred]" $"continue it, also after a shutdown (a search starts over); optionally try what was set aside" \
       "salvage ID [--retries N]" $"read again, with GNU ddrescue, the files a copy left out, and save what can be read of each" \
       "map ID" $"what a disk image has read so far, as a map of the disk" \
       "manifest ID [--output FILE]" $"SHA-256 of what a copy, a salvage or an image wrote, to check later with sha256sum -c (reads the destination only)" \

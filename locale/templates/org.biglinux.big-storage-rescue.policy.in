@@ -20,8 +20,9 @@
   </action>
 
   <!-- A disk image is a raw copy of everything on a drive, the files of every
-       user included: the password is asked every time, never kept. Listed
-       first, and picked by pkexec for "bsr-drive-helper image" only -->
+       user included: the password is asked every time, never kept. pkexec
+       picks an action by the path of the program alone, so it has a program
+       of its own (bsr-drive-helper refuses "image" without it) -->
   <action id="org.biglinux.big-storage-rescue.image">
     <description>Make a disk image of a storage device</description>
     <message>Authentication is required to make a disk image of this storage device. The image holds everything on it.</message>
@@ -31,8 +32,7 @@
       <allow_inactive>auth_admin</allow_inactive>
       <allow_active>auth_admin</allow_active>
     </defaults>
-    <annotate key="org.freedesktop.policykit.exec.path">/usr/lib/big-storage-rescue/bsr-drive-helper</annotate>
-    <annotate key="org.freedesktop.policykit.exec.argv1">image</annotate>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/lib/big-storage-rescue/bsr-image-helper</annotate>
   </action>
 
   <!-- Blocks or allows writing on a device, reads SMART, lists partitions: never changes data on it -->

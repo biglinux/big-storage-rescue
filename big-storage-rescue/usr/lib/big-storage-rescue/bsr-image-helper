@@ -1,0 +1,19 @@
+#!/bin/bash
+#
+# bsr-image-helper - starts a disk image of the Big Storage Rescue drive manager.
+#
+# Started through pkexec (polkit action org.biglinux.big-storage-rescue.image,
+# which asks for the password every time). pkexec picks the action by the path
+# of the program alone, so a disk image needs a program of its own: with the
+# path of bsr-drive-helper it could be authorized by the action of the other
+# verbs, which keeps the password a while.
+#
+#   bsr-image-helper DEV FILE MAP RETRIES STOPFILE [DISKSEQ]
+#
+# The work is done by "bsr-drive-helper image", which refuses to run without
+# the mark set here. pkexec gives a clean environment, so the mark cannot come
+# with "pkexec bsr-drive-helper image".
+
+export PATH=/usr/bin:/bin:/usr/sbin:/sbin
+export BSR_IMAGE_ACTION=1
+exec /usr/lib/big-storage-rescue/bsr-drive-helper image "$@"

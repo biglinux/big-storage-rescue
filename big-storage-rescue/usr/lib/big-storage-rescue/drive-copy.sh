@@ -129,6 +129,7 @@ bsr_cp_err_text() {
       cancelled) REPLY=$"Stopped. Nothing was changed on the disk." ;;
       not-readable) REPLY=$"This device cannot be read by your user. Make a disk image first (big-storage-rescue --cli image), and search in the image: it also spares the disk." ;;
       image-same-disk) REPLY=$"The image cannot be stored on the disk being read." ;;
+      image-dest-unknown) REPLY=$"It cannot be told which disk holds this folder (an overlay, a FUSE folder without a device, or a share of this computer), so the image could end up on the disk being read. Choose a folder on another drive." ;;
       image-other-disk) REPLY=$"An image of another disk already exists in that place. Continuing it would mix the two: choose another name." ;;
       image-exists) REPLY=$"A file with this name already exists and is not an image started here. Choose another name." ;;
       source-replaced) REPLY=$"The device was disconnected or replaced. Nothing was done." ;;

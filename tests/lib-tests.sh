@@ -30,7 +30,7 @@ begin() { echo "— $1"; }
 
 WORK="$(mktemp -d)"
 # Not /tmp: it is often mounted noexec, and the stand-in dialog must run
-EXE="$(mktemp -d -p "${TMPDIR:-/var/tmp}")"
+EXE="$(mktemp -d -p /var/tmp)"
 ORIG_HOME="$HOME"
 trap 'chmod -R u+w "$WORK" 2>/dev/null; rm -rf "$WORK" "$EXE"' EXIT
 
@@ -759,7 +759,7 @@ unset -f bsr_drive_port bsr_drive_kmsg bsr_udev_props bsr_udisks_drive busctl sa
 . "$BSR_LIB/lib.sh"; . "$BSR_LIB/ui.sh"; . "$BSR_LIB/cli.sh"; BSR_UI="tty"; bsr_ui_init
 
 begin "Secure Erase is not part of a rescue tool"
-check "no erase function is loaded" bash -c '! compgen -A function | grep -q erase' 
+check "no erase function is loaded" bash -c '! grep -q erase <<< "$1"' _ "$(compgen -A function)"
 check "  ... and no erase file is installed" test ! -e "$BSR_LIB/drive-erase.sh"
 "$REPO/big-storage-rescue/usr/bin/big-storage-rescue" --secure-erase /dev/sdz > /dev/null 2>&1; rc=$?
 check "  ... --secure-erase is an unknown option" eq "$rc" 2
@@ -986,6 +986,33 @@ unset -f bsr_drive_members
 findmnt() { [ "$1" = --fstab ] && return $((1 - FAKE_FSTAB)); command findmnt "$@"; }
 BSR_SYS_FS=/sys/fs
 . "$BSR_LIB/lib.sh"
+
+begin "which disks hold a folder (where an image may go)"
+PD_BIN="$(mktemp -d -p "$EXE" pd-XXXXXX)"
+printf '#!/bin/sh\nprintf "%%s\\n" "$FAKE_FM"\n' > "$PD_BIN/findmnt"
+cat > "$PD_BIN/lsblk" <<'STUB'
+#!/bin/bash
+case "${*: -1}" in
+   /dev/mapper/vg-lv) printf '/dev/mapper/vg-lv lvm\n/dev/sdy2 part\n/dev/sdy disk\n/dev/sdx1 part\n/dev/sdx disk\n' ;;
+   *) exit 32 ;;
+esac
+STUB
+chmod 755 "$PD_BIN/findmnt" "$PD_BIN/lsblk"
+pd() { # FINDMNT_LINE: "rc disks..." for a folder there
+   local rc
+   FAKE_FM="$1" PATH="$PD_BIN:$PATH" bsr_path_disks /x; rc=$?
+   printf '%s' "$rc ${BK_DISKS[*]}"
+}
+check "LVM over two disks: both" eq "$(pd 'SOURCE="/dev/mapper/vg-lv" FSTYPE="ext4"')" "0 /dev/sdy /dev/sdx"
+check "memory: no disk" eq "$(pd 'SOURCE="tmpfs" FSTYPE="tmpfs"')" "0 "
+check "a share of another computer: no disk here" eq "$(pd 'SOURCE="nas:/vol/fotos" FSTYPE="nfs4"')" "0 "
+check "  ... of this computer: it cannot be told" eq "$(pd 'SOURCE="//localhost/fotos" FSTYPE="cifs"')" "1 "
+check "  ... by its address too" eq "$(pd 'SOURCE="127.0.0.1:/srv" FSTYPE="nfs"')" "1 "
+check "FUSE without a device: it cannot be told" eq "$(pd 'SOURCE="remote:" FSTYPE="fuse.rclone"')" "1 "
+check "an overlay: it cannot be told" eq "$(pd 'SOURCE="overlay" FSTYPE="overlay"')" "1 "
+check "a device that is not a block device" eq "$(pd 'SOURCE="/dev/fake9" FSTYPE="ext4"')" "1 "
+check "a folder outside every mount" eq "$(pd '')" "1 "
+rm -rf -- "$PD_BIN"
 
 echo ""
 echo "========================================="

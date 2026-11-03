@@ -24,7 +24,9 @@
 # Big-Mount from before the split, if still installed, cannot resume it too.
 #
 # When everything is done, ~/.local/state/big-storage-rescue/migrated-from-big-mount
-# records it, and later starts only look at that file.
+# records it, and later starts only look at that file. A job that could not be
+# copied (a full disk) is tried again on the next start; one that is not a
+# valid job never will be, and does not hold the mark back.
 #
 # Exit codes: 0 done (or nothing to do), 1 some jobs could not be brought
 # over (they stay in place), 3 some jobs are running in Big-Mount: try again
@@ -105,7 +107,7 @@ bsr_migrate_job() {
 
 # bsr_migrate_run MODE: MODE auto (on start: quiet, once), run or dry-run
 bsr_migrate_run() {
-   local mode="$1" dry=0 d n_moved=0 n_active=0 n_bad=0 lines=() rc=0
+   local mode="$1" dry=0 d n_moved=0 n_active=0 n_bad=0 n_retry=0 lines=() rc=0
    [ "$mode" = "dry-run" ] && dry=1
    bsr_migrate_paths
    MG_LINES=() MG_MOVED=0
@@ -114,10 +116,12 @@ bsr_migrate_run() {
    [ -d "$MG_OLD_JOBS" ] || [ -f "$MG_OLD_CONF/gui.ini" ] || [ -f "$MG_OLD_AUTOSTART" ] || return 0
    if [ "$dry" = 0 ]; then
       mkdir -p -- "$MG_NEW_STATE" && { [ -d "$MG_NEW_JOBS" ] || mkdir -m 0700 -- "$MG_NEW_JOBS"; } || return 1
-      # One migration at a time: the window and a terminal may start together
+      # One migration at a time: the window and a terminal may start together.
+      # Released on the way out: the same process goes on to the window, and
+      # every other start would wait for it
       exec {MG_LOCK_FD}>"$MG_NEW_STATE/migration.lock" || return 1
-      flock -w 30 "$MG_LOCK_FD" || return 1
-      [ "$mode" = auto ] && [ -e "$MG_DONE" ] && return 0
+      flock -w 30 "$MG_LOCK_FD" || { exec {MG_LOCK_FD}>&-; return 1; }
+      if [ "$mode" = auto ] && [ -e "$MG_DONE" ]; then exec {MG_LOCK_FD}>&-; return 0; fi
    fi
    if [ -d "$MG_OLD_JOBS" ]; then
       for d in "$MG_OLD_JOBS"/*; do
@@ -127,7 +131,10 @@ bsr_migrate_run() {
             moved) n_moved=$((n_moved + 1)); lines+=("moved ${d##*/}") ;;
             exists) lines+=("exists ${d##*/}") ;;
             active) n_active=$((n_active + 1)); lines+=("active ${d##*/}") ;;
-            *) n_bad=$((n_bad + 1)); lines+=("$MG_RESULT ${d##*/} $MG_WHY") ;;
+            *)
+               n_bad=$((n_bad + 1)); lines+=("$MG_RESULT ${d##*/} $MG_WHY")
+               [ "$MG_RESULT" = failed ] && n_retry=$((n_retry + 1))
+               ;;
          esac
       done
    fi
@@ -157,11 +164,13 @@ bsr_migrate_run() {
    elif [ "$n_bad" -gt 0 ]; then rc=1
    fi
    # Done for good when nothing is left to try again: invalid jobs stay where
-   # they are, and are named in the log and by --migrate-state
-   if [ "$dry" = 0 ] && [ "$n_active" -eq 0 ] && [ ! -e "$MG_DONE" ]; then
+   # they are, and are named in the log and by --migrate-state; a running job
+   # or one that failed to copy is tried again
+   if [ "$dry" = 0 ] && [ "$n_active" -eq 0 ] && [ "$n_retry" -eq 0 ] && [ ! -e "$MG_DONE" ]; then
       { printf '# %s\n' "$(date -Is)"; [ "${#lines[@]}" -gt 0 ] && printf '%s\n' "${lines[@]}"; } > "$MG_DONE"
    fi
    MG_LINES=("${lines[@]}") MG_MOVED="$n_moved"
+   [ "$dry" = 0 ] && exec {MG_LOCK_FD}>&-
    return "$rc"
 }
 

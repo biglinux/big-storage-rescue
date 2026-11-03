@@ -66,7 +66,7 @@
 | 🧩 **What a copy left out** | files a copy could not finish are read again block by block with GNU ddrescue. This resumes at any point, and saves what can be read, never under the name of a good file |
 | 🗺️ **Map of the disk** | a disk image shows what has been read, what could not be, and what is left, drawn from ddrescue's map |
 | 🔍 **Whole or not** | files found by content are checked by their structure: *complete*, *cut short* or *damaged* |
-| #️⃣ **Manifests** | SHA-256 of everything rescued, to check later with `sha256sum -c` |
+| #️⃣ **Manifests** | SHA-256 of what a copy, a salvage or a disk image wrote, to check later with `sha256sum -c` |
 | 🔎 **When files cannot be reached** | a disk image with GNU ddrescue, lost partitions with TestDisk, files by content with PhotoRec |
 | 📄 **Reports** | technical reports of a drive or of a copy, anonymized on request |
 
@@ -213,7 +213,7 @@ pacman installs these with the package:
 | --- | --- |
 | `bash`, `util-linux` | the engine; `lsblk`, `findmnt`, `blkid`, `flock`, `setpriv`, `setsid`, `ionice`, `mountpoint` |
 | `udisks2`, `glib2` | mounting, unmounting and powering drives off as the user (`udisksctl`, `gdbus`) |
-| `polkit` | the administrator password for the two small helpers (`pkexec`) |
+| `polkit` | the administrator password for the small helpers (`pkexec`) |
 | `lsof` | which programs keep a device busy |
 | `rsync` | every copy of files |
 | `smartmontools` | the health of a drive (`smartctl`) |
@@ -469,6 +469,9 @@ Options of `copy`:
 | `--stall-seconds N` | set aside a file that does not advance for N seconds (default 90, 0: never) |
 | `--bwlimit KBPS` | limit the reading speed |
 | `--scan auto\|yes\|no` | measure the total first (`auto`: not on a drive at risk) |
+| `--allow-same-disk` | accept a destination on the same physical disk (if that disk fails, both are lost) |
+| `--allow-rw-source` | accept a drive at risk that is already mounted with writing enabled (see [Safety](#safety)) |
+| `--allow-risky-destination` | accept a destination on a drive with critical alerts |
 | `--no-wait` | start and return; the copy continues in the background |
 
 </details>
@@ -480,8 +483,8 @@ Options of `copy`:
 | --- | --- |
 | `jobs` | copies, images, searches and salvages, running and past |
 | `status ID [--watch]` | progress of one of them |
-| `pause ID`, `cancel ID` | stop it safely; it can be resumed later |
-| `resume ID [--retry-deferred]` | continue it, also after a shutdown; optionally try again what was set aside |
+| `pause ID`, `cancel ID` | stop it safely. A copy, an image or a salvage can be paused; a search can only be cancelled, and what it found stays |
+| `resume ID [--retry-deferred]` | continue a copy, an image or a salvage where it stopped, also after a shutdown; optionally try again what was set aside. A search starts again from the beginning |
 | `map ID` | what a disk image has read so far, as a map of the disk |
 | `results ID` | what a search found |
 | `check-files ID` | check again whether the files a search found are whole |
@@ -607,13 +610,15 @@ flowchart TB
     end
     subgraph root["Privileged, one action at a time"]
         UD[UDisks2<br>mount · unmount · power off]
-        H1["bsr-drive-helper<br>protect · smart · partitions · image"]
+        H1["bsr-drive-helper<br>protect · smart · partitions"]
+        H3["bsr-image-helper<br>disk image, asks every time"]
         H2["bsr-holders<br>other users' processes"]
     end
     SUP --> RS & DD & PR
     ENG -- "D-Bus" --> UD
-    ENG -- "pkexec + polkit" --> H1 & H2
-    H1 --> SM & DD
+    ENG -- "pkexec + polkit" --> H1 & H3 & H2
+    H1 --> SM
+    H3 --> DD
 ```
 
 - **One engine.** The window never calls a tool itself: it asks the engine
@@ -623,9 +628,11 @@ flowchart TB
 - **Jobs outlive the window.** A copy, image, search or salvage runs in a
   detached supervisor. The window, `--cli status ID --watch` and the
   notifications only read its state file.
-- **Nothing runs as root for long.** The window and the engine run as you.
-  Mounting goes through UDisks2. What needs root is one call of a small helper
-  through pkexec, with its arguments treated as untrusted.
+- **No root daemon.** The window and the engine run as you. Mounting goes
+  through UDisks2. What needs root is a small helper started through pkexec
+  for one operation, with its arguments treated as untrusted. It ends with
+  that operation: for a disk image, when ddrescue ends, which on a failing
+  drive can take hours.
 
 Details: [docs/03](docs/03-architecture.md).
 
@@ -633,12 +640,21 @@ Details: [docs/03](docs/03-architecture.md).
 
 | polkit action | Runs | Password |
 | --- | --- | --- |
-| `org.biglinux.big-storage-rescue.image` | `bsr-drive-helper image`: reads a whole drive into an image | **every time** (`auth_admin`) |
+| `org.biglinux.big-storage-rescue.image` | `bsr-image-helper`: reads a whole drive into an image | **every time** (`auth_admin`) |
 | `org.biglinux.big-storage-rescue.drive-helper` | `bsr-drive-helper protect`, `unprotect`, `smart`, `partitions` | once, kept a few minutes (`auth_admin_keep`) |
 | `org.biglinux.big-storage-rescue.inspect-processes` | `bsr-holders`: which processes of other users keep a device busy | once, kept a few minutes |
 
-The helper refuses to image a drive of the running system. It opens the
-user's files without following links, and checks the disk sequence number
+pkexec picks the action by the path of the program alone, so each action has
+a program of its own. `bsr-image-helper` hands the work to `bsr-drive-helper
+image`, which refuses to run when it was not started that way: the action that
+keeps the password never reaches a disk image.
+
+The helper refuses to image a drive of the running system, and never writes the
+image or its map on the disk being read. It works that out for whatever holds
+the folder: a partition, LUKS, LVM, RAID, every device of a Btrfs, a loop
+device over a file on that disk. A folder whose disk cannot be told (an
+overlay, FUSE without a device, a share served by this computer) is refused. It
+opens the user's files without following links, and checks the disk sequence number
 right before acting, so a drive swapped during the password dialog is never
 touched. Details: [docs/12](docs/12-security.md).
 
@@ -702,16 +718,21 @@ Nothing is kept in `/etc`, and nothing is installed as a service.
 ## Safety
 
 - **It runs as your user.** Anything that needs more goes through UDisks2 and
-  polkit, or through two small helpers run by pkexec with the administrator
+  polkit, or through small helpers run by pkexec with the administrator
   password. There is no daemon, and nothing stays running.
 - **A disk image asks for the password every time**, and a drive of the
   running system is never imaged: a raw copy holds the files of every user.
 - **A drive at risk is mounted read-only**, and can be blocked at the device
-  level.
+  level. A copy refuses a drive at risk that is already mounted with writing
+  enabled. `copy --allow-rw-source` accepts it anyway: the system may then write
+  to it during the copy (its journal, access times), which wears a failing
+  disk and changes it. Remount it read-only instead whenever you can.
 - **Destination checks:**
   - never inside the source;
   - never on the same physical disk, through partitions, LUKS and LVM (unless
     you insist in the terminal);
+  - a disk image never on the disk being read, whatever holds the folder, and
+    never in a folder whose disk cannot be told;
   - enough room;
   - existing files kept.
 - **Device names are never trusted across time:** the disk sequence number is
@@ -757,7 +778,7 @@ It never changes Big-Mount's configuration or restarts its service.
 | Home says *a mounted device did not answer in time* | a mounted volume hangs (often a failing disk, or FUSE over one). Every drive is still listed after a few seconds, without its free space |
 | A job says *Stopping: waiting for the disk to answer* | a read is stuck inside the driver; it ends when the disk answers. Nothing is killed, so no file is left half-written |
 | `--doctor` says the menu entry was changed | on BigLinux, *render-menu-options* adds the graphics card options to every menu entry: expected |
-| Nothing happens when asked for the password | a polkit agent must be running in your session (Plasma and GNOME have one). Over SSH, use `sudo big-storage-rescue --cli …` for the operations that need the helper |
+| Nothing happens when asked for the password | a polkit agent must be running in your session (Plasma and GNOME have one). Over SSH, use `sudo big-storage-rescue --cli …`: everything then runs as root, with root's jobs, and a disk image goes only into a folder that belongs to root |
 
 ## Development
 

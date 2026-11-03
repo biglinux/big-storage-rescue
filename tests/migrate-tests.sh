@@ -110,6 +110,26 @@ printf '[Desktop Entry]\nHidden=true\n' > "$XDG_CONFIG_HOME/autostart/big-mount-
 "$B" --migrate-state > /dev/null
 check "no entry is created" test ! -e "$XDG_CONFIG_HOME/autostart/big-storage-rescue-notifier.desktop"
 
+begin "a job that could not be copied is tried again"
+rm -rf "$XDG_STATE_HOME/big-storage-rescue"
+old_job 20261102-090000-aa11 copy completed
+chmod 000 "$OLD/20261102-090000-aa11/events.log"
+"$B" --migrate-state > "$WORK/run3"; rc=$?
+check "exit 1: it is left in Big-Mount" bash -c '[ "$1" = 1 ] && [ ! -e "$2" ]' _ "$rc" "$NEW/20261102-090000-aa11"
+check "  ... not done for good: no mark" test ! -e "$XDG_STATE_HOME/big-storage-rescue/migrated-from-big-mount"
+chmod 644 "$OLD/20261102-090000-aa11/events.log"
+"$B" --cli jobs --json > /dev/null
+check "  ... brought over on the next start" grep -qx 'KIND=copy' "$NEW/20261102-090000-aa11/job.conf"
+check "  ... and done for good then" test -e "$XDG_STATE_HOME/big-storage-rescue/migrated-from-big-mount"
+
+begin "the lock of the migration is let go"
+rm -f "$XDG_STATE_HOME/big-storage-rescue/migrated-from-big-mount"
+out="$(BSR_LIB_DIR="$REPO/big-storage-rescue/usr/lib/big-storage-rescue"
+   . "$BSR_LIB_DIR/lib.sh"; . "$BSR_LIB_DIR/migrate.sh"
+   bsr_migrate_run run > /dev/null
+   flock -n "$XDG_STATE_HOME/big-storage-rescue/migration.lock" true && echo free)"
+check "the program that migrated goes on without holding it" eq "$out" free
+
 begin "a paused copy of Big-Mount resumes here"
 rm -rf "$XDG_STATE_HOME" "$XDG_CONFIG_HOME"
 mkdir -p "$SRC/fotos"

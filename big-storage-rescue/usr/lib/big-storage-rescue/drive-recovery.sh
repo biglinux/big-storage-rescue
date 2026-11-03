@@ -258,6 +258,9 @@ bsr_rec_image_supervise() {
    bsr_job_report_write "$dir"
 }
 
+# A function of its own: the tests replace it, having no such device
+bsr_is_block() { [ -b "$1" ]; }
+
 # The current device of an image job: the disk with the serial it had, and on it
 # the same partition (PART: "1" of sdb1, "p2" of nvme0n1p2, empty for the
 # disk). Without a serial, the name it had. Either way with the same size.
@@ -307,8 +310,8 @@ bsr_rec_image_cmd() {
    bsr_dv_scan
    local size="${DV[$src|SIZE]:-0}"
    [ "$size" -gt 0 ] 2>/dev/null || { R_ERR=unavailable; bsr_resolve_fail "$src"; return 24; }
-   local disk="$src"
-   bsr_dv_disks_of "$src" && disk="${DV_DISKS[0]}"
+   local disk="$src" src_disks=("$src") p b
+   bsr_dv_disks_of "$src" && disk="${DV_DISKS[0]}" src_disks=("${DV_DISKS[@]}")
    # The window names the disk it showed: another one under that name is refused
    if [ -n "$expect" ]; then
       bsr_diskseq "$disk"
@@ -336,6 +339,15 @@ bsr_rec_image_cmd() {
       bsr_rec_refusal "$json" image-exists
       return
    fi
+   # Whatever holds the folders: a loop device over a file on that disk, a
+   # Btrfs of several disks, FUSE (the helper checks again, as root)
+   for p in "$img" "$map"; do
+      bsr_rec_probe "$p"
+      bsr_path_disks "$REPLY" || { bsr_rec_refusal "$json" image-dest-unknown; return; }
+      for b in "${BK_DISKS[@]}"; do
+         [[ " ${src_disks[*]} " == *" $b "* ]] && { bsr_rec_refusal "$json" image-same-disk; return; }
+      done
+   done
    bsr_cp_avail "${img%/*}"
    [ -d "${img%/*}" ] || { bsr_rec_probe "$img"; bsr_cp_avail "$REPLY"; }
    local have=0 avail="$REPLY" warns=()
@@ -359,7 +371,7 @@ bsr_rec_image_cmd() {
             "$(bsr_jb ok 1)" "$(bsr_jn exit 0 avail "$avail" total_bytes "$size" total_files 0)" "$(bsr_rec_warnings_json "${warns[@]}")"
          return 0
       fi
-      printf 'dry-run: pkexec bsr-drive-helper image %q %q %q %s\n' "$src" "$img" "$map" "$retries"
+      printf 'dry-run: pkexec bsr-image-helper %q %q %q %s\n' "$src" "$img" "$map" "$retries"
       return 0
    fi
    mkdir -p -- "${img%/*}" || return 1

@@ -14,6 +14,7 @@
   dialog.py     the quick dialogs of --gui-diagnose, --gui-remove and the notifier
   bsr-holders        pkexec: lsof of every user for one mount point (read-only)
   bsr-drive-helper   pkexec: protect/unprotect, smart, partitions, image
+  bsr-image-helper   pkexec: a disk image (its own polkit action), runs bsr-drive-helper image
 ```
 
 ## One engine

@@ -83,8 +83,24 @@ the differences are within noise. The split did not make it slower.
 | gui-e2e | 7 | **7 passed** |
 | ShellCheck (CI set), `bash -n`, ruff | clean | clean |
 
+## After the second review (2026-11-03)
+
+The fixes of the CodeRabbit review of biglinux PR #1 (docs/21).
+
+| Suite | Before (`60a30c8`) | After |
+| --- | --- | --- |
+| lib-tests | 267 | **276 passed** (which disks hold a folder; the erase check really looks) |
+| drive-tests | 386 | **393 passed** (the engine's own block check, image refusals, the helper) |
+| migrate-tests | 41 | **46 passed** (a failed job is tried again; the lock is let go) |
+| i18n-tests | 37 | **37 passed** |
+| package-check | 108 | **112 passed** (`bsr-image-helper`; no two polkit actions share a program) |
+| gui-tests | 174 | **174 passed** |
+| gui-e2e | 7 | **7 passed** |
+| drive-integration `image protect` | never run | **36 passed** (the helper as root on loop devices, with sudo) |
+| ShellCheck (CI set), `bash -n`, ruff | clean | clean |
+
 Stand-ins that a test runs through another program (ionice, timeout) live
-in `/var/tmp`. `/tmp` may be mounted noexec, and an `execvp` then quietly
-runs the real program instead. Salvage tests use GNU ddrescue itself, told
+in `/var/tmp`, whatever `TMPDIR` says. `/tmp` may be mounted noexec, and an
+`execvp` then quietly runs the real program instead. Salvage tests use GNU ddrescue itself, told
 which areas are bad (`--test-mode`) or how fast it may read
 (`--max-read-rate`). CI installs `ddrescue` for them.

@@ -52,7 +52,7 @@ bsr_tui_main() {
    local n
    while :; do
       bsr_dv_scan || return 1
-      bsr_tui_title "BIG-MOUNT DRIVE MANAGER" $"Safe diagnosis and recovery"
+      bsr_tui_title "BIG STORAGE RESCUE" $"Safe diagnosis and recovery"
       printf $"Devices found: %s"'\n\n' "${#DV_TOP[@]}"
       bsr_dv_list_text numbered
       printf '%s\n' "  j) "$"Copies and images" "  a) "$"Refresh" "  0) "$"Quit"

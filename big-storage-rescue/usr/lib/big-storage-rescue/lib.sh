@@ -851,6 +851,65 @@ bsr_system_use() {
    return 1
 }
 
+# bsr_path_disks PATH: the whole disks that store the filesystem PATH is on,
+# in BK_DISKS: through partitions, LUKS, LVM and RAID, every device of a
+# Btrfs, and from a loop device on to the disks of the file behind it. 0 when
+# that is known (BK_DISKS stays empty for memory, or a share of another
+# computer); 1 when it cannot be told, as for FUSE without a device, an
+# overlay or a share served by this computer: what must never be written on
+# a drive refuses those.
+bsr_path_disks() {
+   BK_DISKS=()
+   _bsr_path_disks "$1" 0
+}
+
+_bsr_path_disks() {
+   local out src fstype host uuid m
+   [ "$2" -lt 8 ] || return 1
+   out="$(timeout 10 findmnt -n -P -o SOURCE,FSTYPE -T "$1" 2>/dev/null)" && [ -n "$out" ] || return 1
+   bsr_parse_pairs "${out%%$'\n'*}"
+   src="${KV[SOURCE]%%\[*}" fstype="${KV[FSTYPE]}"
+   case "$fstype" in
+      tmpfs | ramfs) return 0 ;;
+      nfs | nfs4 | cifs | smb3)
+         # //host/share or host:/path; a share of this computer can be on any of its disks
+         if [[ $src == //* ]]; then host="${src#//}"; host="${host%%/*}"; else host="${src%%:/*}"; fi
+         host="${host#[}"; host="${host%]}"
+         { read -r m < /proc/sys/kernel/hostname; } 2>/dev/null
+         case "${host,,}" in localhost | localhost.* | 127.* | ::1 | 0.0.0.0 | "${m,,}" | "") return 1 ;; esac
+         return 0
+         ;;
+   esac
+   [[ $src == /dev/* ]] || return 1
+   _bsr_dev_disks "$src" "$2" || return 1
+   # findmnt names one device of a Btrfs that may span several
+   if [ "$fstype" = btrfs ]; then
+      uuid="$(lsblk -n -d -o UUID -- "$src" 2>/dev/null)"
+      [ -n "$uuid" ] || return 1
+      for m in "/sys/fs/btrfs/$uuid/devices/"*; do
+         [ -e "$m" ] || continue
+         _bsr_dev_disks "/dev/${m##*/}" "$2" || return 1
+      done
+   fi
+   return 0
+}
+
+_bsr_dev_disks() {
+   local name type backing found=0
+   while read -r name type; do
+      found=1
+      case "$type" in
+         disk) BK_DISKS+=("$name") ;;
+         loop)
+            BK_DISKS+=("$name")
+            backing="$(cat "/sys/block/${name##*/}/loop/backing_file" 2>/dev/null)"
+            [ -n "$backing" ] && _bsr_path_disks "$backing" "$(($2 + 1))" || return 1
+            ;;
+      esac
+   done < <(lsblk -s -n -p -r -o NAME,TYPE -- "$1" 2>/dev/null)
+   [ "$found" = 1 ]
+}
+
 # FUSE daemons serving DEV (ntfs-3g, lowntfs-3g, exfat-fuse...): umount
 # returns as soon as the kernel detaches the mount, but the daemon then
 # still writes the final metadata to the device. Fills FUSE_PIDS.
