@@ -134,9 +134,14 @@ bsr_main() {
 bsr_migrate_quietly() {
    local a
    [ "${1:-}" = __run ] && return 0
-   for a in "$@"; do [ "$a" = --dry-run ] && return 0; done
    [ -d "${XDG_STATE_HOME:-$HOME/.local/state}/big-mount" ] || [ -d "${XDG_CONFIG_HOME:-$HOME/.config}/big-mount" ] || return 0
    [ -e "${XDG_STATE_HOME:-$HOME/.local/state}/big-storage-rescue/migrated-from-big-mount" ] && return 0
+   for a in "$@"; do
+      if [ "$a" = --dry-run ]; then
+         printf '%s\n' $"The jobs of Big-Mount 2.x are not brought over by a dry run. To see them here, run first: big-storage-rescue --migrate-state" >&2
+         return 0
+      fi
+   done
    bsr_load migrate.sh && bsr_migrate_run auto >/dev/null 2>&1
    return 0
 }

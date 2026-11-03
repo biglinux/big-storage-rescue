@@ -100,13 +100,14 @@ Each finding was checked against the code first. Fixed:
 Its review on ruscher PR #3 found six more, all fixed:
 - a share mounted through one of this computer's own addresses (not only
   `localhost`) was taken for another computer's; every address of the name
-  is now compared with this computer's, and a name that does not resolve is
-  refused;
+  is now compared with this computer's; a name that does not resolve, or
+  addresses that cannot be read, are refused;
 - a job whose `job.conf` cannot be read is tried again, not dropped as
   invalid;
 - when `--migrate-state` finds a job that must be tried again after the
   migration was marked done, the mark goes;
-- no automatic migration on a `--dry-run`;
+- no automatic migration on a `--dry-run`, which says how to see the jobs of
+  Big-Mount (`--migrate-state`);
 - the README example makes a manifest for the salvage job too (its own ID);
 - `manual-check.sh` no longer passes when `systemctl` fails.
 
