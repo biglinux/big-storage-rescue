@@ -73,7 +73,14 @@ bsr_rp_err_text() {
       repair-not-own) REPLY=$"This disk image is not a file of yours." ;;
       repair-optical) REPLY=$"An optical disc cannot be repaired here." ;;
       repair-small) REPLY=$"This drive is too small to be repaired (at least 80 MB)." ;;
-      repair-read-only) REPLY=$"This drive does not accept writing: its lock switch is on, or writing was blocked on it. Unlock it, or disconnect and connect it again." ;;
+      repair-read-only)
+         REPLY=$"This drive does not accept writing: its lock switch is on, or writing was blocked on it. Unlock it, or disconnect and connect it again."
+         # Where the protection comes from, when that can be told
+         if [ -n "${RP_DISK:-}" ] && bsr_write_protect "$RP_DISK"; then
+            bsr_wp_text "$WP_KIND"
+            REPLY=$"This drive does not accept writing."" $C_REASON ${C_HELP[0]:-}"
+         fi
+         ;;
       repair-mounted) REPLY=$"Volumes of this drive are mounted. Unmount them first." ;;
       repair-in-use) REPLY=$"A repair of this drive is already running." ;;
       repair-confirm) REPLY=$"A repair erases the whole drive: confirm it with --yes, or run it in a terminal to type the name of the device." ;;
@@ -124,7 +131,7 @@ bsr_rp_reason_text() {
 # bsr_rp_eligible DISK: can this drive be repaired here at all? RP_ERR when not
 bsr_rp_eligible() {
    local d="$1" kind backing
-   RP_ERR=""
+   RP_ERR="" RP_DISK="$1"
    # The running system first: that is the reason a person must hear
    if bsr_system_use "$d"; then RP_ERR=repair-system; return 1; fi
    bsr_dv_kind "$d"; kind="$REPLY"

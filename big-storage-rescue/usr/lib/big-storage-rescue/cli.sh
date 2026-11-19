@@ -149,6 +149,56 @@ bsr_migrate_quietly() {
 # ---------------------------------------------------------------------------
 # Texts for each diagnosis (translatable, no markup)
 
+# bsr_wp_text KIND: where a write protection comes from (WP_KIND of
+# bsr_write_protect), in the variables of bsr_cause_text
+bsr_wp_text() {
+   C_TITLE=$"Read-only device" C_FIX_LABEL="" C_FIX_INFO=""
+   case "$1" in
+      chosen)
+         C_TITLE=$"Writing blocked here"
+         C_REASON=$"Writing was blocked on this drive in Big Storage Rescue, to protect it. It lasts until the drive is disconnected."
+         C_HELP=($"To write to it again, allow writing again, or disconnect it and connect it again.")
+         ;;
+      software)
+         C_REASON=$"The drive itself accepts writing: it was blocked on this computer, by a program or a command (blockdev --setro). It is not the lock switch."
+         C_HELP=($"Allow writing again (it asks for the administrator password), or disconnect the drive and connect it again.")
+         ;;
+      switch)
+         C_REASON=$"The card reader reports the card as locked: the lock switch on the side of the card, or of its adapter, is in the Lock position."
+         C_HELP=($"Remove the card and slide the switch on its side up, towards the contacts. Then connect it again."
+            $"A loose or broken switch slides back by itself: try another adapter, or cover the notch of the switch with a small piece of tape."
+            $"Card readers sometimes read the switch wrong: try another reader, or another USB port."
+            $"If it stays locked with the switch unlocked, in two readers, the card locked itself because of wear. It cannot be unlocked: copy your files now and replace it.")
+         ;;
+      card-temporary)
+         C_REASON=$"The card itself is set to refuse writing. This protection is stored inside the card: it is not the lock switch."
+         C_HELP=($"A camera, phone or tool that locked it may unlock it in its own menu (often called protect or lock card)."
+            $"Linux has no safe tool to clear it. Copy your files to another place."
+            $"If it cannot be unlocked, use another card.")
+         ;;
+      card-permanent)
+         C_REASON=$"The card was locked for good by its own controller, usually at the end of its life. This cannot be undone."
+         C_HELP=($"Copy your files to another place now, while they can still be read."
+            $"Replace the card: no program can unlock it.")
+         ;;
+      image)
+         C_REASON=$"This disk image was attached read-only."
+         C_HELP=($"To change it, detach it and attach it again with writing enabled.")
+         ;;
+      *)
+         C_REASON=$"The device itself is write-protected, so no system can write to it."
+         C_HELP=($"SD cards and some USB drives have a small lock switch on the side. Remove the device, move the switch to the unlocked position and connect it again."
+            $"If there is no switch, the device may have locked itself because of wear. Copy your files to another place as soon as possible.")
+         ;;
+   esac
+   case "$1" in
+      chosen | software)
+         C_FIX_LABEL=$"Allow writing again"
+         C_FIX_INFO=$"Writing is allowed again on the device. Nothing on it is changed. The administrator password may be requested."
+         ;;
+   esac
+}
+
 # bsr_cause_text CAUSE: C_TITLE, C_REASON, C_HELP (steps), C_FIX_LABEL, C_FIX_INFO
 bsr_cause_text() {
    C_TITLE="" C_REASON="" C_HELP=() C_FIX_LABEL="" C_FIX_INFO=""
@@ -163,10 +213,7 @@ bsr_cause_text() {
          C_HELP=($"Open the device in the file manager (Dolphin) to mount it.")
          ;;
       hw-readonly)
-         C_TITLE=$"Read-only device"
-         C_REASON=$"The device itself is write-protected, so no system can write to it."
-         C_HELP=($"SD cards and some USB drives have a small lock switch on the side. Remove the device, move the switch to the unlocked position and connect it again."
-            $"If there is no switch, the device may have locked itself because of wear. Copy your files to another place as soon as possible.")
+         bsr_wp_text "${D_WP:-unknown}"
          ;;
       unsupported)
          C_TITLE=$"Read-only device"
@@ -1171,6 +1218,19 @@ bsr_gui_fix() {
          bsr_take_ownership "$dev"
          [ -w "$mp" ] && ok=1
          ;;
+      unprotect)
+         # The helper allows writing again on the device and what it sits on;
+         # it refuses the running system and a drive that was replaced
+         bsr_load drive.sh
+         if bsr_drive_protect unprotect "$dev" >/dev/null 2>&1 && bsr_facts "$dev"; then
+            bsr_diagnose_write "$dev"
+            if [ "$D_CAUSE" = ok ] || [ "$D_CAUSE" = not-mounted ]; then ok=1
+            elif [ "$D_CAUSE" = mounted-ro ] && [ "$D_FIX" = remount ]; then fix=remount
+            fi
+         fi
+         ;;
+   esac
+   case "$fix" in
       remount)
          if ! bsr_drive_lock "${F[DISK]:-$dev}"; then
             bsr_notify info dialog-information "$C_FIX_LABEL" $"Another operation on this drive is in progress. Try again when it finishes."

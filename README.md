@@ -402,6 +402,12 @@ checks the hardware and the kernel log before permissions, so a damaged drive
 is never presented as a simple restriction, and a restriction is never
 presented as damage. Details: [docs/05](docs/05-readonly-diagnostics.md).
 
+A **write-protected card or USB drive** is explained by where the protection
+comes from, also before anything is mounted: the lock switch of the card or
+its adapter (as the reader sees it), a protection stored inside an SD card
+(temporary, or permanent: replace it), or writing blocked on this computer by
+software, which can be allowed again with one click.
+
 ## Busy devices and safe removal
 
 ```bash

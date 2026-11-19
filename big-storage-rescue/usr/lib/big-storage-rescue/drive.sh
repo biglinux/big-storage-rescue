@@ -347,6 +347,17 @@ bsr_dg_volume_json() {
    bsr_jo volume "$p" cause "$cause" title "$title" reason "$reason"
 }
 
+# Whether writing is blocked on the whole drive, and by what: null when it
+# is not. Said even when nothing is mounted, which is when a person asks
+bsr_dg_wp_json() {
+   local help="" sep="" h
+   if ! bsr_write_protect "$1"; then printf 'null'; return 0; fi
+   bsr_wp_text "$WP_KIND"
+   for h in "${C_HELP[@]}"; do bsr_js "$h"; help+="$sep$REPLY"; sep=","; done
+   printf '{%s,"help":[%s],%s}' "$(bsr_jo_inner kind "$WP_KIND" title "$C_TITLE" reason "$C_REASON" detail "$WP_DETAIL" fix_label "$C_FIX_LABEL")" \
+      "$help" "$(bsr_jb can_allow "$([ -n "$C_FIX_LABEL" ] && echo 1)")"
+}
+
 # What may be offered for each volume, read by the GUI
 bsr_dg_json() {
    local d="$1" p first=1 vols="" l first2=1 lines="" earlier="" adv="" w
@@ -377,8 +388,8 @@ bsr_dg_json() {
       earlier+="$REPLY"
    done
    bsr_sc_run "$d"
-   printf '{"device":%s,"advice":[%s],"kernel":[%s],"kernel_earlier":[%s],%s,"volumes":[%s],"tools":{%s}}\n' \
-      "$(bsr_dv_disk_json "$d")" "$adv" "$lines" "$earlier" "$(bsr_sc_json)" "$vols" \
+   printf '{"device":%s,"advice":[%s],"kernel":[%s],"kernel_earlier":[%s],%s,"write_protect":%s,"volumes":[%s],"tools":{%s}}\n' \
+      "$(bsr_dv_disk_json "$d")" "$adv" "$lines" "$earlier" "$(bsr_sc_json)" "$(bsr_dg_wp_json "$d")" "$vols" \
       "$(bsr_jb ddrescue "$(command -v ddrescue >/dev/null && echo 1)" testdisk "$(command -v testdisk >/dev/null && echo 1)" \
          photorec "$(command -v photorec >/dev/null && echo 1)" smartctl "$(command -v smartctl >/dev/null && echo 1)" \
          rsync "$(command -v rsync >/dev/null && echo 1)")"

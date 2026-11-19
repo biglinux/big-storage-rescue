@@ -1019,6 +1019,77 @@ check "a device that is not a block device" eq "$(pd 'SOURCE="/dev/fake9" FSTYPE
 check "a folder outside every mount" eq "$(pd '')" "1 "
 rm -rf -- "$PD_BIN"
 
+begin "write protection: where it comes from (a fake sysfs, fake kernel lines)"
+WPS="$WORK/wp-sys"
+wp_disk() { # NAME RO [FILE=VALUE]...: a disk in the fake sysfs
+    local n="$1" kv; mkdir -p "$WPS/$n/device"; printf '%s\n' "$2" > "$WPS/$n/ro"; printf '42\n' > "$WPS/$n/diskseq"; shift 2
+    for kv in "$@"; do printf '%s\n' "${kv#*=}" > "$WPS/$n/${kv%%=*}"; done
+}
+WP_LINES=()
+bsr_wp_kernel_lines() { [ "${#WP_LINES[@]}" -gt 0 ] && printf '%s\n' "${WP_LINES[@]}"; }
+wp() { local rc; BSR_SYS_BLOCK="$WPS" bsr_write_protect "$1"; rc=$?; printf '%s' "$WP_KIND"; return "$rc"; }
+wp_disk sdw 0
+check "writing allowed: nothing to say" eq "$(wp /dev/sdw; echo ":$?")" ":1"
+wp_disk sdw 1
+WP_LINES=("sd 6:0:0:0: [sdw] Write Protect is on")
+check "a USB reader that says Write Protect is on: the lock switch" eq "$(wp /dev/sdw)" switch
+WP_LINES=("sd 6:0:0:0: [sdw] Write Protect is off")
+check "  ... is off, yet blocked: blocked on this computer" eq "$(wp /dev/sdw)" software
+WP_LINES=("sd 6:0:0:0: [sdw] Write Protect is off" "sd 6:0:0:0: [sdw] Write Protect is on")
+check "  ... the card was changed in the reader: the last answer counts" eq "$(wp /dev/sdw)" switch
+WP_LINES=("sd 6:0:0:0: [sdwx] Write Protect is on")
+check "  ... never the answer of another drive whose name starts the same" eq "$(wp /dev/sdw)" unknown
+WP_LINES=()
+check "  ... nothing in the log: not guessed" eq "$(wp /dev/sdw)" unknown
+
+( XDG_RUNTIME_DIR="$WORK"; printf '42 /dev/sdw\n' > "$WORK/big-storage-rescue-read-only"
+  check "blocked in Big Storage Rescue: said so" eq "$(wp /dev/sdw)" chosen )
+rm -f "$WORK/big-storage-rescue-read-only"
+wp_disk mmcblk0 1 "device/csd=400e00325b590000ed2b7f800a404000"
+check "an SD card with no protection inside, the reader said (ro): the switch" eq "$(WP_LINES=("mmcblk0: mmc0:aaaa SD32G 29.7 GiB (ro)"); wp /dev/mmcblk0)" switch
+check "  ... and without (ro): blocked on this computer" eq "$(wp /dev/mmcblk0)" software
+wp_disk mmcblk0 1 "device/csd=400e00325b590000ed2b7f800a405000"
+check "  ... TMP_WRITE_PROTECT (bit 12 of its CSD): protected inside the card" eq "$(wp /dev/mmcblk0)" card-temporary
+wp_disk mmcblk0 1 "device/csd=400e00325b590000ed2b7f800a406000"
+check "  ... PERM_WRITE_PROTECT (bit 13): locked for good" eq "$(wp /dev/mmcblk0)" card-permanent
+wp_disk mmcblk0 1 "device/csd=400e00325b590000ed2b7f800a404000" "force_ro=1"
+check "  ... force_ro: blocked on this computer" eq "$(wp /dev/mmcblk0)" software
+wp_disk mmcblk0 1 "device/csd=not-hex"
+check "  ... a CSD that is not one is not read" eq "$(wp /dev/mmcblk0)" software
+wp_disk loop7 1
+check "a disk image attached read-only" eq "$(wp /dev/loop7)" image
+
+# The diagnosis of a mounted volume, with what it found (the stand-ins of
+# the first section, which later sections replaced)
+bsr_mounts() {
+    M_TARGET=() M_FSTYPE=() M_VFSOPT=() M_FSOPT=()
+    [ -n "$FAKE_MP" ] || return 0
+    M_TARGET=("$FAKE_MP") M_FSTYPE=("$FAKE_TYPE") M_VFSOPT=("$FAKE_VFS") M_FSOPT=("$FAKE_FS")
+}
+bsr_kernel_messages() { KMSG=(); }
+fake /dev/sdw1 "$WORK/rw" vfat vfat ro ro 0 1; F[DISK]=/dev/sdw
+wp_disk sdw 1; WP_LINES=("sd 6:0:0:0: [sdw] Write Protect is on")
+BSR_SYS_BLOCK="$WPS" bsr_diagnose_write /dev/sdw1
+check "a locked card: hw-readonly, from the switch, nothing to fix by software" eq "$D_CAUSE:$D_WP:$D_FIX" "hw-readonly:switch:"
+check "  ... the line of the kernel is in the details" bash -c '[[ $1 == *"Write Protect is on"* ]]' _ "$D_DETAIL"
+bsr_cause_text hw-readonly
+check "  ... it says where the switch is and what to do when it is broken" bash -c '[[ $1 == *"lock switch"* && $2 == *"tape"* ]] && [ "$3" = 4 ]' _ "$C_REASON" "${C_HELP[*]}" "${#C_HELP[@]}"
+WP_LINES=("sd 6:0:0:0: [sdw] Write Protect is off")
+BSR_SYS_BLOCK="$WPS" bsr_diagnose_write /dev/sdw1
+check "blocked by software: writing can be allowed again" eq "$D_WP:$D_FIX" software:unprotect
+bsr_cause_text hw-readonly
+check "  ... it says it is not the switch, and offers it" bash -c '[[ $1 == *"not the lock switch"* ]] && [ -n "$2" ]' _ "$C_REASON" "$C_FIX_LABEL"
+fake /dev/sdw1 "$WORK/rw" vfat vfat ro ro 1 0; F[DISK]=/dev/sdw
+wp_disk sdw 0
+BSR_SYS_BLOCK="$WPS" bsr_diagnose_write /dev/sdw1
+check "only the partition blocked: by software, never by the drive" eq "$D_WP:$D_FIX" software:unprotect
+D_WP=card-permanent; bsr_cause_text hw-readonly
+check "a card locked for good: replace it, and nothing offered that cannot work" bash -c '[[ $1 == *"cannot be undone"* ]] && [ -z "$2" ]' _ "$C_REASON" "$C_FIX_LABEL"
+D_WP=""; bsr_cause_text hw-readonly
+check "nothing known: the general explanation, as before" bash -c '[[ $1 == *"write-protected"* ]]' _ "$C_REASON"
+check "only sysfs and the journal are read: nothing writes" bash -c '! sed -n "/^bsr_write_protect()/,/^}/p" "$1" | grep -E "> *\"?\\\$|blockdev|echo .* >"' _ "$BSR_LIB/lib.sh"
+unset -f bsr_wp_kernel_lines
+
 echo ""
 echo "========================================="
 echo "lib result: $PASS passed, $FAIL failed"

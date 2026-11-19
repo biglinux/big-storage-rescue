@@ -104,7 +104,7 @@ msgid "Machine-readable output: big-storage-rescue --cli COMMAND --json"
 msgstr "機械可読な出力: big-storage-rescue --cli コマンド --json"
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:123
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:849
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:896
 #: big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:441
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:245
 #: big-storage-rescue/usr/lib/big-storage-rescue/migrate.sh:190
@@ -115,1025 +115,1109 @@ msgstr "big-storage-rescue: 不明なオプション「%s」です (big-storage-
 msgid "The jobs of Big-Mount 2.x are not brought over by a dry run. To see them here, run first: big-storage-rescue --migrate-state"
 msgstr "Big-Mount 2.x のジョブはテスト実行では引き継がれません。ここに表示するには、先に big-storage-rescue --migrate-state を実行してください"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:157
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1194
-msgid "Device ready"
-msgstr "デバイスを使用できます"
-
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:158
-msgid "You can read and write files on this device."
-msgstr "このデバイスのファイルを読み書きできます。"
-
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:161
-msgid "Device not mounted"
-msgstr "デバイスがマウントされていません"
-
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:162
-msgid "The filesystem is not mounted at the moment."
-msgstr "ファイルシステムは現在マウントされていません。"
-
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:163
-msgid "Open the device in the file manager (Dolphin) to mount it."
-msgstr "マウントするには、ファイルマネージャー (Dolphin) でデバイスを開いてください。"
-
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:166
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:172
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:179
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:201
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:155
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:219
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:226
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:248
 msgid "Read-only device"
 msgstr "読み取り専用のデバイス"
 
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:158
+msgid "Writing blocked here"
+msgstr "ここで書き込みを禁止しました"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:159
+msgid "Writing was blocked on this drive in Big Storage Rescue, to protect it. It lasts until the drive is disconnected."
+msgstr "保護のため、Big Storage Rescue でこのドライブへの書き込みを禁止しました。この状態はドライブを取り外すまで続きます。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:160
+msgid "To write to it again, allow writing again, or disconnect it and connect it again."
+msgstr "再び書き込むには、書き込みを再び許可するか、いったん取り外してからもう一度接続してください。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:163
+msgid "The drive itself accepts writing: it was blocked on this computer, by a program or a command (blockdev --setro). It is not the lock switch."
+msgstr "ドライブ自体は書き込みを受け付けます。このコンピューター上で、プログラムまたはコマンド (blockdev --setro) によって書き込みが禁止されています。ロックスイッチが原因ではありません。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:164
+msgid "Allow writing again (it asks for the administrator password), or disconnect the drive and connect it again."
+msgstr "書き込みを再び許可するか (管理者のパスワードを求められます)、ドライブをいったん取り外してからもう一度接続してください。"
+
 #: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:167
+msgid "The card reader reports the card as locked: the lock switch on the side of the card, or of its adapter, is in the Lock position."
+msgstr "カードリーダーは、カードがロックされていると報告しています。カードまたはそのアダプターの側面にあるロックスイッチが Lock の位置になっています。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:168
+msgid "Remove the card and slide the switch on its side up, towards the contacts. Then connect it again."
+msgstr "カードを取り外し、側面のスイッチを上 (端子の方向) にスライドしてください。それからもう一度接続してください。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:169
+msgid "A loose or broken switch slides back by itself: try another adapter, or cover the notch of the switch with a small piece of tape."
+msgstr "スイッチがゆるんでいたり壊れていたりすると、ひとりでに元の位置に戻ってしまいます。別のアダプターを試すか、スイッチの溝を小さなテープでふさいでください。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:170
+msgid "Card readers sometimes read the switch wrong: try another reader, or another USB port."
+msgstr "カードリーダーがスイッチの状態を誤って読み取ることがあります。別のカードリーダーや別の USB ポートを試してください。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:171
+msgid "If it stays locked with the switch unlocked, in two readers, the card locked itself because of wear. It cannot be unlocked: copy your files now and replace it."
+msgstr "スイッチをロック解除の位置にしても 2 台のカードリーダーでロックされたままなら、カードが消耗によって自らロックしています。ロックは解除できません。今すぐファイルをコピーし、カードを交換してください。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:174
+msgid "The card itself is set to refuse writing. This protection is stored inside the card: it is not the lock switch."
+msgstr "カード自体が書き込みを拒否するように設定されています。この保護はカードの内部に保存されているもので、ロックスイッチではありません。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:175
+msgid "A camera, phone or tool that locked it may unlock it in its own menu (often called protect or lock card)."
+msgstr "カードをロックしたカメラ、スマートフォン、ツールのメニューで、ロックを解除できることがあります (「プロテクト」や「カードのロック」などと呼ばれます)。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:176
+msgid "Linux has no safe tool to clear it. Copy your files to another place."
+msgstr "Linux にはこれを安全に解除するツールがありません。ファイルを別の場所にコピーしてください。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:177
+msgid "If it cannot be unlocked, use another card."
+msgstr "ロックを解除できない場合は、別のカードを使ってください。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:180
+msgid "The card was locked for good by its own controller, usually at the end of its life. This cannot be undone."
+msgstr "カードは、カード自身のコントローラーによって永久にロックされました。通常は寿命の終わりに起こるものです。元に戻すことはできません。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:181
+msgid "Copy your files to another place now, while they can still be read."
+msgstr "まだ読み取れるうちに、今すぐファイルを別の場所にコピーしてください。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:182
+msgid "Replace the card: no program can unlock it."
+msgstr "カードを交換してください。どのプログラムでもロックは解除できません。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:185
+msgid "This disk image was attached read-only."
+msgstr "このディスクイメージは読み取り専用で接続されています。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:186
+msgid "To change it, detach it and attach it again with writing enabled."
+msgstr "変更するには、いったん切り離し、書き込みを有効にしてもう一度接続してください。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:189
 msgid "The device itself is write-protected, so no system can write to it."
 msgstr "デバイス自体が書き込み禁止になっているため、どのシステムからも書き込めません。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:168
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:190
 msgid "SD cards and some USB drives have a small lock switch on the side. Remove the device, move the switch to the unlocked position and connect it again."
 msgstr "SD カードや一部の USB ドライブには、側面に小さなロックスイッチがあります。デバイスを取り外し、スイッチをロック解除の位置に動かしてから、もう一度接続してください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:169
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:191
 msgid "If there is no switch, the device may have locked itself because of wear. Copy your files to another place as soon as possible."
 msgstr "スイッチがない場合は、消耗のためにデバイスが自らロックした可能性があります。できるだけ早くファイルを別の場所にコピーしてください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:173
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:196
+msgid "Allow writing again"
+msgstr "書き込みを再び許可"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:197
+msgid "Writing is allowed again on the device. Nothing on it is changed. The administrator password may be requested."
+msgstr "デバイスへの書き込みを再び許可します。デバイス上のものは何も変更されません。管理者のパスワードを求められる場合があります。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:207
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1254
+msgid "Device ready"
+msgstr "デバイスを使用できます"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:208
+msgid "You can read and write files on this device."
+msgstr "このデバイスのファイルを読み書きできます。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:211
+msgid "Device not mounted"
+msgstr "デバイスがマウントされていません"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:212
+msgid "The filesystem is not mounted at the moment."
+msgstr "ファイルシステムは現在マウントされていません。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:213
+msgid "Open the device in the file manager (Dolphin) to mount it."
+msgstr "マウントするには、ファイルマネージャー (Dolphin) でデバイスを開いてください。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:220
 msgid "This kind of filesystem cannot be written on Linux with the driver in use."
 msgstr "この種類のファイルシステムには、現在使用中のドライバーでは Linux から書き込めません。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:174
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:221
 msgid "CDs, DVDs and disk images (ISO, SquashFS) are read-only by nature."
 msgstr "CD、DVD、ディスクイメージ (ISO、SquashFS) は、もともと読み取り専用です。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:175
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:222
 msgid "Drives formatted on a Mac (HFS+ with journaling, APFS) can only be read on Linux."
 msgstr "Mac でフォーマットされたドライブ (ジャーナリング有効の HFS+、APFS) は、Linux では読み取りのみ可能です。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:176
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:223
 msgid "To write to it, copy the files elsewhere and format the device with a filesystem such as exFAT. Formatting erases everything on it."
 msgstr "書き込めるようにするには、ファイルを別の場所にコピーしてから、exFAT などのファイルシステムでデバイスをフォーマットしてください。フォーマットすると、デバイス上のすべてが消去されます。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:180
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:227
 msgid "Windows did not close this NTFS partition properly (hibernation, Fast Startup or an interrupted shutdown). Writing to it now could damage files."
 msgstr "Windows がこの NTFS パーティションを正しく閉じていません (休止状態、高速スタートアップ、または中断されたシャットダウン)。今書き込むと、ファイルが破損するおそれがあります。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:181
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:228
 msgid "Start Windows and shut it down completely: hold the Shift key while you click Shut down."
 msgstr "Windows を起動し、完全にシャットダウンしてください: Shift キーを押したまま「シャットダウン」をクリックします。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:182
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:229
 msgid "To avoid this in the future, disable Fast Startup in Windows: Control Panel > Power Options > Choose what the power buttons do."
 msgstr "今後これを避けるには、Windows で高速スタートアップを無効にしてください: コントロール パネル > 電源オプション > 電源ボタンの動作を選択する。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:183
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:230
 msgid "If it still happens, check the partition in Windows: open the Command Prompt as administrator and run chkdsk with the /f option for that drive letter."
 msgstr "それでも発生する場合は、Windows でパーティションをチェックしてください: 管理者としてコマンド プロンプトを開き、そのドライブ文字に対して /f オプション付きで chkdsk を実行します。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:184
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:231
 msgid "Big Storage Rescue never repairs NTFS by itself, because the repair tools available on Linux may discard data that Windows still needs."
 msgstr "Big Storage Rescue が NTFS を自動で修復することはありません。Linux で使える修復ツールは、Windows がまだ必要とするデータを破棄するおそれがあるためです。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:187
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:234
 msgid "The filesystem needs attention"
 msgstr "ファイルシステムに注意が必要です"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:188
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:235
 msgid "The system found errors in the filesystem and stopped writing to it to protect your files."
 msgstr "システムがファイルシステムにエラーを見つけたため、ファイルを守るために書き込みを停止しました。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:189
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:236
 msgid "First copy your important files to another place."
 msgstr "まず、重要なファイルを別の場所にコピーしてください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:190
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:237
 msgid "Then check the filesystem with the device unmounted, for example with KDE Partition Manager (Check)."
 msgstr "次に、デバイスをアンマウントした状態でファイルシステムをチェックしてください。たとえば KDE パーティションマネージャーの「チェック」を使います。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:191
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:238
 msgid "Do not write to the device until it has been checked."
 msgstr "チェックが終わるまで、デバイスに書き込まないでください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:194
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:241
 msgid "The device has read or write errors"
 msgstr "デバイスに読み取りエラーまたは書き込みエラーがあります"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:195
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:242
 msgid "The device reported read or write errors. This is usually a bad cable, a weak USB port or a failing drive."
 msgstr "デバイスが読み取りエラーまたは書き込みエラーを報告しました。多くの場合、ケーブルの不良、USB ポートの電力不足、またはドライブの故障が原因です。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:196
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:974
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:243
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1021
 msgid "Copy your important files to another place as soon as possible."
 msgstr "できるだけ早く、重要なファイルを別の場所にコピーしてください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:197
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:244
 msgid "Try another cable and connect the device directly to the computer, without a hub."
 msgstr "別のケーブルを試し、ハブを使わずにデバイスをコンピューターに直接接続してください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:198
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:245
 msgid "Check the health of the drive in KDE Partition Manager (SMART status)."
 msgstr "KDE パーティションマネージャーでドライブの健康状態 (SMART ステータス) を確認してください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:202
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:249
 msgid "The filesystem was mounted read-only, but no problem was found with it."
 msgstr "ファイルシステムは読み取り専用でマウントされましたが、問題は見つかりませんでした。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:203
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:250
 msgid "Mount it again with writing enabled."
 msgstr "書き込みを有効にして、もう一度マウントしてください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:204
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:251
 msgid "Mount again with writing"
 msgstr "書き込み可能にして再マウント"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:205
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:252
 msgid "The device will be unmounted and mounted again with writing enabled. Nothing on it is changed. Programs using it must be closed first."
 msgstr "デバイスをアンマウントし、書き込みを有効にしてもう一度マウントします。デバイス上の内容は何も変更されません。デバイスを使用しているプログラムは先に閉じる必要があります。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:208
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:216
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:221
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:235
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:255
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:263
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:268
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:282
 msgid "No permission to write"
 msgstr "書き込み権限がありません"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:209
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:256
 msgid "The device accepts writing, but its main folder belongs to another user and you are not allowed to change it."
 msgstr "デバイスへの書き込みは可能ですが、メインフォルダーが別のユーザーの所有になっていて、変更する権限がありません。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:210
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:257
 msgid "You can become the owner of the main folder. Only that folder changes: the files and folders inside it keep their owners."
 msgstr "メインフォルダーの所有者を自分に変更できます。変更されるのはそのフォルダーだけで、中のファイルやフォルダーの所有者はそのままです。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:211
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:258
 msgid "This is the usual fix for drives formatted with a Linux filesystem (ext4, Btrfs, XFS)."
 msgstr "これは、Linux のファイルシステム (ext4、Btrfs、XFS) でフォーマットされたドライブでの一般的な解決方法です。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:212
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:259
 msgid "Become owner of the main folder"
 msgstr "メインフォルダーの所有者になる"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:213
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:260
 msgid "The main folder of the device will belong to you (not recursive: the files and folders inside keep their owners). The administrator password may be requested."
 msgstr "デバイスのメインフォルダーが現在のユーザーの所有になります (再帰的ではありません: 中のファイルやフォルダーの所有者はそのままです)。管理者のパスワードを求められる場合があります。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:217
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:264
 msgid "This partition contains an operating system. Its folders belong to that system and must keep their owners."
 msgstr "このパーティションにはオペレーティングシステムが入っています。フォルダーはそのシステムのものであり、所有者を変えてはいけません。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:218
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:265
 msgid "Save your files in a folder that belongs to you, for example your home folder on that system."
 msgstr "自分が所有するフォルダーにファイルを保存してください。たとえば、そのシステム上の自分のホームフォルダーです。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:222
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:269
 msgid "This folder belongs to %s, and only its owner can create or change files in it."
 msgstr "このフォルダーは %s の所有で、所有者だけがここにファイルを作成または変更できます。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:223
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:270
 msgid "Save your files in a folder of your own, for example in your home folder."
 msgstr "自分のフォルダーにファイルを保存してください。たとえば、ホームフォルダーです。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:226
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:273
 msgid "System partition"
 msgstr "システムパーティション"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:227
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:274
 msgid "This partition holds the operating system that is running now. Only the system and administrators write here."
 msgstr "このパーティションには、現在実行中のオペレーティングシステムが入っています。ここに書き込むのはシステムと管理者だけです。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:228
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:275
 msgid "Save your files in your home folder."
 msgstr "ファイルはホームフォルダーに保存してください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:231
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:278
 msgid "Swap space"
 msgstr "スワップ領域"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:232
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:279
 msgid "This partition is used as swap space (virtual memory), not to store files."
 msgstr "このパーティションは、ファイルの保存ではなくスワップ領域 (仮想メモリー) として使われています。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:236
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:283
 msgid "The device was mounted for another user, so only that user can write to it."
 msgstr "デバイスは別のユーザー向けにマウントされたため、そのユーザーだけが書き込めます。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:237
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:284
 msgid "Unmount it and open it again from the file manager while you are logged in."
 msgstr "アンマウントしてから、ログインした状態でファイルマネージャーからもう一度開いてください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:239
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:286
 msgid "This internal partition is mounted by Big-Mount at boot. An administrator can choose who may write to it with PERMISSIONS in /etc/big-mount.conf."
 msgstr "この内部パーティションは、起動時に Big-Mount によってマウントされます。誰が書き込めるかは、管理者が /etc/big-mount.conf の PERMISSIONS で選べます。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:241
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:288
 msgid "Mount again for my user"
 msgstr "自分のユーザーで再マウント"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:242
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:289
 msgid "The device will be unmounted and mounted again for your user. Nothing on it is changed. Programs using it must be closed first."
 msgstr "デバイスをアンマウントし、現在のユーザーでもう一度マウントします。デバイス上の内容は何も変更されません。デバイスを使用しているプログラムは先に閉じる必要があります。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:245
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:292
 msgid "Unknown state"
 msgstr "不明な状態"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:246
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:293
 msgid "The state of this device could not be determined."
 msgstr "このデバイスの状態を判別できませんでした。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:255
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:930
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:302
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:977
 #: big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:57
 msgid "unknown"
 msgstr "不明"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:286
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:333
 msgid "system"
 msgstr "システム"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:291
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:338
 msgid "other"
 msgstr "その他"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:304
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:602
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:351
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:649
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:314
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:260
 msgid "Device"
 msgstr "デバイス"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:305
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:603
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:352
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:650
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:274
 msgid "Filesystem"
 msgstr "ファイルシステム"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:307
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:604
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:354
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:651
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:278
 msgid "Mounted at"
 msgstr "マウント先"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:308
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:355
 msgid "Folder"
 msgstr "フォルダー"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:310
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:357
 msgid "Writable, but not by your user"
 msgstr "書き込み可能 (現在のユーザーは不可)"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:310
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:357
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:277
 msgid "Status"
 msgstr "状態"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:314
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:973
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:361
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1020
 msgid "How to solve:"
 msgstr "解決方法:"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:318
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:365
 msgid "Attention: the filesystem has recorded errors. Copy important files elsewhere and check it soon."
 msgstr "注意: ファイルシステムにエラーが記録されています。重要なファイルを別の場所にコピーし、早めにチェックしてください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:321
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:368
 msgid "Attention: the drive that holds this device reported errors since the computer was started. Copy important files elsewhere and check the drive."
 msgstr "注意: このデバイスがあるドライブは、コンピューターの起動後にエラーを報告しました。重要なファイルを別の場所にコピーし、ドライブを確認してください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:394
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:441
 msgid "To see the errors of the drive: big-storage-rescue --diagnose %s"
 msgstr "ドライブのエラーを表示するには: big-storage-rescue --diagnose %s"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:396
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1030
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:443
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1077
 msgid "Technical details:"
 msgstr "技術的な詳細:"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:412
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:459
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-tui.sh:87
 msgid "DEVICE"
 msgstr "デバイス"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:412
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:459
 msgid "LABEL"
 msgstr "ラベル"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:412
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:459
 msgid "SIZE"
 msgstr "サイズ"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:412
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:459
 msgid "FS"
 msgstr "FS"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:412
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:459
 msgid "MANAGED BY"
 msgstr "管理元"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:412
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:459
 msgid "MOUNTED AT"
 msgstr "マウント先"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:412
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:459
 msgid "STATE"
 msgstr "状態"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:422
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:469
 msgid "not mounted"
 msgstr "未マウント"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:424
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:471
 msgid "in use by the system"
 msgstr "システムが使用中"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:426
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:473
 msgid "READ-ONLY"
 msgstr "読み取り専用"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:428
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:475
 msgid "read and write"
 msgstr "読み書き可能"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:430
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:477
 msgid "no write permission"
 msgstr "書き込み権限なし"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:444
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:491
 msgid "Storage devices"
 msgstr "ストレージデバイス"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:458
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:505
 msgid "To find out why a device cannot be written to, run: big-storage-rescue --diagnose DEVICE"
 msgstr "デバイスに書き込めない理由を調べるには、次を実行してください: big-storage-rescue --diagnose デバイス"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:465
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:512
 #: big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:399
 msgid "Running system"
 msgstr "実行中のシステム"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:472
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:519
 msgid "Environment"
 msgstr "環境"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:475
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:522
 msgid "not installed"
 msgstr "未インストール"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:476
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:523
 msgid "present: automount disabled"
 msgstr "あり: 自動マウントは無効"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:477
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:524
 msgid "available"
 msgstr "利用可能"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:477
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:948
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:524
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:995
 msgid "not available"
 msgstr "利用不可"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:480
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:527
 msgid "installed"
 msgstr "インストール済み"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:480
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:527
 msgid "missing"
 msgstr "なし"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:482
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:529
 msgid "readable"
 msgstr "読み取り可能"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:482
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:529
 msgid "not readable (fewer details for errors)"
 msgstr "読み取り不可 (エラーの詳細が少なくなります)"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:483
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:530
 msgid "kernel log"
 msgstr "カーネルログ"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:519
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:566
 msgid "Also mounted at %s"
 msgstr "%s にもマウントされています"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:520
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:567
 msgid "Another device is mounted inside it: %s"
 msgstr "別のデバイスが内部にマウントされています: %s"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:521
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:568
 msgid "A swap file on it is in use: %s"
 msgstr "デバイス上のスワップファイルが使用中です: %s"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:522
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:569
 msgid "It is in use as swap space"
 msgstr "スワップ領域として使用中です"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:523
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:570
 msgid "A disk image stored on it is attached: %s"
 msgstr "デバイスに保存されたディスクイメージが接続されています: %s"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:524
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:571
 msgid "It is used by %s (encryption, LVM or RAID)"
 msgstr "%s (暗号化、LVM、または RAID) が使用しています"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:525
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:572
 msgid "Also mounted inside an isolated environment (a container or a sandboxed service): %s"
 msgstr "隔離された環境 (コンテナーまたはサンドボックス化されたサービス) の中にもマウントされています: %s"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:554
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:601
 msgid "A container or a sandboxed service has its own mount of this device (see below). Unmounting it here does not release the device while that mount exists."
 msgstr "コンテナーまたはサンドボックス化されたサービスが、このデバイスを独自にマウントしています (下記参照)。そのマウントが残っている間は、ここでアンマウントしてもデバイスは解放されません。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:555
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:602
 msgid "Stop that container or service first. Big Storage Rescue waits for it before saying the device can be disconnected."
 msgstr "先にそのコンテナーまたはサービスを停止してください。Big Storage Rescue は、それが止まるまで待ってから、デバイスを取り外せることを知らせます。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:557
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:604
 msgid "No program is using it, but the system still is (see below)."
 msgstr "プログラムは使用していませんが、システムがまだ使用しています (下記参照)。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:558
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:605
 msgid "Resolve the item listed below, then try again."
 msgstr "下に表示されている項目を解決してから、もう一度お試しください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:560
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:607
 msgid "None of your programs is using it. A system service or a program of another user may be holding it, or it was released a moment ago."
 msgstr "現在のユーザーのプログラムはどれも使用していません。システムサービスや別のユーザーのプログラムが使用しているか、少し前に解放された可能性があります。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:561
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:608
 msgid "Try again. If it is still busy, show the programs of all users."
 msgstr "もう一度お試しください。それでも使用中の場合は、すべてのユーザーのプログラムを表示してください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:567
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:614
 msgid "%s has a file open for writing on this device."
 msgstr "%s がこのデバイス上のファイルを書き込み用に開いています。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:568
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:615
 msgid "Let it finish, or cancel the operation in that program, then try again."
 msgstr "処理が終わるのを待つか、そのプログラムで操作をキャンセルしてから、もう一度お試しください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:569
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:616
 msgid "A terminal is open in a folder of this device."
 msgstr "このデバイスのフォルダーで端末が開いています。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:570
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:617
 msgid "Type cd in that terminal, or close it, then try again."
 msgstr "その端末で cd と入力するか端末を閉じてから、もう一度お試しください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:571
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:618
 msgid "%s is showing or reading files of this device."
 msgstr "%s がこのデバイスのファイルを表示または読み取っています。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:572
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:619
 msgid "Close the window or tab that shows the device, then try again."
 msgstr "デバイスを表示しているウィンドウまたはタブを閉じてから、もう一度お試しください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:573
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:620
 msgid "The file indexer is reading this device."
 msgstr "ファイルインデクサーがこのデバイスを読み取っています。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:574
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:621
 msgid "It usually finishes in a moment: try again shortly."
 msgstr "通常はすぐに終わります: 少し待ってからもう一度お試しください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:575
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:622
 msgid "%s is running inside a folder of this device."
 msgstr "%s がこのデバイスのフォルダー内で実行中です。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:576
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:578
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:623
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:625
 msgid "Close that program, then try again."
 msgstr "そのプログラムを閉じてから、もう一度お試しください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:577
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:624
 msgid "%s is using files on this device."
 msgstr "%s がこのデバイス上のファイルを使用しています。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:581
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:628
 msgid "In total, %d programs are using it."
 msgstr "合計 %d 個のプログラムが使用しています。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:594
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:641
 msgid "In use"
 msgstr "使用中"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:598
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:645
 msgid "%s is still in use"
 msgstr "%s はまだ使用中です"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:608
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:655
 msgid "Programs using it:"
 msgstr "使用中のプログラム:"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:610
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:612
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:657
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:659
 msgid "Application"
 msgstr "アプリケーション"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:610
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:612
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:657
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:659
 msgid "process"
 msgstr "プロセス"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:610
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:657
 msgid "User"
 msgstr "ユーザー"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:610
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:612
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:657
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:659
 msgid "Activity"
 msgstr "動作"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:628
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:675
 msgid "Also keeping it busy:"
 msgstr "ほかに使用中にしているもの:"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:632
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:679
 msgid "An open file does not necessarily mean that something is being copied."
 msgstr "ファイルが開いているからといって、何かがコピーされているとは限りません。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:659
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:706
 msgid "%s is not in use"
 msgstr "%s は使用されていません"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:661
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:708
 msgid "No program and nothing in the system is using it. It can be unmounted."
 msgstr "どのプログラムもシステムも使用していません。アンマウントできます。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:663
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:710
 msgid "None of your programs is using %s"
 msgstr "現在のユーザーのプログラムはどれも %s を使用していません"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:665
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:712
 msgid "No program of yours, no other mount and no other device is using it. It can probably be unmounted. Programs of other users and of the system are only visible to an administrator."
 msgstr "現在のユーザーのプログラム、ほかのマウント、ほかのデバイスはどれも使用していません。おそらくアンマウントできます。別のユーザーやシステムのプログラムは、管理者にしか表示されません。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:693
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:740
 msgid "The device was disconnected or replaced during the operation. Nothing else was done."
 msgstr "操作中にデバイスが取り外されたか、交換されました。それ以外は何も行っていません。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:752
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:799
 msgid "%s was mounted again at %s"
 msgstr "%s を %s にもう一度マウントしました"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:768
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:815
 msgid "%s: the encrypted volume could not be locked"
 msgstr "%s: 暗号化されたボリュームをロックできませんでした"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:810
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:857
 msgid "They do not start again by themselves when the device comes back."
 msgstr "デバイスが戻っても、これらのサービスは自動では起動しません。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:812
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:859
 msgid "They start again by themselves when the device is mounted again."
 msgstr "デバイスがもう一度マウントされると、これらのサービスは自動で再び起動します。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:855
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:503
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:902
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:514
 msgid "Another removal of this drive is in progress. Nothing was done."
 msgstr "このドライブの別の取り外し処理が進行中です。何も行っていません。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:871
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:918
 msgid "Device removed safely. It can be disconnected now."
 msgstr "安全な取り外し処理が完了しました。デバイスを今すぐ取り外せます。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:873
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:522
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:920
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:533
 msgid "Unmounted. Everything was written to the device."
 msgstr "アンマウントしました。すべてのデータがデバイスに書き込まれました。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:885
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:932
 msgid "These programs can be asked to close (unsaved changes in them may be lost):"
 msgstr "次のプログラムに終了を求めることができます (保存していない変更は失われる場合があります):"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:889
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1244
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:936
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1304
 msgid "Close them"
 msgstr "閉じる"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:889
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:902
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1168
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1220
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1244
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1317
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:936
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:949
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1215
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1280
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1304
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1377
 msgid "Cancel"
 msgstr "キャンセル"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:892
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:939
 msgid "Still running: %s"
 msgstr "まだ実行中: %s"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:895
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:527
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:942
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:538
 msgid "These services use the device and will be stopped when it is unmounted:"
 msgstr "次のサービスがデバイスを使用しており、アンマウント時に停止されます:"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:902
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:949
 msgid "Stop them and continue"
 msgstr "停止して続行"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:905
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:952
 msgid "Nothing was done. Run again with --assume-yes to stop them."
 msgstr "何も行っていません。停止するには --assume-yes を付けてもう一度実行してください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:909
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:956
 msgid "Unmounted, but powering the drive off failed (%s). Wait a moment before disconnecting it."
 msgstr "アンマウントしましたが、ドライブの電源を切れませんでした (%s)。少し待ってから取り外してください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:910
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:524
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:957
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:535
 msgid "Refused: this drive holds the running system (%s)."
 msgstr "拒否しました: このドライブには実行中のシステムがあります (%s)。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:911
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:525
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:958
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:536
 msgid "Permission to unmount was not granted."
 msgstr "アンマウントの権限が与えられませんでした。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:912
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:959
 msgid "Unmounted, but the drive is still in use (%s), so it was not powered off."
 msgstr "アンマウントしましたが、ドライブがまだ使用中のため (%s)、電源は切っていません。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:913
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:960
 msgid "Unmounted. This drive cannot be powered off by the computer; it can be disconnected now."
 msgstr "アンマウントしました。このドライブはコンピューターから電源を切れませんが、今すぐ取り外せます。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:916
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:531
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:963
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:542
 msgid "Could not unmount: %s"
 msgstr "アンマウントできませんでした: %s"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:937
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:984
 msgid "The drive reports errors"
 msgstr "ドライブがエラーを報告しています"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:938
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:985
 msgid "The drive had errors before this start of the computer"
 msgstr "このドライブには、今回のコンピューター起動より前にエラーがありました"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:939
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:986
 msgid "No drive errors found"
 msgstr "ドライブのエラーは見つかりませんでした"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:943
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:492
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:990
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:499
 msgid "Drive"
 msgstr "ドライブ"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:944
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:991
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:313
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:259
 msgid "Connection"
 msgstr "接続"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:946
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:993
 msgid "no problem reported"
 msgstr "問題の報告なし"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:947
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:994
 msgid "the drive predicts its own failure"
 msgstr "ドライブ自身が故障を予測しています"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:951
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:998
 msgid "no failure predicted (%s damaged sectors were replaced by spare ones)"
 msgstr "故障の予測なし (損傷したセクター %s 個が予備のセクターに置き換えられました)"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:953
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1000
 msgid "SMART status"
 msgstr "SMART ステータス"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:956
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1003
 msgid "Since the computer was started, the system recorded no read, write or connection errors for this drive."
 msgstr "コンピューターの起動以降、このドライブの読み取りエラー、書き込みエラー、接続エラーは記録されていません。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:958
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1005
 msgid "The kernel log cannot be read by your user, so recent errors of this drive cannot be checked."
 msgstr "現在のユーザーではカーネルログを読み取れないため、このドライブの最近のエラーを確認できません。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:963
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1010
 msgid "Problems found:"
 msgstr "見つかった問題:"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:966
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1013
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:240
 msgid "The drive itself reports that it is failing (SMART)."
 msgstr "ドライブ自身が故障しつつあることを報告しています (SMART)。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:967
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1014
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:245
 msgid "Since the computer was started, it stopped answering and the connection had to be reset (%s kernel messages)."
 msgstr "コンピューターの起動以降、ドライブが応答しなくなり、接続をリセットする必要がありました (カーネルメッセージ %s 件)。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:968
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1015
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:244
 msgid "Since the computer was started, reading or writing failed (%s kernel messages)."
 msgstr "コンピューターの起動以降、読み取りまたは書き込みに失敗しました (カーネルメッセージ %s 件)。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:969
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1016
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:247
 msgid "Since the computer was started, the connection was slowed down after errors."
 msgstr "コンピューターの起動以降、エラーのため接続速度が落とされました。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:970
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1017
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:246
 msgid "Since the computer was started, the USB connection was reset or lost %s times."
 msgstr "コンピューターの起動以降、USB 接続のリセットまたは切断が %s 回ありました。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:975
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1022
 msgid "Check the data and power cables of the drive, or try another SATA port."
 msgstr "ドライブのデータケーブルと電源ケーブルを確認するか、別の SATA ポートを試してください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:976
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1023
 msgid "An SSD that fails like this may lock itself in a protection mode: it seems to accept writing, but keeps nothing. Copy what you can first; no repair is worth more than your files."
 msgstr "このような故障の仕方をする SSD は、保護モードで自らロックすることがあります: 書き込みを受け付けているように見えても、何も保存されません。まずはコピーできるものをコピーしてください。どんな修復よりも、ファイルのほうが大切です。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:977
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1024
 msgid "If the errors come back, replace the drive."
 msgstr "エラーが再発する場合は、ドライブを交換してください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:986
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1033
 msgid "From before this start of the computer:"
 msgstr "今回のコンピューター起動より前:"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:988
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1035
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:254
 msgid "In %s of the last %s starts of the computer, the drive had read or connection errors (%s kernel messages)."
 msgstr "直近のコンピューターの起動のうち %s 回 (%s 回中) で、ドライブに読み取りエラーまたは接続エラーがありました (カーネルメッセージ %s 件)。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:991
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1038
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:256
 msgid "They were errors of the connection: check the data cable and the power connector of the drive, or try another port."
 msgstr "接続のエラーでした: ドライブのデータケーブルと電源コネクターを確認するか、別のポートを試してください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:995
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1042
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:260
 msgid "Its filesystems recorded %s errors, which are kept across restarts (%s)."
 msgstr "ファイルシステムに %s 件のエラーが記録されており、再起動後も保持されます (%s)。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:997
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1044
 msgid "After the cause is solved (a cable, a drive replaced, the files copied), an administrator can reset them: btrfs device stats -z on Btrfs; e2fsck clears them on ext4."
 msgstr "原因を解決したら (ケーブルの交換、ドライブの交換、ファイルのコピーなど)、管理者がリセットできます: Btrfs では btrfs device stats -z、ext4 では e2fsck がクリアします。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1051
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1054
 #: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1098
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1108
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1116
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1101
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1145
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1155
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1163
 msgid "Storage diagnostics"
 msgstr "ストレージの診断"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1051
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1098
 msgid "No storage device to diagnose was found."
 msgstr "診断できるストレージデバイスが見つかりませんでした。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1054
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1108
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1101
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1155
 msgid "Choose a device:"
 msgstr "デバイスを選択してください:"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1075
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1078
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1122
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1125
 msgid "Unable to access storage device"
 msgstr "ストレージデバイスにアクセスできません"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1076
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1123
 msgid "Big Storage Rescue could not identify this storage device. It may have been disconnected or become temporarily unavailable."
 msgstr "Big Storage Rescue はこのストレージデバイスを識別できませんでした。取り外されたか、一時的に利用できなくなった可能性があります。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1077
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1124
 msgid "If you disconnected it, connect it again and choose Try again."
 msgstr "取り外した場合は、もう一度接続してから「再試行」を選んでください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1078
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1220
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1125
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1280
 msgid "Try again"
 msgstr "再試行"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1078
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1085
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1124
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1126
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1129
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1131
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1140
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1233
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1125
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1132
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1171
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1173
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1176
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1178
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1187
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1293
 msgid "Technical details"
 msgstr "技術的な詳細"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1078
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1124
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1126
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1129
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1131
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1411
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1125
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1171
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1173
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1176
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1178
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1471
 #: big-storage-rescue/usr/lib/big-storage-rescue/ui.sh:234
 msgid "Close"
 msgstr "閉じる"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1098
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1145
 msgid "This folder is not on a local storage device."
 msgstr "このフォルダーはローカルのストレージデバイス上にありません。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1126
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1173
 msgid "Check the drive…"
 msgstr "ドライブを確認…"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1129
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1176
 msgid "Safely remove…"
 msgstr "安全に取り外す…"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1155
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1451
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1202
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1511
 msgid "How to solve"
 msgstr "解決方法"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1176
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1236
 msgid "Another operation on this drive is in progress. Try again when it finishes."
 msgstr "このドライブで別の操作が進行中です。終わってからもう一度お試しください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1194
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1254
 msgid "You can now write to this device."
 msgstr "このデバイスに書き込めるようになりました。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1196
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1256
 msgid "Unable to fix the device"
 msgstr "デバイスの問題を解決できません"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1197
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1257
 msgid "Nothing was changed on the device. See the technical details for more information."
 msgstr "デバイス上では何も変更されていません。詳しくは技術的な詳細を参照してください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1220
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1229
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1280
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1289
 msgid "Device is busy"
 msgstr "デバイスは使用中です"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1220
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1280
 msgid "More options…"
 msgstr "その他のオプション…"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1225
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1285
 msgid "Refresh the list"
 msgstr "一覧を更新"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1225
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1285
 msgid "Show technical details"
 msgstr "技術的な詳細を表示"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1227
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1287
 msgid "Close the listed programs…"
 msgstr "一覧のプログラムを閉じる…"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1228
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1288
 msgid "Show programs of all users (administrator)"
 msgstr "すべてのユーザーのプログラムを表示 (管理者)"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1229
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1289
 msgid "What do you want to do?"
 msgstr "どうしますか?"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1237
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1297
 msgid "Close these programs?"
 msgstr "これらのプログラムを閉じますか?"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1239
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1299
 msgid "They will be asked to close, as when you close their windows. Unsaved changes in them may be lost: if possible, close them yourself instead."
 msgstr "ウィンドウを閉じたときと同じように、終了を求めます。保存していない変更は失われる場合があります: できれば、自分で閉じてください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1241
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1301
 msgid "These will not be closed:"
 msgstr "次のものは閉じられません:"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1244
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1304
 msgid "Close programs"
 msgstr "プログラムを閉じる"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1273
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1333
 msgid "Writing pending data to the device. Do not disconnect it yet."
 msgstr "未書き込みのデータをデバイスに書き込んでいます。まだ取り外さないでください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1278
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1284
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1338
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1344
 msgid "Safely remove"
 msgstr "安全に取り外す"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1278
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1338
 msgid "This folder is not on a removable storage device."
 msgstr "このフォルダーはリムーバブルストレージデバイス上にありません。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1284
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1344
 msgid "The removal of this drive is already in progress."
 msgstr "このドライブの取り外しはすでに進行中です。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1293
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1296
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1305
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1353
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1356
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1365
 msgid "Safe to disconnect"
 msgstr "安全に取り外せます"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1294
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1354
 msgid "Successfully unmounted and powered off. You can disconnect it now."
 msgstr "アンマウントして電源を切りました。今すぐ取り外せます。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1297
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1357
 msgid "Successfully unmounted. You can disconnect it now."
 msgstr "アンマウントしました。今すぐ取り外せます。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1299
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1359
 msgid "Device unmounted"
 msgstr "デバイスをアンマウントしました"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1300
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1360
 msgid "All pending data was written and its filesystems were unmounted."
 msgstr "未書き込みのデータはすべて書き込まれ、ファイルシステムはアンマウントされました。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1306
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1366
 msgid "Successfully unmounted. This drive cannot be powered off by the computer, but you can disconnect it now."
 msgstr "アンマウントしました。このドライブはコンピューターから電源を切れませんが、今すぐ取り外せます。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1313
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1317
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1373
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1377
 msgid "Services use this device"
 msgstr "サービスがこのデバイスを使用しています"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1314
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1374
 msgid "Removing it will stop these services:"
 msgstr "取り外すと、次のサービスが停止します:"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1317
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1377
 msgid "Stop them and remove"
 msgstr "停止して取り外す"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1324
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1339
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1384
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1399
 msgid "Unable to power off device"
 msgstr "デバイスの電源を切れません"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1325
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1385
 msgid "It was unmounted, but powering it off failed. Wait a moment before disconnecting it."
 msgstr "アンマウントしましたが、電源を切れませんでした。少し待ってから取り外してください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1329
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1389
 msgid "Unable to remove device"
 msgstr "デバイスを取り外せません"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1330
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1390
 msgid "It holds the operating system that is running now."
 msgstr "現在実行中のオペレーティングシステムが入っています。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1334
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1348
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1394
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1408
 msgid "Unable to unmount device"
 msgstr "デバイスをアンマウントできません"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1335
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1395
 msgid "Permission was not granted. The device remains mounted."
 msgstr "権限が与えられませんでした。デバイスはマウントされたままです。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1340
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1400
 msgid "Its filesystems were unmounted, but the drive is still in use, so it was not powered off. Do not disconnect it yet."
 msgstr "ファイルシステムはアンマウントされましたが、ドライブがまだ使用中のため、電源は切っていません。まだ取り外さないでください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1345
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1405
 msgid "Device disconnected"
 msgstr "デバイスが取り外されました"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1346
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1406
 msgid "The device was disconnected before the removal finished. If files were being written to it, check them when you connect it again."
 msgstr "取り外し処理が終わる前にデバイスが取り外されました。ファイルを書き込み中だった場合は、もう一度接続したときに確認してください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1349
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1409
 msgid "It remains mounted. Nothing was forced."
 msgstr "マウントされたままです。強制的な操作は何も行っていません。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1401
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1461
 msgid "%s: %s"
 msgstr "%s: %s"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1404
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1464
 msgid "This drive reported serious problems. Copy your files to another drive before trying any repair."
 msgstr "このドライブは深刻な問題を報告しました。修復を試す前に、ファイルを別のドライブにコピーしてください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1406
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1466
 msgid "This drive reported problems. Copy what matters to another place."
 msgstr "このドライブは問題を報告しました。大切なものを別の場所にコピーしてください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1409
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1469
 msgid "Big Storage Rescue shows what was found and how to rescue the files without writing to the drive."
 msgstr "Big Storage Rescue は、見つかった内容と、ドライブに書き込まずにファイルを救出する方法を表示します。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1411
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1471
 msgid "A drive needs attention"
 msgstr "注意が必要なドライブがあります"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1411
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1471
 msgid "Open Big Storage Rescue"
 msgstr "Big Storage Rescue を開く"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1449
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1509
 msgid "Device: %s\\nFilesystem: %s\\nPossible reason: %s"
 msgstr "デバイス: %s\\nファイルシステム: %s\\n考えられる原因: %s"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1451
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1511
 msgid "View details"
 msgstr "詳細を表示"
 
@@ -1154,7 +1238,7 @@ msgid "source:"
 msgstr "ソース:"
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:121
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:728
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:739
 msgid "Big Storage Rescue"
 msgstr "Big Storage Rescue"
 
@@ -1583,7 +1667,7 @@ msgstr "TestDisk がインストールされていません (testdisk パッケ�
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:128
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:485
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:778
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:635
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:646
 msgid "Permission was not granted."
 msgstr "権限が与えられませんでした。"
 
@@ -1614,29 +1698,29 @@ msgid "A file with this name already exists and is not an image started here. Ch
 msgstr "この名前のファイルがすでにあり、ここで開始したイメージではありません。別の名前を選んでください。"
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:135
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:414
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:634
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:421
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:645
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-tui.sh:78
 msgid "The device was disconnected or replaced. Nothing was done."
 msgstr "デバイスが取り外されたか、交換されました。何も行っていません。"
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:136
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:405
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:412
 msgid "This computer has no driver for this filesystem. Installing the right package may solve it."
 msgstr "このコンピューターには、このファイルシステム用のドライバーがありません。適切なパッケージをインストールすると解決する場合があります。"
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:137
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:410
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:417
 msgid "This volume is encrypted. Unlock it first."
 msgstr "このボリュームは暗号化されています。先にロックを解除してください。"
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:138
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:411
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:418
 msgid "This is a part of a larger volume (RAID, LVM or similar), not a filesystem of its own. Its volume must be assembled first."
 msgstr "これは、より大きなボリューム (RAID、LVM など) の一部で、単独のファイルシステムではありません。先にそのボリュームを組み立てる必要があります。"
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:139
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:413
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:420
 msgid "This is swap space, not a place for files."
 msgstr "これはスワップ領域で、ファイルを置く場所ではありません。"
 
@@ -1911,7 +1995,7 @@ msgstr "平均"
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1100
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1119
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:484
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:491
 msgid "Elapsed:"
 msgstr "経過時間:"
 
@@ -1959,7 +2043,7 @@ msgstr "コピーしたデータ"
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1177
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1138
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:501
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:508
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-salvage.sh:378
 msgid "Elapsed"
 msgstr "経過時間"
@@ -2012,7 +2096,7 @@ msgid "Different at the destination:"
 msgstr "保存先で異なるもの:"
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1206
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:510
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:517
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-salvage.sh:386
 msgid "Log:"
 msgstr "ログ:"
@@ -2119,7 +2203,7 @@ msgstr "コピーを開始しました: %s"
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1576
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:396
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:343
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:350
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-salvage.sh:131
 msgid "To follow it: big-storage-rescue --cli status %s --watch"
 msgstr "進行状況を見るには: big-storage-rescue --cli status %s --watch"
@@ -2385,87 +2469,91 @@ msgstr "見つかったもの:"
 msgid "Why it is not called healthy:"
 msgstr "正常と判断しない理由:"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:331
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:334
+msgid "To allow writing again: big-storage-rescue --cli unprotect DEVICE"
+msgstr "書き込みを再び許可するには: big-storage-rescue --cli unprotect デバイス"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:338
 msgid "Volumes:"
 msgstr "ボリューム:"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:340
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:347
 msgid "no driver for this filesystem on this computer"
 msgstr "このコンピューターにはこのファイルシステム用のドライバーがありません"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:342
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:349
 msgid "writing blocked on the device"
 msgstr "デバイスへの書き込みを禁止中"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:348
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:355
 msgid "For the SMART details of the drive, which need the administrator password: big-storage-rescue --cli diagnose DEVICE --smart"
 msgstr "ドライブの SMART の詳細を表示するには (管理者のパスワードが必要です): big-storage-rescue --cli diagnose デバイス --smart"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:358
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:365
 msgid "Copy what matters now, starting with the most important files. Every extra read wears a failing disk."
 msgstr "大切なものを今すぐ、最も重要なファイルからコピーしてください。故障しつつあるディスクは、読み取るたびに消耗します。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:359
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:366
 msgid "Do not run repair tools on this disk: they write, and they can destroy what is still readable."
 msgstr "このディスクに修復ツールを使わないでください: 修復ツールは書き込みを行うため、まだ読み取れるものを壊してしまうおそれがあります。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:360
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:367
 msgid "If the data is very important and cannot be replaced, consider a data recovery professional before insisting."
 msgstr "データがとても重要で代わりがない場合は、無理に続ける前に、データ復旧の専門業者に相談することを検討してください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:363
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:370
 msgid "Copy your important files to another place."
 msgstr "重要なファイルを別の場所にコピーしてください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:364
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:371
 msgid "Try another cable and connect the drive directly to the computer, without a hub."
 msgstr "別のケーブルを試し、ハブを使わずにドライブをコンピューターに直接接続してください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:404
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:411
 msgid "Permission to mount was not granted."
 msgstr "マウントの権限が与えられませんでした。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:406
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:413
 msgid "Windows left this partition hibernated (Fast Startup). It can be read only after Windows shuts down completely."
 msgstr "Windows がこのパーティションを休止状態のままにしています (高速スタートアップ)。Windows を完全にシャットダウンするまで、読み取ることはできません。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:407
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:414
 msgid "The drive could not read the start of this filesystem. This is usually damage on the disk, a bad cable or a weak USB port. Making a disk image with GNU ddrescue is the safest next step."
 msgstr "ドライブはこのファイルシステムの先頭を読み取れませんでした。多くの場合、ディスクの損傷、ケーブルの不良、または USB ポートの電力不足が原因です。次の一歩として最も安全なのは、GNU ddrescue でディスクイメージを作成することです。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:408
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:415
 msgid "The structure of this filesystem seems damaged, or this is not the filesystem it claims to be. Nothing was repaired. A disk image or a search for files (PhotoRec) may still recover data."
 msgstr "このファイルシステムの構造が損傷しているか、名乗っている種類のファイルシステムではないようです。修復は何も行っていません。ディスクイメージやファイルの検索 (PhotoRec) で、まだデータを復元できる可能性があります。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:409
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:416
 msgid "This filesystem was not closed properly and needs to replay its journal, which writes to the disk. To protect the data that was not done. A disk image, worked on as a copy, is the safe way to read it."
 msgstr "このファイルシステムは正しく閉じられておらず、ジャーナルの再生が必要ですが、それにはディスクへの書き込みが伴います。データを守るため、それは行っていません。ディスクイメージを作成し、コピーとして扱うのが安全な読み取り方法です。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:412
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:419
 msgid "No filesystem was recognized on it. If it should have partitions, searching for them with TestDisk does not change the disk."
 msgstr "ファイルシステムを認識できませんでした。パーティションがあるはずの場合は、TestDisk で検索してもディスクは変更されません。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:415
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:422
 msgid "This drive reported problems, so it is only mounted read-only. Writing to it can destroy what is still readable."
 msgstr "このドライブは問題を報告したため、読み取り専用でのみマウントします。書き込むと、まだ読み取れるものを壊してしまうおそれがあります。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:416
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:423
 msgid "It is already mounted with writing enabled. Unmount it first to mount it read-only (big-storage-rescue --cli mount DEVICE --remount)."
 msgstr "すでに書き込み可能でマウントされています。読み取り専用でマウントするには、先にアンマウントしてください (big-storage-rescue --cli mount デバイス --remount)。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:417
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:424
 msgid "It is in use, so it could not be unmounted to be mounted again."
 msgstr "使用中のため、再マウントに必要なアンマウントができませんでした。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:418
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:425
 msgid "Writing could not be blocked on the drive: another volume of it is mounted with writing enabled. Unmount it first."
 msgstr "ドライブへの書き込みを禁止できませんでした: このドライブの別のボリュームが書き込み可能でマウントされています。先にそれをアンマウントしてください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:419
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:426
 msgid "Writing cannot be blocked on the drive of the running system, so the volume was not mounted."
 msgstr "実行中のシステムのドライブには書き込み禁止を設定できないため、ボリュームはマウントしていません。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:420
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:427
 msgid "The reason could not be determined. Nothing was changed on the device. See the technical details."
 msgstr "原因を判別できませんでした。デバイス上では何も変更されていません。技術的な詳細を参照してください。"
 
@@ -2715,188 +2803,192 @@ msgstr "光ディスクはここでは修復できません。"
 msgid "This drive is too small to be repaired (at least 80 MB)."
 msgstr "このドライブは小さすぎるため修復できません (80 MB 以上が必要です)。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:76
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:77
 msgid "This drive does not accept writing: its lock switch is on, or writing was blocked on it. Unlock it, or disconnect and connect it again."
 msgstr "このドライブには書き込めません。ロックスイッチがオンになっているか、書き込みが禁止されています。ロックを解除するか、いったん取り外してからもう一度接続してください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:77
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:81
+msgid "This drive does not accept writing."
+msgstr "このドライブには書き込めません。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:84
 msgid "Volumes of this drive are mounted. Unmount them first."
 msgstr "このドライブのボリュームがマウントされています。先にアンマウントしてください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:78
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:85
 msgid "A repair of this drive is already running."
 msgstr "このドライブの修復はすでに実行中です。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:79
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:86
 msgid "A repair erases the whole drive: confirm it with --yes, or run it in a terminal to type the name of the device."
 msgstr "修復するとドライブ全体が消去されます。--yes で確認するか、端末で実行してデバイス名を入力してください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:80
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:87
 msgid "A tool needed for the repair is not installed."
 msgstr "修復に必要なツールがインストールされていません。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:97
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:104
 msgid "Everything on this drive will be erased: its volumes, files and partitions. Copy what matters first."
 msgstr "このドライブ上のすべて (ボリューム、ファイル、パーティション) が消去されます。大切なものを先にコピーしてください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:98
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:105
 msgid "This drive reported problems. If it holds files you need, recover them first: a repair erases them for good."
 msgstr "このドライブは問題を報告しています。必要なファイルがある場合は、先に復元してください。修復すると、それらは完全に消去されます。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:99
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:106
 msgid "f3 is not installed (package f3), so the real capacity is not measured: a counterfeit card is detected, but its size cannot be told. Installing it is recommended."
 msgstr "f3 がインストールされていないため (f3 パッケージ)、実際の容量は測定されません。偽物のカードは検出されますが、その実際のサイズはわかりません。インストールをお勧めします。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:100
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:107
 msgid "The complete test writes and reads every block. On a slow card it can take hours."
 msgstr "完全テストではすべてのブロックを書き込んで読み取ります。遅いカードでは数時間かかることがあります。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:101
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:108
 msgid "Some older devices (cameras, car radios, TVs) do not read exFAT. FAT32 works everywhere, with files up to 4 GB."
 msgstr "一部の古い機器 (カメラ、カーオーディオ、テレビ) は exFAT を読み取れません。FAT32 はどこでも使えますが、ファイルは 4 GB までです。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:102
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:109
 msgid "ext4 is read by Linux only. Windows, macOS, phones and cameras will not open it."
 msgstr "ext4 を読み取れるのは Linux だけです。Windows、macOS、スマートフォン、カメラでは開けません。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:103
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:110
 msgid "FAT32 cannot store files of 4 GB or more."
 msgstr "FAT32 には 4 GB 以上のファイルを保存できません。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:111
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:118
 msgid "This drive is counterfeit: it announces more space than it really has. It was set up to use only the real part, and works now."
 msgstr "このドライブは偽物です。実際よりも大きな容量を表示しています。実在する部分だけを使うように設定し直したので、今は使用できます。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:112
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:119
 msgid "Part of this drive failed the test. It was left out, and the rest works now. Keep a copy of what you put on it: it may get worse."
 msgstr "このドライブの一部がテストに不合格でした。その部分は除外し、残りは使用できるようになりました。保存したものはコピーを残しておいてください。状態が悪化する可能性があります。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:113
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:120
 msgid "This drive can no longer keep data: writing to it fails. It cannot be repaired. Replace it."
 msgstr "このドライブはもうデータを保持できません。書き込みに失敗します。修復はできません。交換してください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:114
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:121
 msgid "The drive gave back other data than was written: it may be counterfeit. Install f3 (package f3) to measure its real capacity, then repair it again."
 msgstr "ドライブから、書き込んだものと異なるデータが返されました。偽物の可能性があります。実際の容量を測定するために f3 (f3 パッケージ) をインストールしてから、もう一度修復してください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:115
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:122
 msgid "The repair was stopped. The drive was partly erased and has no usable filesystem: repair it again before using it."
 msgstr "修復は停止されました。ドライブは一部が消去され、使用できるファイルシステムがありません。使う前にもう一度修復してください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:116
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:123
 msgid "The repair stopped with an error. See the log. The drive may have no usable filesystem until it is repaired again."
 msgstr "修復はエラーで停止しました。ログを確認してください。もう一度修復するまで、ドライブに使用できるファイルシステムがない可能性があります。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:117
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:124
 msgid "The drive was disconnected or replaced before the repair started. Nothing was done."
 msgstr "修復の開始前に、ドライブが取り外されたか交換されました。何も行っていません。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:118
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:125
 msgid "Something mounted the drive before the repair started. Nothing was done."
 msgstr "修復の開始前に、何かがドライブをマウントしました。何も行っていません。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:119
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:126
 msgid "A tool needed for the repair is not installed. See the log."
 msgstr "修復に必要なツールがインストールされていません。ログを確認してください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:213
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:220
 msgid "Name the drive to repair, such as /dev/sdb."
 msgstr "修復するドライブを /dev/sdb のように指定してください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:303
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:310
 msgid "Repair (this erases the whole drive):"
 msgstr "修復 (ドライブ全体が消去されます):"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:304
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:472
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:311
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:479
 msgid "Drive:"
 msgstr "ドライブ:"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:305
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:312
 msgid "Test:"
 msgstr "テスト:"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:305
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:312
 msgid "complete: every block"
 msgstr "完全: すべてのブロック"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:305
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:312
 msgid "quick: samples of the surface"
 msgstr "クイック: 表面のサンプル"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:306
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:313
 msgid "New filesystem:"
 msgstr "新しいファイルシステム:"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:318
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:325
 msgid "Everything on %s (%s, %s) will be erased."
 msgstr "%s (%s、%s) 上のすべてが消去されます。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:319
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:326
 msgid "To continue, type %s: "
 msgstr "続行するには %s と入力してください: "
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:322
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:329
 msgid "Nothing was done."
 msgstr "何も行っていません。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:341
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:348
 msgid "Repair started: %s"
 msgstr "修復を開始しました: %s"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:451
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:458
 msgid "Measure the real capacity"
 msgstr "実際の容量を測定"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:452
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:459
 msgid "Test the surface"
 msgstr "表面をテスト"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:453
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:460
 msgid "Create a new partition table"
 msgstr "新しいパーティションテーブルを作成"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:454
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:461
 msgid "Create the filesystem"
 msgstr "ファイルシステムを作成"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:461
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:468
 msgid "done"
 msgstr "完了"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:462
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:469
 msgid "failed"
 msgstr "失敗"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:463
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:470
 msgid "skipped"
 msgstr "スキップ"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:464
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:471
 msgid "in progress"
 msgstr "実行中"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:493
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:500
 msgid "Announced capacity"
 msgstr "表示上の容量"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:494
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:501
 msgid "Real capacity"
 msgstr "実際の容量"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:496
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:503
 msgid "Tested"
 msgstr "テスト済み"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:497
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:504
 msgid "Failed the test"
 msgstr "テストに不合格"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:499
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:506
 msgid "Usable now"
 msgstr "現在使用可能"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:500
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:507
 msgid "New filesystem"
 msgstr "新しいファイルシステム"
 
@@ -3228,74 +3320,74 @@ msgstr "書き込み"
 msgid "blocked on the device"
 msgstr "デバイスで禁止中"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:402
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:413
 msgid "smartctl is not installed (package smartmontools), so SMART details cannot be read."
 msgstr "smartctl がインストールされていない (smartmontools パッケージ) ため、SMART の詳細を読み取れません。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:407
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:418
 msgid "Permission to read SMART was not granted."
 msgstr "SMART を読み取る権限が与えられませんでした。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:408
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:419
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-tui.sh:120
 msgid "The drive did not report SMART data. Many USB adapters do not pass it through."
 msgstr "ドライブは SMART データを報告しませんでした。多くの USB アダプターはこのデータを中継しません。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:431
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:442
 msgid "Mounted read-only at %s"
 msgstr "%s に読み取り専用でマウント済み"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:432
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:443
 msgid "Mounted at %s"
 msgstr "%s にマウント済み"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:434
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:445
 msgid "Writing is also blocked on the device itself until it is disconnected."
 msgstr "デバイスが取り外されるまで、デバイス自体への書き込みも禁止されています。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:457
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:621
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:643
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:468
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:632
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:654
 msgid "Name a device, such as /dev/sdb1."
 msgstr "デバイスを指定してください (例: /dev/sdb1)。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:529
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:540
 msgid "Nothing was done. Use big-storage-rescue --unmount to confirm stopping them."
 msgstr "何も行っていません。停止することを確認するには big-storage-rescue --unmount を使ってください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:628
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:639
 msgid "Writing is now blocked on this device until it is disconnected."
 msgstr "デバイスが取り外されるまで、このデバイスへの書き込みを禁止しました。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:629
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:640
 msgid "Writing is allowed on this device again."
 msgstr "このデバイスへの書き込みを再び許可しました。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:632
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:643
 msgid "Another volume of this drive is mounted with writing enabled. Unmount it first."
 msgstr "このドライブの別のボリュームが書き込み可能でマウントされています。先にそれをアンマウントしてください。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:633
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:644
 msgid "Refused: this drive holds the running system."
 msgstr "拒否しました: このドライブには実行中のシステムがあります。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:636
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:647
 msgid "The helper failed (exit %s)."
 msgstr "ヘルパーが失敗しました (終了コード %s)。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:645
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:656
 msgid "Unlocking in the terminal needs an interactive terminal."
 msgstr "端末でロックを解除するには、対話型の端末が必要です。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:715
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:726
 msgid "big-storage-rescue: the graphical application does not run as administrator. Open it as your user; it asks for the password when it needs it."
 msgstr "big-storage-rescue: グラフィカルなアプリケーションは管理者としては実行しません。自分のユーザーで開いてください。必要なときにパスワードを求めます。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:719
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:730
 msgid "big-storage-rescue: there is no graphical session here. Use the manager in the terminal: big-storage-rescue --cli"
 msgstr "big-storage-rescue: ここにはグラフィカルセッションがありません。端末の管理ツールを使ってください: big-storage-rescue --cli"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:729
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:740
 msgid "The application needs GTK 4, libadwaita 1.5 or later and PyGObject (packages gtk4, libadwaita and python-gobject). The same tools work in the terminal: big-storage-rescue --cli"
 msgstr "アプリケーションには GTK 4、libadwaita 1.5 以降、PyGObject (gtk4、libadwaita、python-gobject パッケージ) が必要です。同じ機能は端末でも使えます: big-storage-rescue --cli"
 
@@ -3540,143 +3632,143 @@ msgstr "「%s」はローカルのストレージデバイス上にありませ�
 msgid "'%s' is not a local storage device or a folder on one"
 msgstr "「%s」はローカルのストレージデバイスでも、その中のフォルダーでもありません"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:497
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:579
 msgid "Dolphin (file manager)"
 msgstr "Dolphin (ファイルマネージャー)"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:500
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:582
 msgid "KDE thumbnail generator"
 msgstr "KDE サムネイル生成"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:501
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:583
 msgid "KDE trash"
 msgstr "KDE ごみ箱"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:502
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:584
 msgid "KDE file service (kioworker)"
 msgstr "KDE ファイルサービス (kioworker)"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:503
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:585
 msgid "KDE file service (%s)"
 msgstr "KDE ファイルサービス (%s)"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:506
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:588
 msgid "Baloo file indexer"
 msgstr "Baloo ファイルインデクサー"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:507
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:589
 msgid "File indexer (Tracker)"
 msgstr "ファイルインデクサー (Tracker)"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:509
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:591
 msgid "Terminal"
 msgstr "端末"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:511
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:593
 msgid "Command shell (terminal)"
 msgstr "コマンドシェル (端末)"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:513
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:595
 msgid "Media player"
 msgstr "メディアプレーヤー"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:514
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:596
 msgid "Thumbnail generator"
 msgstr "サムネイル生成"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:515
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:597
 msgid "Document viewer"
 msgstr "ドキュメントビューアー"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:516
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:598
 msgid "Image viewer"
 msgstr "画像ビューアー"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:517
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:599
 msgid "Text editor"
 msgstr "テキストエディター"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:519
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:601
 msgid "Web browser"
 msgstr "ウェブブラウザー"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:520
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:602
 msgid "File manager"
 msgstr "ファイルマネージャー"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:522
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:604
 msgid "Copy or archive operation"
 msgstr "コピーまたはアーカイブ操作"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:523
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:605
 msgid "Synchronization service"
 msgstr "同期サービス"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:524
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:606
 msgid "Backup"
 msgstr "バックアップ"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:534
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:616
 msgid "Current folder is on the device"
 msgstr "現在のフォルダーがデバイス上にあります"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:535
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:617
 msgid "Root folder (chroot) is on the device"
 msgstr "ルートフォルダー (chroot) がデバイス上にあります"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:536
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:618
 msgid "Program running from the device"
 msgstr "デバイスから実行中のプログラム"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:537
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:619
 msgid "File mapped in memory"
 msgstr "メモリーにマップされたファイル"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:540
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:622
 msgid "Open for writing"
 msgstr "書き込み用に開いています"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:541
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:623
 msgid "Open for reading and writing"
 msgstr "読み書き用に開いています"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:542
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:624
 msgid "Folder open"
 msgstr "フォルダーを開いています"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:542
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:624
 msgid "Open for reading"
 msgstr "読み取り用に開いています"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:651
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:733
 msgid "belongs to another user or to the system"
 msgstr "別のユーザーまたはシステムのものです"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:654
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:736
 msgid "part of the desktop session"
 msgstr "デスクトップセッションの一部です"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:657
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:739
 msgid "a terminal: type 'cd' in it or close the tab"
 msgstr "端末です: その端末で「cd」と入力するか、タブを閉じてください"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:660
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:742
 msgid "this tool"
 msgstr "このツール"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:665
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:747
 msgid "has a file open for writing: finish or cancel the operation in the application"
 msgstr "書き込み用にファイルを開いています: アプリケーションで操作を完了するか、キャンセルしてください"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:1040
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:1122
 msgid "%s is unmounted here, but %s (PID %s) still has it mounted at %s"
 msgstr "ここでは %s をアンマウントしましたが、%s (PID %s) がまだ %s にマウントしています"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:1044
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:1126
 msgid "%s is unmounted, but its filesystem driver is still writing to it"
 msgstr "%s はアンマウントされましたが、ファイルシステムドライバーがまだ書き込んでいます"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:1070
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:1152
 msgid "%s is still mounted at %s after being unmounted"
 msgstr "%s はアンマウント後も %s にマウントされたままです"
 
@@ -3902,24 +3994,24 @@ msgid "Recover files…"
 msgstr "ファイルを復元…"
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/gui/actions.py:153
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:389
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:510
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:398
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:532
 msgid "Unmount"
 msgstr "アンマウント"
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/gui/actions.py:154
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:390
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:399
 msgid "Force unmount (close the programs using it)…"
 msgstr "強制アンマウント (使用中のプログラムを閉じる)…"
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/gui/actions.py:159
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:394
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:403
 msgid "Repair the drive (erases it)…"
 msgstr "ドライブを修復 (消去されます)…"
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/gui/actions.py:173
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:350
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:351
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:359
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:360
 #: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:1013
 msgid "More options"
 msgstr "その他のオプション"
@@ -3992,7 +4084,7 @@ msgid "List of files"
 msgstr "ファイルの一覧"
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/gui/models.py:367
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:538
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:560
 msgid "Search by content"
 msgstr "内容による検索"
 
@@ -4246,7 +4338,7 @@ msgstr "「%s」を読み取り専用でマウント"
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:65
 #: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:85
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:505
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:527
 msgid "Mount read-only"
 msgstr "読み取り専用でマウント"
 
@@ -4312,17 +4404,17 @@ msgid "Rescue my files"
 msgstr "ファイルを救出"
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:166
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:385
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:394
 msgid "Export diagnosis…"
 msgstr "診断結果をエクスポート…"
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:168
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:468
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:477
 msgid "Repair…"
 msgstr "修復…"
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:169
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:469
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:478
 msgid "Tests the drive and sets it up again. It erases everything on it."
 msgstr "ドライブをテストして、使える状態に設定し直します。中身はすべて消去されます。"
 
@@ -4344,260 +4436,276 @@ msgstr "コンピューターの起動に使ったドライブでのみ確認し
 msgid "The running system"
 msgstr "実行中のシステム"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:197
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:198
+msgid "Writing is blocked"
+msgstr "書き込みが禁止されています"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:206
 msgid "What to do"
 msgstr "対処方法"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:207
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:216
 msgid "What the drive itself reports (SMART)"
 msgstr "ドライブ自身の報告 (SMART)"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:213
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:222
 #, python-format
 msgid "Read at %s, through the administrator password."
 msgstr "%s に管理者のパスワードを使って読み取りました。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:215
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:224
 msgid "As the system keeps it up to date, without a password."
 msgstr "システムが更新している情報です (パスワード不要)。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:217
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:226
 msgid "Overall verdict"
 msgstr "総合判定"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:217
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:226
 msgid "Passed"
 msgstr "合格"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:217
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:226
 msgid "Failing"
 msgstr "故障の兆候あり"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:218
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:227
 msgid "Sectors waiting to be replaced"
 msgstr "置き換え待ちのセクター"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:219
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:228
 msgid "Sectors already replaced"
 msgstr "置き換え済みのセクター"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:220
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:229
 msgid "Sectors it could not read offline"
 msgstr "オフライン検査で読み取れなかったセクター"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:221
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:230
 msgid "Errors it could not correct"
 msgstr "訂正できなかったエラー"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:222
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:231
 msgid "Cable or adapter errors"
 msgstr "ケーブルまたはアダプターのエラー"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:223
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:232
 msgid "NVMe media errors"
 msgstr "NVMe のメディアエラー"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:224
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:233
 msgid "NVMe life used"
 msgstr "NVMe の使用済み寿命"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:225
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:234
 msgid "Hours powered on"
 msgstr "通電時間"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:226
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:235
 msgid "Temperature now"
 msgstr "現在の温度"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:237
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:246
 msgid "Not read yet. It needs the administrator password, and through USB it can take a minute. Many USB adapters do not pass it through."
 msgstr "まだ読み取っていません。管理者のパスワードが必要で、USB 経由では 1 分ほどかかることがあります。多くの USB アダプターはこのデータを中継しません。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:238
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:247
 msgid "Not read"
 msgstr "未読み取り"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:242
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:251
 msgid "Read SMART…"
 msgstr "SMART を読み取る…"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:242
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:251
 msgid "Read SMART again…"
 msgstr "SMART をもう一度読み取る…"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:244
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:253
 msgid "Asks for the administrator password. It only reads: no test is started."
 msgstr "管理者のパスワードを求めます。読み取るだけで、テストは開始しません。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:256
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:265
 #, python-format
 msgid "%s (about a year of use)"
 msgstr "%s (約 1 年分の使用)"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:257
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:266
 #, python-format
 msgid "%(h)s (about %(y)d years of use)"
 msgstr "%(h)s (約 %(y)d 年分の使用)"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:263
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:272
 msgid "Reading SMART. Through USB it can take a minute."
 msgstr "SMART を読み取っています。USB 経由では 1 分ほどかかることがあります。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:278
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:287
 msgid "Details"
 msgstr "詳細"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:288
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:297
 msgid "Hidden. It identifies this drive: it is also left out of shared reports."
 msgstr "非表示。このドライブを特定できる情報のため、共有用のレポートにも含めません。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:297
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:298
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:306
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:307
 msgid "Show the serial number"
 msgstr "シリアル番号を表示"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:304
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:307
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:313
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:316
 msgid "Messages from the system log"
 msgstr "システムログのメッセージ"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:305
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:314
 #, python-format
 msgid "%d recent message about this drive"
 msgid_plural "%d recent messages about this drive"
 msgstr[0] "このドライブに関する最近のメッセージ %d 件"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:311
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:316
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:320
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:325
 msgid "Messages from earlier starts"
 msgstr "以前の起動時のメッセージ"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:312
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:321
 #, python-format
 msgid "%d error message about this drive before this start of the computer"
 msgid_plural "%d error messages about this drive before this start of the computer"
 msgstr[0] "今回のコンピューター起動より前の、このドライブに関するエラーメッセージ %d 件"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:343
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:352
 msgid "Overview"
 msgstr "概要"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:344
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:353
 msgid "Recover"
 msgstr "復元"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:346
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:355
 msgid "History"
 msgstr "履歴"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:357
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:423
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:366
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:432
 msgid "The drive was disconnected"
 msgstr "ドライブが取り外されました"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:358
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:367
 msgid "Nothing else was done. Connect it again and it comes back here."
 msgstr "それ以外は何も行っていません。もう一度接続すると、ここに戻ります。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:359
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:368
 msgid "Back to my drives"
 msgstr "ドライブの一覧に戻る"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:388
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:397
 msgid "Block writing on the device…"
 msgstr "デバイスへの書き込みを禁止…"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:462
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:471
 #: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/overview.py:69
 #: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:277
 msgid "Recover files"
 msgstr "ファイルを復元"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:465
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:474
 msgid "Check drive"
 msgstr "ドライブを確認"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:473
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:475
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:488
+msgid "Allow writing again…"
+msgstr "書き込みを再び許可…"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:493
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:495
 msgid "Volumes"
 msgstr "ボリューム"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:498
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:520
 msgid "This volume spans more than one device. All of them must be connected."
 msgstr "このボリュームは複数のデバイスにまたがっています。すべてを接続する必要があります。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:509
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:512
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:531
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:534
 #: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/overview.py:66
 msgid "Open files"
 msgstr "ファイルを開く"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:514
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:536
 msgid "Unlock…"
 msgstr "ロック解除…"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:531
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:553
 msgid "Copy your files to another place, step by step. This never writes to this drive."
 msgstr "ファイルを一歩ずつ別の場所にコピーします。このドライブに書き込むことは決してありません。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:532
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:554
 msgid "Start recovering files"
 msgstr "ファイルの復元を開始"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:535
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:557
 msgid "What can be done"
 msgstr "できること"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:536
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:558
 msgid "Copy files that can still be read"
 msgstr "まだ読み取れるファイルをコピー"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:536
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:558
 msgid "The quickest and safest: names and folders are kept."
 msgstr "最も速く安全な方法です: 名前とフォルダーが保持されます。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:537
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:559
 msgid "List what exists, by type"
 msgstr "存在するものを種類別に一覧表示"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:537
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:559
 msgid "Goes through the folders. Then you choose what to copy."
 msgstr "フォルダーを順に調べます。その後、コピーするものを選びます。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:538
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:560
 msgid "For when files cannot be opened. Names and folders are lost, and nothing is guaranteed."
 msgstr "ファイルを開けない場合に使います。名前とフォルダーは失われ、何も保証されません。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:556
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:578
 msgid "Copies and searches of this drive"
 msgstr "このドライブのコピーと検索"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:560
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:582
 msgid "Nothing yet"
 msgstr "まだありません"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:561
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:583
 msgid "What you copy from this drive is listed here."
 msgstr "このドライブからコピーしたものがここに表示されます。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:581
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:583
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:603
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:605
 msgid "Export diagnosis"
 msgstr "診断結果をエクスポート"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:584
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:606
 msgid "Keep them"
 msgstr "含める"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:584
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:606
 msgid "Hide them"
 msgstr "伏せる"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:620
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:637
+msgid "Allow writing again?"
+msgstr "書き込みを再び許可しますか?"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:639
+msgid "Allow writing"
+msgstr "書き込みを許可"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:662
 msgid "Whatever a driver or another program tries, the disk does not change. It lasts until the drive is disconnected. It asks for the administrator password."
 msgstr "ドライバーやほかのプログラムが何をしようとしても、ディスクは変更されません。ドライブを取り外すまで有効です。管理者のパスワードを求めます。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:621
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:663
 msgid "Block writing"
 msgstr "書き込みを禁止"
 
