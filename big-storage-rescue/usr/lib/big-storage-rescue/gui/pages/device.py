@@ -193,6 +193,15 @@ class HealthView(Gtk.Box):
                 group.add_row(w.row(item.get("text", ""), item.get("help", ""), icon_name=icon))
             self.append(group)
 
+        wp = (self.diag or {}).get("write_protect")
+        if wp:
+            group = w.Group(_("Writing is blocked"), wp.get("reason", ""))
+            for step in wp.get("help") or []:
+                group.add_row(w.row(step, icon_name="go-next-symbolic"))
+            if wp.get("can_allow"):
+                group.set_header_suffix(w.button(wp.get("fix_label") or _("Allow writing again"), self.page.allow_writing, css=("flat",)))
+            self.append(group)
+
         if self.diag and self.diag.get("advice"):
             advice = w.Group(_("What to do"))
             for text in self.diag["advice"]:
@@ -468,6 +477,17 @@ class DevicePage(Adw.NavigationPage):
             buttons.append(w.button(_("Repair…"), lambda: self.window.open_repair(dev), icon_name="media-flash-symbolic", css=("pill",),
                                     tooltip=_("Tests the drive and sets it up again. It erases everything on it.")))
         box.append(w.button_row(*buttons))
+        wp = (self.health.diag or {}).get("write_protect")
+        if wp:
+            level = "critical" if wp.get("kind") == "card-permanent" else "attention"
+            text = f"{wp.get('title', '')}: {wp.get('reason', '')}"
+            steps = wp.get("help") or []
+            if steps:
+                text += "\n" + "\n".join(f"• {x}" for x in steps)
+            if wp.get("can_allow"):
+                box.append(w.notice(text, level, action=_("Allow writing again…"), callback=self.allow_writing))
+            else:
+                box.append(w.notice(text, level))
         vols = dev.content_volumes
         if not vols:
             box.append(w.Group(_("Volumes"), _("No filesystem was recognized on it. If it should have partitions, searching for them with TestDisk does not change the disk.")))
@@ -490,7 +510,9 @@ class DevicePage(Adw.NavigationPage):
         if vol.mountpoint:
             state += " — " + vol.mountpoint
         card.append(w.label(state, css=("dim-label",), selectable=True))
-        if vol.device_read_only:
+        wp = (self.health.diag or {}).get("write_protect") or {}
+        if vol.device_read_only and wp.get("kind") in (None, "chosen", "software"):
+            # The lock switch or the card itself is said in the notice above, not here
             card.append(w.label(_("Writing is also blocked on the device itself until it is disconnected."), css=("caption", "dim-label")))
         if vol.used is not None and vol.avail is not None:
             card.append(w.UsageBar(vol.used, vol.avail))
@@ -595,6 +617,26 @@ class DevicePage(Adw.NavigationPage):
     def force_unmount(self):
         if self.dev:
             actions.force_unmount(self.window, actions.drive_target(self.dev))
+
+    def allow_writing(self):
+        """Allow writing again where it was blocked on this computer only: the
+        engine offers it only when the drive itself accepts writing."""
+        if not self.dev:
+            return
+        dev = self.dev
+
+        def answered(rid):
+            if rid != "allow":
+                return
+
+            def done(res):
+                self.window.refresh()
+                self.window.notify_text((res.out or res.err).strip())
+            self.window.engine.protect(dev.device, done, on=False)
+
+        w.alert(self.window, _("Allow writing again?"),
+                _("Writing is allowed again on the device. Nothing on it is changed. The administrator password may be requested."),
+                responses=(("cancel", _("Cancel")), ("allow", _("Allow writing"))), default="cancel", close="cancel", callback=answered)
 
     def repair(self):
         if self.dev and self.dev.repairable:

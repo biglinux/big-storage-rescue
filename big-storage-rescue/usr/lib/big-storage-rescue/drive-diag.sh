@@ -326,6 +326,13 @@ bsr_dg_show() {
    fi
    bsr_ds_advice
    for w in "${DS_ADVICE[@]}"; do bsr_doc_li "$w"; done
+   # Writing blocked on the drive: by what, and what to do
+   if bsr_write_protect "$d"; then
+      bsr_wp_text "$WP_KIND"
+      bsr_doc_p "$C_TITLE: $C_REASON"
+      for w in "${C_HELP[@]}"; do bsr_doc_li "$w"; done
+      [ -n "$C_FIX_LABEL" ] && bsr_doc_li $"To allow writing again: big-storage-rescue --cli unprotect DEVICE"
+   fi
    bsr_sc_run "$d"
    bsr_sc_doc "$SC_SYSTEM"
    bsr_doc_p $"Volumes:"

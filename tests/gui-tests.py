@@ -1536,6 +1536,49 @@ class Repair(Base):
         self.assertFalse(self.win.repair.confirm.get_active(), "a new repair asks again")
 
 
+class WriteProtect(Base):
+    def show_with(self, wp):
+        diag = {"device": seagate(), "advice": [], "kernel": [], "volumes": [], "tools": {"smartctl": True}, "write_protect": wp}
+        fix("diagnose", diag)
+        self.win.show_device("serial:S1DFL8G9")
+        page = self.win.device_page
+        self.assertTrue(pump(lambda: page.health.diag is not None, 4))
+        pump(timeout=0.2)
+        return page
+
+    def test_the_lock_switch_is_explained_and_nothing_is_offered_that_cannot_work(self):
+        page = self.show_with({"kind": "switch", "title": "Read-only device", "reason": "The card reader reports the card as locked.",
+                               "help": ["Slide the switch up.", "Try another adapter."], "detail": "", "fix_label": "", "can_allow": False})
+        self.see("The card reader reports the card as locked.", page)
+        self.see("Slide the switch up.", page)
+        self.assertIsNone(find_button(page, "Allow writing again…"))
+        page.stack.set_visible_child_name("health")
+        self.see("Writing is blocked", page)
+
+    def test_blocked_by_software_can_be_allowed_again_after_a_question(self):
+        page = self.show_with({"kind": "software", "title": "Read-only device", "reason": "It is not the lock switch.",
+                               "help": ["Allow writing again."], "detail": "", "fix_label": "Allow writing again", "can_allow": True})
+        fix_text("unprotect", "Writing is allowed on this device again.")
+        forget_calls()
+        click(page, "Allow writing again…")
+        dialog = self.dialog()
+        self.assertIsNotNone(dialog)
+        self.assertEqual(dialog.get_default_response(), "cancel")
+        self.assertFalse([c for c in calls() if "unprotect" in c], "nothing before the answer")
+        dialog.emit("response", "allow")
+        self.assertTrue(pump(lambda: "--cli unprotect /dev/sdb" in calls(), 3), calls())
+
+    def test_a_card_locked_for_good_is_critical(self):
+        page = self.show_with({"kind": "card-permanent", "title": "Read-only device", "reason": "This cannot be undone.",
+                               "help": ["Replace the card."], "detail": "", "fix_label": "", "can_allow": False})
+        self.see("This cannot be undone.", page)
+        self.assertTrue(any(w.has_css_class("notice-critical") for w in widgets(page)))
+
+    def test_a_drive_that_accepts_writing_shows_nothing(self):
+        page = self.show_with(None)
+        self.assertNotIn("Writing is blocked", text(page))
+
+
 class ResultIndex(unittest.TestCase):
     def test_reads_every_field_also_with_hostile_names(self):
         names = [b"a.jpg", "acentuação.pdf".encode(), b"com\ttab.png", b"-comeca.txt", b"nome\nquebra.mp3", b"\xff\xfeinvalido.jpg", b"pasta/ com espacos /x.zip"]
