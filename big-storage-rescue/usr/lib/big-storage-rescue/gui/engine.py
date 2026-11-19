@@ -245,6 +245,20 @@ class Engine:
         """What can be read of the files copy JOB_ID left out (GNU ddrescue)."""
         self.run(["salvage", job_id, *(["--dry-run"] if dry_run else [])], cb, operation=not dry_run)
 
+    def repair(self, cb, device, mode="quick", filesystem="auto", label="", margin=8, diskseq=None, dry_run=False):
+        """Erases DEVICE, a memory card or a USB drive, and sets it up again. The
+        dry run says whether it can be done and what is on it; the real one is
+        confirmed (--yes) here, by the page that asked the person."""
+        args = ["repair", device, "--mode", mode, "--filesystem", filesystem, "--margin-mib", str(margin)]
+        if label:
+            args += ["--label", label]
+        if diskseq is not None:
+            args += ["--expect-diskseq", str(diskseq)]
+        args.append("--dry-run" if dry_run else "--yes")
+        if not dry_run:
+            args.append("--no-wait")
+        self.run(args, cb, operation=not dry_run)
+
     def damage_map(self, job_id, cb, bins=1024):
         self.run(["map", job_id, "--bins", str(bins)], cb)
 

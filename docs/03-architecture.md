@@ -10,11 +10,13 @@
   migrate.sh    state of Big-Mount 2.x        (loaded only when there is some)
   drive.sh      --cli: commands, JSON, helper (loaded only by --cli and --gui)
   drive-detect.sh  drive-diag.sh  drive-copy.sh  drive-recovery.sh  drive-tui.sh
+  drive-repair.sh  the repair of a card or USB drive: checks, plan, its job (22-repair.md)
   app.py  gui/  the application (GTK 4, libadwaita, Python)
   dialog.py     the quick dialogs of --gui-diagnose, --gui-remove and the notifier
   bsr-holders        pkexec: lsof of every user for one mount point (read-only)
   bsr-drive-helper   pkexec: protect/unprotect, smart, partitions, image
   bsr-image-helper   pkexec: a disk image (its own polkit action), runs bsr-drive-helper image
+  bsr-repair-helper  pkexec: repairs (ERASES) a card or USB drive (its own polkit action, asked every time)
 ```
 
 ## One engine

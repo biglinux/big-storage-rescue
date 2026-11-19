@@ -164,6 +164,9 @@ class HealthView(Gtk.Box):
             buttons.append(w.button(_("Rescue my files"), lambda: self.window.open_wizard(dev),
                                     css=("suggested-action", "pill") if h.risky else ("pill",), icon_name="document-save-symbolic"))
         buttons.append(w.button(_("Export diagnosis…"), self._export, css=("pill",), icon_name="document-save-as-symbolic"))
+        if dev.repairable:
+            buttons.append(w.button(_("Repair…"), lambda: self.window.open_repair(dev), css=("pill",), icon_name="media-flash-symbolic",
+                                    tooltip=_("Tests the drive and sets it up again. It erases everything on it.")))
         panel.append(w.button_row(*buttons))
         self.append(panel)
 
@@ -369,10 +372,11 @@ class DevicePage(Adw.NavigationPage):
         group = Gio.SimpleActionGroup()
         for name, handler in (("technical", self.show_technical), ("report", self.export_report), ("remove", self.safe_remove),
                               ("unmount", self.unmount), ("force", self.force_unmount),
-                              ("protect", self.protect), ("refresh", self.window.refresh)):
+                              ("protect", self.protect), ("refresh", self.window.refresh), ("repair", self.repair)):
             action = Gio.SimpleAction.new(name, None)
             action.connect("activate", lambda _a, _p, h=handler: h())
             group.add_action(action)
+        self.action_group = group
         self.insert_action_group("device", group)
         menu = Gio.Menu()
         first = Gio.Menu()
@@ -386,6 +390,9 @@ class DevicePage(Adw.NavigationPage):
         second.append(_("Force unmount (close the programs using it)…"), "device.force")
         second.append(_("Safely remove"), "device.remove")
         menu.append_section(None, second)
+        third = Gio.Menu()
+        third.append(_("Repair the drive (erases it)…"), "device.repair")
+        menu.append_section(None, third)
         self.menu_button.set_menu_model(menu)
 
     # ----- what is shown
@@ -418,6 +425,7 @@ class DevicePage(Adw.NavigationPage):
             self._signature = None
             return
         self.content.set_visible_child_name("drive")
+        self.action_group.lookup_action("repair").set_enabled(dev.repairable)
         self.set_title(dev.name)
         self.narrow_title.set_title(dev.name)
         signature = repr(dev)
@@ -456,6 +464,9 @@ class DevicePage(Adw.NavigationPage):
         if dev.kind != "image":
             buttons.append(w.button(_("Check drive"), lambda: self.stack.set_visible_child_name("health"),
                                     icon_name="system-search-symbolic", css=("pill",)))
+        if dev.repairable:
+            buttons.append(w.button(_("Repair…"), lambda: self.window.open_repair(dev), icon_name="media-flash-symbolic", css=("pill",),
+                                    tooltip=_("Tests the drive and sets it up again. It erases everything on it.")))
         box.append(w.button_row(*buttons))
         vols = dev.content_volumes
         if not vols:
@@ -534,7 +545,8 @@ class DevicePage(Adw.NavigationPage):
         dev = self.dev
         mounts = [v.mountpoint for v in dev.volumes if v.mountpoint]
         names = [v.device for v in dev.volumes]
-        jobs = [j for j in self.window.jobs if j.source in names or any(j.source == m or j.source.startswith(m + "/") for m in mounts)]
+        jobs = [j for j in self.window.jobs if j.source == dev.device or j.source in names
+                or any(j.source == m or j.source.startswith(m + "/") for m in mounts)]
         # What a row shows, without progress: the History tab keeps its focus while a job runs
         signature = repr((dev.stable_id, [(j.id, j.state, j.state_label, j.source, j.destination) for j in jobs]))
         if signature == self._history_signature:
@@ -583,6 +595,10 @@ class DevicePage(Adw.NavigationPage):
     def force_unmount(self):
         if self.dev:
             actions.force_unmount(self.window, actions.drive_target(self.dev))
+
+    def repair(self):
+        if self.dev and self.dev.repairable:
+            self.window.open_repair(self.dev)
 
     def protect(self):
         if not self.dev:

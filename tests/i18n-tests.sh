@@ -73,10 +73,10 @@ done
 check "service menu: submenu and actions translated" \
     test "$(grep -c '\[pt_BR\]=' big-storage-rescue/usr/share/kio/servicemenus/big-storage-rescue.desktop)" -eq 6
 check "polkit: description and message translated (pt_BR form)" \
-    test "$(grep -c 'xml:lang="pt_BR"' big-storage-rescue/usr/share/polkit-1/actions/org.biglinux.big-storage-rescue.policy)" -eq 6
+    test "$(grep -c 'xml:lang="pt_BR"' big-storage-rescue/usr/share/polkit-1/actions/org.biglinux.big-storage-rescue.policy)" -eq 8
 # polkit looks languages up by their POSIX name (zh_CN, not zh-Hans-CN)
 check "polkit: every language of locale/LINGUAS, by its POSIX name" \
-    bash -c 'while read -r l; do [ "$(grep -c "xml:lang=\"$l\"" "$1")" -eq 6 ] || { echo "      $l"; exit 1; }; done < locale/LINGUAS' _ \
+    bash -c 'while read -r l; do [ "$(grep -c "xml:lang=\"$l\"" "$1")" -eq 8 ] || { echo "      $l"; exit 1; }; done < locale/LINGUAS' _ \
     big-storage-rescue/usr/share/polkit-1/actions/org.biglinux.big-storage-rescue.policy
 
 begin "no user-visible text outside the translation system"
