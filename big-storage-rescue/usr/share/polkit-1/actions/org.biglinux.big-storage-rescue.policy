@@ -70,6 +70,41 @@
     </defaults>
     <annotate key="org.freedesktop.policykit.exec.path">/usr/lib/big-storage-rescue/bsr-image-helper</annotate>
   </action>
+  <!-- A repair ERASES a memory card or a USB drive: the one action of Big
+       Storage Rescue that writes to a device. The password is asked every
+       time, never kept, and the program is its own (bsr-repair-helper), so
+       that no other action can ever reach it -->
+  <action id="org.biglinux.big-storage-rescue.repair">
+    <description>Repair a memory card or USB drive, erasing everything on it</description>
+    <description xml:lang="zh_CN">修复存储卡或 USB 驱动器，并擦除其上的全部内容</description>
+    <description xml:lang="tr">Bir hafıza kartını ya da USB sürücüyü, üzerindeki her şeyi silerek onar</description>
+    <description xml:lang="ru">Исправить карту памяти или USB-накопитель, стерев на нём всё</description>
+    <description xml:lang="pt_BR">Reparar um cartão de memória ou unidade USB, apagando tudo o que houver nele</description>
+    <description xml:lang="pl">Napraw kartę pamięci lub dysk USB, wymazując wszystko, co się na nim znajduje</description>
+    <description xml:lang="ja">メモリーカードや USB ドライブを、中身をすべて消去して修復します</description>
+    <description xml:lang="it">Ripara una scheda di memoria o un'unità USB, cancellandone tutto il contenuto</description>
+    <description xml:lang="fr">Réparer une carte mémoire ou un disque USB, en effaçant tout son contenu</description>
+    <description xml:lang="es">Reparar una tarjeta de memoria o unidad USB, borrando todo lo que contiene</description>
+    <description xml:lang="de">Eine Speicherkarte oder ein USB-Laufwerk reparieren und dabei alles darauf löschen</description>
+    <message>Authentication is required to repair this drive. Everything on it will be erased.</message>
+    <message xml:lang="zh_CN">修复此驱动器需要身份验证。其上的所有内容都将被擦除。</message>
+    <message xml:lang="tr">Bu sürücüyü onarmak için kimlik doğrulaması gerekli. Üzerindeki her şey silinecek.</message>
+    <message xml:lang="ru">Для исправления этого диска требуется аутентификация. Всё на нём будет стёрто.</message>
+    <message xml:lang="pt_BR">É necessário autenticar-se para reparar esta unidade. Tudo o que houver nela será apagado.</message>
+    <message xml:lang="pl">Wymagane jest uwierzytelnienie, aby naprawić ten dysk. Wszystko, co się na nim znajduje, zostanie wymazane.</message>
+    <message xml:lang="ja">このドライブを修復するには、認証が必要です。ドライブ上のすべてが消去されます。</message>
+    <message xml:lang="it">È richiesto autenticarsi per riparare questa unità. Tutto il suo contenuto verrà cancellato.</message>
+    <message xml:lang="fr">Une authentification est nécessaire pour réparer ce disque. Tout ce qu’il contient sera effacé.</message>
+    <message xml:lang="es">Se requiere autenticación para reparar esta unidad. Se borrará todo lo que contiene.</message>
+    <message xml:lang="de">Legitimierung ist erforderlich, um dieses Laufwerk zu reparieren. Alles darauf wird gelöscht.</message>
+    <icon_name>big-storage-rescue</icon_name>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/lib/big-storage-rescue/bsr-repair-helper</annotate>
+  </action>
   <!-- Blocks or allows writing on a device, reads SMART, lists partitions: never changes data on it -->
   <action id="org.biglinux.big-storage-rescue.drive-helper">
     <description>Protect a storage device, read its health or its partitions</description>

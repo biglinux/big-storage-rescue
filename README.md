@@ -43,6 +43,7 @@
 - [The running system](#the-running-system)
 - [Why can't I write here?](#why-cant-i-write-here)
 - [Busy devices and safe removal](#busy-devices-and-safe-removal)
+- [Repair a memory card or a USB drive](#repair-a-memory-card-or-a-usb-drive)
 - [The command line](#the-command-line)
 - [How it works](#how-it-works)
 - [Safety](#safety)
@@ -69,11 +70,15 @@
 | #️⃣ **Manifests** | SHA-256 of what a copy, a salvage or a disk image wrote, to check later with `sha256sum -c` |
 | 🔎 **When files cannot be reached** | a disk image with GNU ddrescue, lost partitions with TestDisk, files by content with PhotoRec |
 | 📄 **Reports** | technical reports of a drive or of a copy, anonymized on request |
+| 🧰 **Repair a card or USB drive** | for a memory card or pen drive that gives write errors, shows a size it does not have, or cannot be formatted: measures its real capacity (counterfeit cards), tests its surface, and sets it up again with only the part that works. **It erases the drive**, and says so first |
 
 > [!IMPORTANT]
 > It never does any of these to the drive it rescues from: format it, repair
 > it, rewrite its partition table, force an unmount or kill programs. Secure
 > Erase is not part of this tool. See [Safety](#safety).
+>
+> The one exception is the [repair of a card or USB drive](#repair-a-memory-card-or-a-usb-drive),
+> a separate step you start yourself, which erases that drive.
 
 ## Screenshots
 
@@ -412,6 +417,35 @@ big-storage-rescue --safe-remove /run/media/me/PENDRIVE [--close-apps]
 
 Details: [docs/06](docs/06-busy-processes.md), [docs/07](docs/07-safe-removal.md).
 
+## Repair a memory card or a USB drive
+
+For a card or pen drive that gives write errors (`I/O error … WRITE`,
+`lost async page write`), shows a capacity it does not have, or cannot be
+formatted. Open the drive and choose **Repair…** (or *Repair the drive (erases
+it)…* in its menu). It is offered for memory cards and USB drives only, never
+for the running system or a disk inside the computer.
+
+1. **Real capacity** — `f3probe` (package `f3`) finds counterfeit cards, which
+   announce more space than they have.
+2. **Test of the surface** — a pattern of its own on each block, written and
+   read back: *quick* (samples, more at the end of the drive, where cheap
+   cards fail first: minutes) or *complete* (every block: hours on a slow card).
+3. **New partition table** — one partition that leaves out what failed, with a
+   margin before it (8 MiB by default).
+4. **New filesystem** — FAT32 up to 32 GB, exFAT above, or ext4.
+
+At the end it says what it found: *the drive works*, *a counterfeit drive, set
+up with its real capacity*, *part of the drive failed and was left out*, or
+*this drive cannot be repaired: replace it*, with the announced, real and
+usable capacity.
+
+> [!CAUTION]
+> **A repair erases everything on the drive.** The page lists what is on it,
+> offers *Recover files first*, and starts only after you tick that you
+> understand. The administrator password is asked every time. In the terminal:
+> `big-storage-rescue --cli repair /dev/sdX` asks you to type the name of the
+> device. Details: [docs/22](docs/22-repair.md).
+
 ## The command line
 
 Every operation of the window is a command, and the window runs those same
@@ -442,6 +476,7 @@ big-storage-rescue --doctor              # check the installation and the storag
 | `protect DEV`, `unprotect DEV` | block or allow writing on the device itself (asks for a password) |
 | `unlock DEV` | unlock an encrypted volume |
 | `report TARGET [--anonymize]` | a technical report of a drive |
+| `repair DEV [--mode quick\|full] [--filesystem auto\|fat32\|exfat\|ext4]` | repair a memory card or USB drive: test it, partition and format it. **Erases it**; asks you to type the device name (`--yes` in scripts) |
 
 </details>
 
@@ -743,7 +778,12 @@ Nothing is kept in `/etc`, and nothing is installed as a service.
   share that went away): the questions that could block have a time limit.
 - **Files found on a disk are never run:** thumbnails have size and pixel
   limits, and the integrity check reads structure only.
-- **Secure Erase, formatting and repairs are not part of this tool.**
+- **Secure Erase is not part of this tool, and nothing is formatted or
+  repaired on a drive being rescued.** The one exception is the repair of a
+  memory card or a USB drive, which you start yourself on a page of its own:
+  it refuses the running system and every disk inside the computer, asks for
+  the password every time, checks again as root that the drive is the one you
+  saw (sequence number and size), and is never resumed.
 
 > [!WARNING]
 > When the hardware itself is failing (heads, controller, firmware, NAND), no
@@ -879,6 +919,7 @@ the code, from Big-Mount 2.0 to 2.6, is kept in git and in
 | [04 Device detection](docs/04-device-detection.md) | [10 GTK and Libadwaita](docs/10-gtk-libadwaita-ux.md) | [16 Migration validation](docs/16-migration-validation.md) |
 | [05 Read-only diagnostics](docs/05-readonly-diagnostics.md) | [11 Command line](docs/11-cli.md) | [17 Final report](docs/17-final-report.md) |
 | [06 Busy processes](docs/06-busy-processes.md) | [12 Security](docs/12-security.md) | [18 System and history checks](docs/18-system-and-history-checks.md) |
+| [22 Repairing a card or USB drive](docs/22-repair.md) | | |
 
 ## License
 

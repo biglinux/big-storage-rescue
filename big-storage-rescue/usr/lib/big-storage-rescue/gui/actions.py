@@ -1,5 +1,5 @@
 """What can be done to a drive from anywhere in the window: unmount it, remove it
-safely, close what keeps it busy, and the way to erasing it. Every step goes
+safely, close what keeps it busy, and the way to repairing (erasing) a card. Every step goes
 through the engine, and nothing is forced: a busy volume is never unmounted
 behind the back of the programs using it (no forced or lazy unmount). The
 person sees who uses it and decides whether those programs are asked to close."""
@@ -155,6 +155,8 @@ def drive_menu(window, widget, dev):
         (mount, "remove", _("Safely remove"), lambda: unmount(window, dev.device, remove=True),
          dev.external and not dev.has_system and dev.kind != "image"),
     ]
+    repair = Gio.Menu()
+    entries.append((repair, "repair", _("Repair the drive (erases it)…"), lambda: window.open_repair(dev), dev.repairable))
     for section, name, text, handler, shown in entries:
         if not shown:
             continue
@@ -162,7 +164,7 @@ def drive_menu(window, widget, dev):
         action.connect("activate", lambda _a, _p, h=handler: h())
         group.add_action(action)
         section.append(text, f"drive.{name}")
-    for section in (view, mount):
+    for section in (view, mount, repair):
         if section.get_n_items():
             menu.append_section(None, section)
     widget.insert_action_group("drive", group)

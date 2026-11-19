@@ -417,6 +417,8 @@ bsr_job_state_load() {
    for k in "${!JS[@]}"; do
       case "$k" in
          STATE | REASON | CURRENT | VERIFY_RESULT | TOTAL_ESTIMATE) ;;
+         # Words of a repair: only what they can be
+         PHASE | VERDICT | STEPS | MISSING) [[ ${JS[$k]} =~ ^[a-z0-9:,._-]*$ ]] || unset -v 'JS[$k]' ;;
          *) [[ ${JS[$k]} =~ ^-?[0-9]*$ ]] || unset -v 'JS[$k]' ;;
       esac
    done
@@ -444,6 +446,11 @@ bsr_job_state_label() {
       carve:verifying) REPLY=$"Checking whether what was found is whole"; return ;;
       salvage:running) REPLY=$"Saving what can be read of each file"; return ;;
       salvage:completed) REPLY=$"Every file was read completely"; return ;;
+      repair:pending) REPLY=$"Waiting for the password"; return ;;
+      repair:running) REPLY=$"Repairing the drive"; return ;;
+      repair:completed) REPLY=$"Repaired: the drive is ready to use"; return ;;
+      repair:failed) REPLY=$"The repair did not complete"; return ;;
+      repair:stopping) REPLY=$"Stopping the repair"; return ;;
    esac
    case "$1" in
       pending) REPLY=$"Waiting to start" ;;
@@ -485,6 +492,10 @@ bsr_job_reason_text() {
       salvage-partial) REPLY=$"Some files have areas that could not be read. They were saved with everything else, in a folder of their own, with a list of what is missing." ;;
       salvage-left) REPLY=$"Some files could not be saved. See the list below." ;;
       nothing-found) REPLY=$"No file was recognized by its content. That does not prove there is nothing to recover: another method, or a professional, may find more." ;;
+      repair-*)
+         bsr_rp_reason_text "$1"
+         [ -n "$REPLY" ] || bsr_rp_err_text "$1"
+         ;;
       "") REPLY="" ;;
       *) REPLY="$1" ;;
    esac
@@ -1016,6 +1027,13 @@ bsr_job_json_of() {
       salvage) result=salvaged-files pausable=1 ;;
       *) result="" ;;
    esac
+   # A repair: its steps and what it found
+   local repair=""
+   if [ "$kind" = repair ]; then
+      repair=",$(bsr_jo_inner phase "${JS[PHASE]:-}" steps "${JS[STEPS]:-}" verdict "${JS[VERDICT]:-}" filesystem "${JC[FS]:-}" label "${JC[LABEL]:-}" \
+         mode "${JC[MODE]:-}" missing "${JS[MISSING]:-}"),$(bsr_jn announced_bytes "${JS[ANNOUNCED]:-${JC[SIZE]:-}}" real_bytes "${JS[REAL]:-}" \
+         usable_bytes "${JS[USABLE]:-}" tested_bytes "${JS[TESTED]:-}")"
+   fi
    printf '{%s,%s,%s}' \
       "$(bsr_jo_inner id "$id" kind "$kind" result_kind "$result" state "${JS[STATE]}" state_label "$label" reason "${JS[REASON]:-}" reason_text "$reason" \
          source "${JC[SOURCE]:-}" destination "${JC[DEST]:-}" name "${JC[NAME]:-}" current "${JS[CURRENT]:-}" verify "${JC[VERIFY]:-}" \
@@ -1026,7 +1044,7 @@ bsr_job_json_of() {
          failed "${JS[FAILED]:-0}" differ "${JS[DIFFER]:-0}" conflicts "${JS[CONFLICTS]:-0}" read_errors "${JS[READ_FAILS]:-0}" stuck "${JS[STUCK_SECONDS]:-0}" \
          created "${JC[CREATED]:-0}" finished "${JS[FINISHED]:-}" scanned "${JS[SCANNED]:-0}" pass "${JS[PASS]:-0}" bad_bytes "${JS[BAD_BYTES]:-0}" \
          partial "${JS[PARTIAL]:-0}")" \
-      "$(bsr_jb total_estimate "${JS[TOTAL_ESTIMATE]:-0}" pausable "$pausable")"
+      "$(bsr_jb total_estimate "${JS[TOTAL_ESTIMATE]:-0}" pausable "$pausable")$repair"
 }
 
 bsr_fmt_time() {
@@ -1053,6 +1071,10 @@ bsr_job_status_text() {
    printf '%s\n' "$REPLY"
    if [ "$kind" = scan ] || [ "$kind" = carve ]; then
       bsr_rec_status_text
+      return 0
+   fi
+   if [ "$kind" = repair ]; then
+      bsr_rp_status_text
       return 0
    fi
    printf '%-22s %s\n' $"Source:" "${JC[SOURCE]//[[:cntrl:]]/?}" $"Destination:" "${JC[DEST]//[[:cntrl:]]/?}"
@@ -1143,6 +1165,10 @@ bsr_job_report_text() {
    fi
    if [ "${JC[KIND]:-copy}" = salvage ]; then
       bsr_sv_report_text "$dir"
+      return 0
+   fi
+   if [ "${JC[KIND]:-copy}" = repair ]; then
+      bsr_rp_report_text "$dir"
       return 0
    fi
    bsr_doc_kv $"Destination" "${JC[DEST]}"
@@ -1615,11 +1641,15 @@ bsr_job_cmd_stop() {
          printf '%s\n' $"A search cannot be paused, only cancelled. What was found stays." >&2
          return 2
          ;;
+      repair:pause)
+         printf '%s\n' $"A repair cannot be paused, only stopped." >&2
+         return 2
+         ;;
    esac
    case "${JS[STATE]}" in
       pending | analyzing | running | verifying | stopping)
          printf '%s\n' "$verb" > "$dir/control"
-         [ "${JC[KIND]:-copy}" = image ] && : > "$dir/stop"
+         case "${JC[KIND]:-copy}" in image | repair) : > "$dir/stop" ;; esac
          bsr_job_state_label stopping
          printf '%s\n' "$REPLY"
          ;;
@@ -1653,6 +1683,12 @@ bsr_job_cmd_resume() {
    dir="$REPLY"
    bsr_job_conf_load "$dir"
    bsr_job_state_load "$dir"
+   # A card reader keeps its name when its card is swapped: a repair is
+   # started again from the beginning, with a new confirmation, never resumed
+   if [ "${JC[KIND]:-copy}" = repair ]; then
+      printf '%s\n' $"A repair is not resumed. Start a new one: it asks for a confirmation again." >&2
+      return 2
+   fi
    case "${JS[STATE]}" in
       pending | analyzing | running | verifying | stopping)
          printf '%s\n' $"It is already running." >&2
@@ -1705,6 +1741,7 @@ bsr_job_cmd() {
             scan) bsr_rec_scan_supervise "$id" ;;
             carve) bsr_rec_carve_supervise "$id" ;;
             salvage) bsr_sv_supervise "$id" ;;
+            repair) bsr_rp_supervise "$id" ;;
             *) bsr_job_supervise "$id" ;;
          esac
          ;;

@@ -12,6 +12,7 @@ from .monitor import DeviceMonitor
 from .pages.device import DevicePage
 from .pages.job import JobPage, JobsPage
 from .pages.overview import OverviewPage
+from .pages.repair import RepairPage
 from .pages.rescue import RescueWizard
 from .pages.results import ResultsPage
 from .welcome import WelcomeDialog
@@ -45,6 +46,7 @@ class MainWindow(Adw.ApplicationWindow):
         self._side_signature = None
         self._closing = False
         self.wizard = None
+        self.repair = None
 
         self.toasts = Adw.ToastOverlay()
         self.nav = Adw.NavigationView()
@@ -259,6 +261,8 @@ class MainWindow(Adw.ApplicationWindow):
         self.device_page.devices_changed()
         if self.wizard:
             self.wizard.devices_changed()
+        if self.repair:
+            self.repair.devices_changed()
         if self.pending_route is not None:
             target, section = self.pending_route
             self.pending_route = None
@@ -340,11 +344,13 @@ class MainWindow(Adw.ApplicationWindow):
 
     def show_overview(self):
         self.wizard = None
+        self.repair = None
         self.selected_id = None
         self._go(self.overview)
 
     def show_device(self, stable_id, section=None):
         self.wizard = None
+        self.repair = None
         self.selected_id = stable_id
         self.device_page.show(stable_id, section)
         self._go(self.device_page)
@@ -362,6 +368,15 @@ class MainWindow(Adw.ApplicationWindow):
         self.split.set_show_content(True)
         self._mark_sidebar()
 
+    def open_repair(self, device):
+        """Repair a memory card or a USB drive: a page that leads to erasing it."""
+        self.repair = RepairPage(self, device)
+        self.nav.push(self.repair)
+
+    def close_repair(self):
+        self.repair = None
+        self.nav.pop()
+
     def open_wizard(self, device=None, volume=None, image=None):
         self.wizard = RescueWizard(self, device, volume, image)
         self.nav.push(self.wizard)
@@ -377,6 +392,7 @@ class MainWindow(Adw.ApplicationWindow):
             if self.selected_id:
                 stack.append(self.device_page)
             self.wizard = None
+            self.repair = None
             self.nav.replace([*stack, page])
         else:
             self.nav.push(page)

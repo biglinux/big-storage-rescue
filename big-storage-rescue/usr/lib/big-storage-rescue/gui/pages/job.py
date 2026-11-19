@@ -10,6 +10,16 @@ from ..common import _, human_duration, human_size, human_time
 from ..damage_map import DamageMap
 from ..models import Job
 from .device import job_row
+from .repair import STEPS
+
+# What a finished repair concluded: an icon, a title, its level
+VERDICTS = {
+    "real": ("object-select-symbolic", lambda: _("The drive works"), "normal"),
+    "fake": ("dialog-warning-symbolic", lambda: _("A counterfeit drive, set up with its real capacity"), "attention"),
+    "worn": ("dialog-warning-symbolic", lambda: _("Part of the drive failed and was left out"), "attention"),
+    "damaged": ("dialog-error-symbolic", lambda: _("This drive cannot be repaired"), "critical"),
+    "inconsistent": ("dialog-warning-symbolic", lambda: _("The drive gave back other data than was written"), "attention"),
+}
 
 POLL_MS = 1500
 PULSE_MS = 180
@@ -74,6 +84,25 @@ class JobPage(Adw.NavigationPage):
         self.current = w.label("", css=("caption", "dim-label"), ellipsize=True)
         content.append(self.current)
 
+        # A repair: what it concluded, and its steps
+        self.verdict_box = w.box(spacing=10, css=("repair-verdict", "card"))
+        self.verdict_box.set_visible(False)
+        content.append(self.verdict_box)
+        self.steps_group = w.Group(_("Steps"))
+        self.step_rows = {}
+        for key, title, text, _icon in STEPS:
+            row = w.row(title(), text())
+            row.state_icon = w.icon("media-record-symbolic", 16, css=("dim-label",))
+            row.spinner = Gtk.Spinner(valign=Gtk.Align.CENTER)
+            row.add_prefix(row.state_icon)
+            row.add_prefix(row.spinner)
+            row.state_text = w.label("", css=("caption", "dim-label"), wrap=False)
+            row.add_suffix(row.state_text)
+            self.step_rows[key] = row
+            self.steps_group.add_row(row)
+        self.steps_group.set_visible(False)
+        content.append(self.steps_group)
+
         self.map_group = w.Group(_("Map of the disk"), _("What has been read so far, from the start of the disk (top left) to its end."))
         self.damage_map = DamageMap()
         self.map_group.add(self.damage_map)
@@ -105,10 +134,12 @@ class JobPage(Adw.NavigationPage):
         self.salvage_btn = w.button(_("Save what can be read…"), self._salvage, icon_name="document-save-symbolic",
                                     tooltip=_("Reads each file left out again with GNU ddrescue, and saves what can be read of it."))
         self.partial_btn = w.button(_("Open partly recovered files"), self._open_partial, icon_name="folder-open-symbolic")
+        self.again_btn = w.button(_("Repair again…"), self._repair_again, css=("suggested-action",), icon_name="media-flash-symbolic")
         self.log_btn = w.button(_("Show log"), self._show_log, css=("flat",))
         for b in (self.log_btn, self.cancel_btn):
             self.actions.pack_start(b)
-        for b in (self.next_btn, self.results_btn, self.resume_btn, self.salvage_btn, self.retry_btn, self.pause_btn, self.open_btn, self.partial_btn):
+        for b in (self.next_btn, self.results_btn, self.resume_btn, self.salvage_btn, self.retry_btn, self.pause_btn, self.open_btn, self.partial_btn,
+                  self.again_btn):
             self.actions.pack_end(b)
             b.set_visible(False)
 
@@ -182,7 +213,14 @@ class JobPage(Adw.NavigationPage):
         self.bar.set_visible(running or pct is not None or job.state == "completed")
 
         phase = ""
-        if running and job.kind == "carve" and job.pass_:
+        if running and job.kind == "repair":
+            keys = [k for k, *_r in STEPS]
+            if job.phase in keys:
+                title = dict((k, t) for k, t, *_r in STEPS)[job.phase]()
+                phase = _("Step %(n)d of %(total)d: %(step)s") % {"n": keys.index(job.phase) + 1, "total": len(keys), "step": title}
+            elif job.state == "pending":
+                phase = _("The administrator password is asked before anything is written.")
+        elif running and job.kind == "carve" and job.pass_:
             phase = _("Pass %d of the search. The percentage restarts at each pass.") % job.pass_
         elif running and job.kind == "scan":
             phase = _("It goes through the folders, so the total is only known at the end.")
@@ -195,12 +233,13 @@ class JobPage(Adw.NavigationPage):
         if job.files_total:
             files += f" / {job.files_total}"
         self.stat["files"].caption.set_text(job.count_label)
-        self.stat["files"].set_value(files if job.kind != "image" else "")
+        self.stat["files"].set_value(files if job.kind not in ("image", "repair") else "")
         self.stat["examined"].set_value(str(job.scanned) if job.kind == "scan" else "")
         data = human_size(done)
         if total:
             data += (" / ≈ " if job.total_estimate else " / ") + human_size(total)
-        self.stat["bytes"].set_value(data)
+        # A repair counts the bytes of its current step only: nothing to say once it ends
+        self.stat["bytes"].set_value(data if job.kind != "repair" or running else "")
         self.stat["speed"].set_value(f"{human_size(job.rate_now)}/s" if running and job.rate_now else "")
         self.stat["elapsed"].set_value(human_time(job.elapsed))
         self.stat["eta"].set_value(human_duration(job.eta) if running and job.eta is not None else "")
@@ -213,7 +252,10 @@ class JobPage(Adw.NavigationPage):
                 parent.set_visible(self.stat[key].get_visible())
 
         reason = job.reason_text
-        if job.kind in ("image", "salvage") and job.bad_bytes:
+        if job.kind == "repair":
+            # The verdict panel says it, with its numbers
+            reason = "" if not running and job.verdict else reason
+        elif job.kind in ("image", "salvage") and job.bad_bytes:
             reason = (reason + " " if reason else "") + _("%s could not be read.") % human_size(job.bad_bytes)
         self.reason.set_text(reason)
         self.reason.set_visible(bool(reason))
@@ -224,6 +266,7 @@ class JobPage(Adw.NavigationPage):
         self.current.set_text(current)
         self.current.set_visible(bool(current))
 
+        self.source_row.set_title(_("Drive") if job.kind == "repair" else _("Source"))
         self.source_row.set_subtitle(job.source)
         self.dest_row.set_subtitle(job.destination)
         self.dest_row.set_visible(bool(job.destination))
@@ -243,7 +286,10 @@ class JobPage(Adw.NavigationPage):
         self.salvage_btn.set_visible(job.kind == "copy" and not running and job.state in ("needs-attention", "paused", "interrupted", "cancelled")
                                      and (job.failed or job.deferred) > 0)
         self.partial_btn.set_visible(job.kind == "salvage" and not running and job.partial > 0 and os.path.isdir(job.partial_dir))
+        self.again_btn.set_visible(job.kind == "repair" and not running and job.state != "completed" and job.verdict != "damaged"
+                                   and self._repair_device() is not None)
         self._update_map(job)
+        self._update_repair(job)
 
         if not running:
             self.stop()
@@ -254,6 +300,81 @@ class JobPage(Adw.NavigationPage):
         elif previous and not previous.running:
             self.report_expander.set_visible(False)
             self._report_state = None
+
+    def _update_repair(self, job):
+        """The steps of a repair, and what it concluded once it ends."""
+        is_repair = job.kind == "repair"
+        self.steps_group.set_visible(is_repair)
+        self.verdict_box.set_visible(is_repair and not job.running and bool(job.verdict or job.reason_text))
+        if not is_repair:
+            return
+        states = job.step_states
+        labels = {"ok": _("done"), "failed": _("failed"), "skipped": _("skipped"), "running": _("in progress")}
+        icons = {"ok": ("object-select-symbolic", "success"), "failed": ("dialog-error-symbolic", "error"),
+                 "skipped": ("action-unavailable-symbolic", "dim-label")}
+        for key, row in self.step_rows.items():
+            state = states.get(key, "")
+            if state == "running" and not job.running:
+                state = "failed"
+            row.spinner.set_visible(state == "running")
+            row.spinner.set_spinning(state == "running")
+            row.state_icon.set_visible(state != "running")
+            name, css = icons.get(state, ("media-record-symbolic", "dim-label"))
+            row.state_icon.set_from_icon_name(name)
+            for c in ("success", "error", "dim-label"):
+                row.state_icon.remove_css_class(c)
+            row.state_icon.add_css_class(css)
+            row.state_text.set_text(labels.get(state, ""))
+            if key == "capacity" and state == "skipped":
+                row.set_subtitle(_("f3 is not installed (package f3): the real capacity was not measured."))
+        if job.running:
+            return
+        w.clear(self.verdict_box)
+        icon_name, title, level = VERDICTS.get(job.verdict, ("dialog-information-symbolic", lambda: job.state_label, "unknown"))
+        if not job.verdict:
+            level = "attention" if job.state in ("cancelled", "needs-attention") else ("critical" if job.state == "failed" else "normal")
+            icon_name = {"critical": "dialog-error-symbolic", "attention": "dialog-warning-symbolic"}.get(level, icon_name)
+        for c in ("level-critical", "level-attention", "level-normal", "level-unknown"):
+            self.verdict_box.remove_css_class(c)
+        self.verdict_box.add_css_class(f"level-{level}")
+        top = w.hbox(12)
+        top.append(w.icon(icon_name, 32, css=("level-icon", f"level-{level}")))
+        top.append(w.label(title(), css=("title-3",)))
+        self.verdict_box.append(top)
+        if job.reason_text:
+            self.verdict_box.append(w.label(job.reason_text))
+        elif job.verdict == "real":
+            self.verdict_box.append(w.label(_("Its whole capacity passed the test, and it has a new filesystem. It can be used again.")))
+        facts = []
+        if job.announced_bytes:
+            facts.append((_("Announced capacity"), human_size(job.announced_bytes)))
+        if job.real_bytes is not None and job.verdict != "damaged":
+            facts.append((_("Real capacity"), human_size(job.real_bytes)))
+        if job.tested_bytes:
+            facts.append((_("Tested"), human_size(job.tested_bytes)))
+            facts.append((_("Failed the test"), human_size(job.bad_bytes or 0)))
+        if job.usable_bytes:
+            facts.append((_("Usable now"), human_size(job.usable_bytes)))
+        if job.state == "completed" and job.filesystem:
+            facts.append((_("New filesystem"), f"{job.filesystem.upper()} · {job.label}"))
+        if facts:
+            grid = Gtk.Grid(column_spacing=16, row_spacing=4)
+            for i, (key, value) in enumerate(facts):
+                grid.attach(w.label(key, css=("dim-label",), wrap=False), 0, i, 1, 1)
+                grid.attach(w.label(value, css=("numeric",), selectable=True), 1, i, 1, 1)
+            self.verdict_box.append(grid)
+
+    def _repair_device(self):
+        job = self.job
+        if not job or job.kind != "repair":
+            return None
+        dev = self.window.device_by_name(job.source)
+        return dev if dev is not None and dev.repairable else None
+
+    def _repair_again(self):
+        dev = self._repair_device()
+        if dev is not None:
+            self.window.open_repair(dev)
 
     def _update_map(self, job):
         """The map of an image: every few seconds while it runs, once more when it stops."""
@@ -316,7 +437,9 @@ class JobPage(Adw.NavigationPage):
         job = self.job
         if not job:
             return
-        if job.kind in ("scan", "carve"):
+        if job.kind == "repair":
+            text = _("Stop the repair? The drive is left partly erased, with no usable filesystem, until it is repaired again.")
+        elif job.kind in ("scan", "carve"):
             text = _("Stop the search? What was found so far stays.")
         elif job.kind in ("image", "salvage"):
             text = _("Stop? What was read so far is kept, and it can be resumed later from where it stopped.")
@@ -357,13 +480,17 @@ class JobPage(Adw.NavigationPage):
         job = self.job
         if not job:
             return
-        name = {"image": "ddrescue.out", "salvage": "ddrescue.out", "scan": "scan.err", "carve": "report.txt"}.get(job.kind, "events.log")
+        name = {"image": "ddrescue.out", "salvage": "ddrescue.out", "scan": "scan.err", "carve": "report.txt",
+                "repair": "repair.out"}.get(job.kind, "events.log")
         path = os.path.join(job.dir or "", name)
         try:
             with open(path, "rb") as handle:
                 handle.seek(0, os.SEEK_END)
                 handle.seek(max(0, handle.tell() - 200000))
                 text = handle.read().decode("utf-8", "replace")
+            if job.kind == "repair":
+                # The progress lines are for the supervisor, not for a person
+                text = "\n".join(line for line in text.splitlines() if not line.startswith("@progress "))
         except OSError as exc:
             text = str(exc)
         w.TextDialog(_("Log"), text or _("Nothing was recorded.")).present(self.window)

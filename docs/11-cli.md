@@ -26,7 +26,12 @@ big-storage-rescue --doctor | --version | --help
 `destinations`, `copy`, `jobs`, `status [--watch]`, `pause`, `cancel`, `resume [--retry-deferred]`,
 `report [--anonymize] [--output FILE [--replace]]`, `methods`, `image`, `partitions [--search]`,
 `scan`, `carve`, `results`, `check-files`, `salvage [--retries N]`, `map [--bins N]`,
-`manifest [--output FILE]`. `big-storage-rescue --cli --help` describes each.
+`manifest [--output FILE]`, `repair [--mode quick|full] [--filesystem auto|fat32|exfat|ext4] [--label NAME] [--margin-mib N] [--yes]`.
+`big-storage-rescue --cli --help` describes each.
+
+`repair` is the one command that erases a drive: a memory card or a USB drive,
+never the system or a disk inside the computer. In a terminal it asks to type
+the name of the device; a script must give `--yes`. See 22-repair.md.
 
 - `--json` on every command: one JSON object on standard output. This is what
   the application uses, so it is complete and stable. Device data and file

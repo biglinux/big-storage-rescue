@@ -25,6 +25,11 @@ license=('GPL-3.0-or-later')
 #   python-cairo        draws the map of a disk image: without it PyGObject
 #                       cannot hand the drawing its Cairo context
 #   libnotify           notifications (notify-send)
+# Repairing a memory card or USB drive (the one tool that erases a drive) needs
+# sfdisk and wipefs (util-linux), python (the test of the surface) and the
+# formatter of the filesystem chosen: e2fsprogs (ext4) is in every system,
+# dosfstools (FAT32) and exfatprogs (exFAT) are optional, as is f3 (the real
+# capacity of counterfeit cards).
 # Commands of the base system (coreutils, findutils, gawk, grep, sed,
 # procps-ng, systemd) are not listed.
 # libadwaita has an epoch: without it, ">=1.5" would accept any version. It
@@ -36,6 +41,9 @@ depends=('bash' 'util-linux' 'udisks2' 'glib2' 'polkit' 'lsof' 'rsync'
          'libnotify')
 optdepends=('ddrescue: disk images of a failing drive, and saving what can be read of files a copy left out'
             'testdisk: find lost partitions, search files by content (PhotoRec)'
+            'f3: measure the real capacity of memory cards and USB drives when repairing them (counterfeit cards)'
+            'dosfstools: FAT32 when repairing a memory card or USB drive'
+            'exfatprogs: exFAT when repairing a memory card or USB drive'
             'dolphin: the Storage device actions of the right-click menu'
             'big-mount: mounts the internal partitions at boot')
 # A separate program from big-mount: both can be installed, neither needs the

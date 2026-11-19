@@ -22,6 +22,7 @@ bsr_load drive.sh
 bsr_load drive-copy.sh
 bsr_load drive-recovery.sh
 bsr_load drive-tui.sh
+bsr_load drive-repair.sh
 
 PASS=0 FAIL=0 FAILED=()
 check() {
@@ -37,6 +38,15 @@ trap 'rm -rf "$WORK"' EXIT
 export XDG_STATE_HOME="$WORK/state" XDG_CONFIG_HOME="$WORK/config" XDG_RUNTIME_DIR="$WORK/run"
 mkdir -p "$XDG_RUNTIME_DIR"
 BSR_JOBS="$XDG_STATE_HOME/big-storage-rescue/jobs"
+# Nothing here may ever reach a real privileged helper: on a system where
+# polkit lets this user through without a password, pkexec would run it as
+# root on a real disk. Every helper call goes to a stand-in that refuses, and
+# pkexec itself is one too, for any code path that forgets BSR_HELPER_CMD
+mkdir -p "$WORK/bin"
+printf '#!/bin/sh\nprintf "%%s\\n" "$*" >> "%s/no-helper.calls"\nexit 126\n' "$WORK" > "$WORK/bin/no-helper"
+cp "$WORK/bin/no-helper" "$WORK/bin/pkexec"
+chmod +x "$WORK/bin/no-helper" "$WORK/bin/pkexec"
+export PATH="$WORK/bin:$PATH" BSR_HELPER_CMD="$WORK/bin/no-helper"
 
 echo "========================================="
 echo "Drive manager unit tests"
@@ -422,7 +432,7 @@ check "  ... not for a replaced device" eq "$?" 1
 bsr_diskseq() { REPLY=7; }
 FAKE_HELPER_RC=3; check "btrfs, a sibling volume writing: refused" mnt /dev/sdg1 20 protect-busy
 FAKE_HELPER_RC=4; check "btrfs on the system drive: refused" mnt /dev/sdg1 20 protect-system
-unset BSR_HELPER_CMD FAKE_HELPER_RC; FAKE_MP="" FAKE_HEALTH_FIND=() FAKE_SMART=""
+BSR_HELPER_CMD="$WORK/bin/no-helper"; unset FAKE_HELPER_RC; FAKE_MP="" FAKE_HEALTH_FIND=() FAKE_SMART=""
 explain() { bsr_mnt_explain /dev/sdc1 ntfs "$1"; eq "$MNT_WHY" "$2"; }
 bsr_kernel_messages() { KMSG=(); }
 check "no driver" explain "unknown filesystem type 'apfs'" no-driver
@@ -648,7 +658,9 @@ check "big-storage-rescue loads no drive module by itself" bash -c '! grep -nE "
 check "cli.sh does not load them either until asked" bash -c '[ "$(grep -cE "^\. .*drive" "$1/cli.sh")" = 0 ]' _ "$L"
 
 begin "commands that must not exist in the drive manager"
-grep -hvE '^[[:space:]]*#' "$L"/drive*.sh "$L"/bsr-drive-helper "$L"/app.py "$L"/gui/*.py "$L"/gui/pages/*.py > "$WORK/code.txt"
+engine=()
+for f in "$L"/drive*.sh; do [ "${f##*/}" = drive-repair.sh ] || engine+=("$f"); done
+grep -hvE '^[[:space:]]*#' "${engine[@]}" "$L"/bsr-drive-helper "$L"/app.py "$L"/gui/*.py "$L"/gui/pages/*.py > "$WORK/code.txt"
 for bad in 'fsck' 'mkfs' 'wipefs' 'dd if=' 'umount -f' 'umount -l' 'kill -9' 'kill -KILL' 'fuser -k' 'chmod -R' 'chown -R' 'btrfs check' 'ntfsfix' 'shred' 'blkdiscard' 'sgdisk' 'parted' ' eval ' 'rm -rf /' \
    'SecurityEraseUnit' 'hdparm' 'nvme format' 'nvme sanitize'; do
    check "no '$bad'" bash -c '! grep -nF -- "$2" "$1"' _ "$WORK/code.txt" "$bad"
@@ -978,6 +990,135 @@ printf '%s\n' KIND=image "MAP=$big" > "$BSR_JOBS/20261103-110000-eeee/job.conf"
 t0=$SECONDS; out="$(run_b --drive map 20261103-110000-eeee --json)"
 check "a map of 40 000 areas on 4 TB: summed in a few seconds ($((SECONDS - t0)) s)" bash -c '[ "$1" -lt 15 ] && [[ $2 == *"\"bad\":10240000"* ]]' _ "$((SECONDS - t0))" "$out"
 run_b --drive map 20261103-100000-aaaa >/dev/null 2>&1; check "a copy has no map" eq "$?" 2
+
+begin "repair: only a memory card or a USB drive, never the system, said before the password"
+# The drive of a target, without real devices; tools present unless a test says otherwise
+bsr_drive_disk() { DD_DISK="$1"; bsr_dv_scan; [ -n "${DV[$1|TYPE]:-}" ] || return 24; }
+# The fixture answers every "lsblk -s" with one drive: here a drive is itself
+bsr_dv_disks_of() { DV_DISKS=("$1"); }
+# A repair that would start only says so: no supervisor is ever launched here
+bsr_rec_image_start() { printf '%s\n' "$1" >> "$WORK/repair-started"; }
+RP_MISSING=""
+bsr_rp_have() { [[ " $RP_MISSING " != *" $1 "* ]]; }
+bsr_system_use() { REPLY=""; [ "$1" = /dev/nvme0n1 ] && REPLY="/dev/nvme0n1p2 → /"; [ -n "$REPLY" ]; }
+rp() { bsr_rp_cmd "$@" 2>&1; }
+out="$(rp /dev/sda --dry-run --json)"; rc=$?
+check "a SATA disk inside the computer: refused" eq "$rc:$(grep -o '"error":"[a-z-]*"' <<< "$out")" '20:"error":"repair-internal"'
+printf '%s' "$out" | json_ok; check "  ... in valid JSON" eq "$?" 0
+out="$(rp /dev/nvme0n1 --dry-run --json)"
+check "the drive of the running system: refused" grep -q '"error":"repair-system"' <<< "$out"
+out="$(rp /dev/sr0 --dry-run --json)"
+check "an optical drive: refused" grep -q '"error":"repair-optical"' <<< "$out"
+out="$(rp /dev/mmcblk0 --dry-run --json)"; rc=$?
+printf '%s' "$out" | json_ok; check "an SD card: a plan, in valid JSON" eq "$rc:$?" 0:0
+check "  ... larger than 32 GiB: exFAT" grep -q '"filesystem":"exfat"' <<< "$out"
+check "  ... its old name is kept" grep -q '"label":"FOTOS"' <<< "$out"
+check "  ... and what will be erased is said" bash -c '[[ $1 == *"\"has_data\":true"* && $1 == *"\"key\":\"has-data\""* && $1 == *"\"device\":\"/dev/mmcblk0p1\""* ]]' _ "$out"
+check "  ... and that older devices may not read exFAT" grep -q '"key":"exfat-old"' <<< "$out"
+out="$(rp /dev/sdd --dry-run --json)"
+check "a USB pen drive of 16 GB: FAT32, with a name FAT accepts" bash -c '[[ $1 == *"\"filesystem\":\"fat32\""* && $1 == *"\"label\":\"SEM_PARTICA\""* ]]' _ "$out"
+out="$(rp /dev/sdd --dry-run --json --filesystem ext4 --label 'Fotos da Família!')"
+check "  ... ext4 when asked, the name cleaned of what other systems refuse" bash -c '[[ $1 == *"\"filesystem\":\"ext4\""* && $1 == *"\"label\":\"Fotos_da_Famlia\""* && $1 == *"ext4-linux"* ]]' _ "$out"
+out="$(rp /dev/sdc --dry-run --json)"
+check "an external USB hard disk can be repaired too" grep -q '"ok":true' <<< "$out"
+out="$(RP_MISSING="f3probe"; rp /dev/sdd --dry-run --json)"
+check "without f3: said, not refused" bash -c '[[ $1 == *"\"ok\":true"* && $1 == *"\"f3\":false"* && $1 == *"\"key\":\"no-f3\""* ]]' _ "$out"
+out="$(RP_MISSING="mkfs.fat"; rp /dev/sdd --dry-run --json)"; rc=$?
+check "without the formatter: refused, naming the package" bash -c '[ "$1" = 25 ] && [[ $2 == *"repair-no-tool"* && $2 == *"\"package\":\"dosfstools\""* ]]' _ "$rc" "$out"
+out="$(rp /dev/sdd --dry-run --json --expect-diskseq 99)"; rc=$?
+check "another drive under the same name: refused" eq "$rc:$(grep -o '"error":"[a-z-]*"' <<< "$out")" '24:"error":"source-replaced"'
+for a in "--mode slow" "--filesystem ntfs" "--margin-mib 99999" "--margin-mib x" "--nope"; do
+   # shellcheck disable=SC2086  # the option and its value
+   rp /dev/sdd --dry-run $a >/dev/null; check "a bad option ($a): exit 2" eq "$?" 2
+done
+rp --dry-run >/dev/null; check "no drive named: exit 2" eq "$?" 2
+out="$(rp /dev/sdd --json </dev/null)"; rc=$?
+check "never started without --yes when nobody can type the name" eq "$rc:$(grep -o '"error":"[a-z-]*"' <<< "$out")" '2:"error":"repair-confirm"'
+bsr_drive_disk() { DD_DISK="$1"; bsr_dv_scan; DV[/dev/mmcblk0p1|MOUNTPOINTS]=/run/media/u/FOTOS; }
+out="$(rp /dev/mmcblk0 --dry-run --json)"
+check "mounted volumes are listed, to be unmounted first" grep -q '"mounted":\["/dev/mmcblk0p1"\]' <<< "$out"
+out="$(rp /dev/mmcblk0 --yes --json)"; rc=$?
+check "  ... and a repair does not start while they are" eq "$rc:$(grep -o '"error":"[a-z-]*"' <<< "$out")" '3:"error":"repair-mounted"'
+check "  ... no job was created" bash -c '! grep -lsx KIND=repair "$1"/*/job.conf && [ ! -e "$2" ]' _ "$BSR_JOBS" "$WORK/repair-started"
+bsr_rp_auto_fs $((32 * 1024 * 1024 * 1024)); check "automatic: FAT32 up to 32 GiB" eq "$REPLY" fat32
+bsr_rp_auto_fs $((64 * 1000 * 1000 * 1000)); check "  ... exFAT above" eq "$REPLY" exfat
+bsr_rp_label fat32 "minha câmera"; check "a FAT name: capitals, 11 characters" eq "$REPLY" MINHA_CMERA
+bsr_rp_label exfat ";;;"; check "  ... nothing left of it: a name all the same" eq "$REPLY" DRIVE
+
+begin "repair: the job follows the helper, and is never resumed"
+FAKE="$WORK/fake-repair-helper"
+cat > "$FAKE" <<'EOF'
+#!/bin/bash
+# what bsr-repair-helper says, as a test: $1 is the verb, then DEV SEQ SIZE MODE FS LABEL MARGIN STOP
+printf '%s\n' "$*" > "${STOP_ARGS:?}"
+printf '@fact announced 16000000000\n@phase capacity\n'
+case "${FAKE_END:?}" in
+   fake) printf '@fact real 8000000000\n@step capacity ok\n@phase surface\n@progress 50 100\n@progress 100 100\n@fact tested 104857600\n@fact bad 0\n@fact first_bad -1\n@step surface ok\n@phase partition\n@fact usable 7990000000\n@step partition ok\n@phase format\nmkfs.fat 4.2\n@step format ok\n@verdict fake\n@phase done\n'; exit 0 ;;
+   damaged) printf 'Bad news: damaged\n@fact real 0\n@verdict damaged\n@step capacity failed\n'; exit 8 ;;
+   stopped) printf '@step capacity ok\n@phase surface\n'; exit 23 ;;
+   denied) exit 126 ;;
+esac
+EOF
+chmod +x "$FAKE"
+rjob() { # ID END: a repair job, run by its supervisor to the end
+   local d="$BSR_JOBS/$1"
+   mkdir -p "$d"
+   printf '%s\n' KIND=repair SOURCE=/dev/sdd DEVICE=/dev/sdd SIZE=16000000000 DISKSEQ=7 NAME=Pendrive MODE=quick FS=fat32 LABEL=PEN MARGIN=8 CREATED=1 > "$d/job.conf"
+   printf 'STATE=pending\n' > "$d/state.env"
+   STOP_ARGS="$WORK/fake.args" FAKE_END="$2" BSR_HELPER_CMD="$FAKE" run_b --drive __run "$1" >/dev/null 2>&1
+   run_b --drive status "$1" --json
+}
+out="$(rjob 20261119-100000-a001 fake)"
+printf '%s' "$out" | json_ok; check "a counterfeit card, repaired: valid JSON" eq "$?" 0
+check "  ... completed, with its reason" bash -c '[[ $1 == *"\"state\":\"completed\""* && $1 == *"\"reason\":\"repair-fake\""* && $1 == *"\"verdict\":\"fake\""* ]]' _ "$out"
+check "  ... every step done" grep -q '"steps":"capacity:ok,surface:ok,partition:ok,format:ok"' <<< "$out"
+check "  ... what it measured" bash -c '[[ $1 == *"\"real_bytes\":8000000000"* && $1 == *"\"usable_bytes\":7990000000"* && $1 == *"\"announced_bytes\":16000000000"* && $1 == *"\"tested_bytes\":104857600"* ]]' _ "$out"
+check "  ... the helper got the device, its sequence number and the choices" grep -qE '^repair /dev/sdd 7 16000000000 quick fat32 PEN 8 /.+/stop$' "$WORK/fake.args"
+check "  ... a report a person can read" bash -c '[[ $("$1" --drive report 20261119-100000-a001) == *"Real capacity"*"8 GB"* ]]' _ "$B"
+out="$(rjob 20261119-100000-a002 damaged)"
+check "a card that cannot be written: failed, damaged, said in words" bash -c '[[ $1 == *"\"state\":\"failed\""* && $1 == *"\"reason\":\"repair-damaged\""* && $1 == *"Replace it"* ]]' _ "$out"
+check "  ... the step that found it failed" grep -q '"steps":"capacity:failed"' <<< "$out"
+out="$(rjob 20261119-100000-a003 stopped)"
+check "stopped: cancelled, and it says the drive needs another repair" bash -c '[[ $1 == *"\"state\":\"cancelled\""* && $1 == *"\"reason\":\"repair-cancelled\""* && $1 == *"surface:failed"* ]]' _ "$out"
+out="$(rjob 20261119-100000-a004 denied)"
+check "the password refused: nothing done, said so" grep -q '"reason":"not-authorized"' <<< "$out"
+run_b --drive resume 20261119-100000-a003 >/dev/null 2>&1; check "a repair is never resumed (the card may be another one)" eq "$?" 2
+run_b --drive pause 20261119-100000-a003 >/dev/null 2>&1; check "  ... nor paused" eq "$?" 2
+check "  ... and the window offers no resume either" grep -q 'if self.kind == "repair":' "$L/gui/models.py"
+
+begin "repair: the helper, as this user"
+H="$L/bsr-repair-helper"
+bash "$H" /dev/sdz 7 1 quick fat32 X 8 /tmp/stop >/dev/null 2>&1; check "it runs only as root" eq "$?" 1
+bash "$H" /dev/sdz >/dev/null 2>&1; check "  ... and with all of its arguments" eq "$?" 2
+(
+   # shellcheck source=../big-storage-rescue/usr/lib/big-storage-rescue/bsr-repair-helper
+   . "$H"
+   f3probe_parse "$HERE/fixtures/f3probe-damaged.txt"; check "f3probe: a damaged card" eq "$F3_VERDICT" damaged
+   f3probe_parse "$HERE/fixtures/f3probe-real.txt"; check "  ... a real one" eq "$F3_VERDICT:$F3_USABLE" "real:$((15622144 * 512))"
+   f3probe_parse "$HERE/fixtures/f3probe-fake.txt"; check "  ... a counterfeit one, with its last good sector" eq "$F3_VERDICT:$F3_LAST" fake:16477878
+   repair_last $((512 * MIB)) -1 8; check "the partition ends 8 MiB before the end, on a MiB" eq "$REPLY" $(((512 - 8) * 2048 - 1))
+   repair_last $((512 * MIB)) $((400 * MIB + 4096)) 8; check "  ... or 8 MiB before the first block that failed" eq "$REPLY" $(((400 - 8) * 2048 - 1))
+   repair_last $((70 * MIB)) -1 8; check "  ... and refuses what is too small to be worth it" eq "$?" 1
+   img="$WORK/surface.img"; truncate -s 200M "$img"
+   out="$(python3 -I -c "$BSR_SURFACE" "$img" 0 $((200 * MIB)) quick 3 "$WORK/no-stop")"
+   check "the test of the surface: samples, more at the end, nothing bad" bash -c '[[ $1 == *"@surface "*" 0 -1 0 0 0"* ]] && [ "$(grep -c "^@progress" <<< "$1")" -gt 10 ]' _ "$out"
+   tested="$(sed -n 's/^@surface \([0-9]*\) .*/\1/p' <<< "$out")"
+   check "  ... about half of 200 MiB: 64 samples and the last 32 MiB ($((tested / 1048576)) MiB)" bash -c '[ "$1" -ge $((80 * 1048576)) ] && [ "$1" -le $((110 * 1048576)) ]' _ "$tested"
+   check "  ... and what it wrote is there, block by block" bash -c '[ "$(tail -c 1048576 "$1" | tr -d "\0" | wc -c)" -gt 1000000 ]' _ "$img"
+   out="$(python3 -I -c "$BSR_SURFACE" "$img" 0 $((200 * MIB)) full 4 "$WORK/no-stop")"
+   check "  ... complete: every block" grep -q "^@surface $((200 * MIB)) 0 -1 0 0 0$" <<< "$out"
+   : > "$WORK/stop-now"
+   python3 -I -c "$BSR_SURFACE" "$img" 0 $((200 * MIB)) full 4 "$WORK/stop-now" >/dev/null; check "  ... and it stops when asked" eq "$?" 3
+   rm -f "$img"
+)
+check "only bsr-repair-helper runs a formatter or a partitioner" bash -c '! grep -lE "^[^#]*\b(mkfs\.[a-z0-9]+|wipefs|sfdisk) +(-|\")" "$1"/*.sh "$1"/bsr-drive-helper "$1"/bsr-image-helper "$1"/bsr-holders "$1"/app.py "$1"/gui/*.py "$1"/gui/pages/*.py' _ "$L"
+check "  ... drive-repair.sh only names them" bash -c '! grep -nE "^[^#]*(^|[;&|({]|then|do)[[:space:]]*(mkfs\.[a-z0-9]+|wipefs|sfdisk|f3probe|dd)[[:space:]]+[-/\"\$]" "$1"' _ "$L/drive-repair.sh"
+check "the repair helper has a fixed library path" grep -q '^BSR_LIB="/usr/lib/big-storage-rescue"$' "$H"
+check "  ... resets PATH" grep -q '^export PATH=/usr/bin:/bin:/usr/sbin:/sbin$' "$H"
+check "  ... refuses a disk inside the computer, the system, another drive, what is in use" bash -c 'for c in "not a removable drive\" 6" "holds the running system (\$REPLY)\" 4" "nothing was done\" 5" "Unmount it first.\" 7"; do grep -qF "$c" "$1" || exit 1; done' _ "$H"
+check "  ... and opens the device exclusively before writing" grep -q 'flags |= os.O_EXCL' "$H"
+check "the engine reaches it only through its own program" bash -c 'grep -q "bsr-repair-helper\"; shift" "$1/drive.sh"' _ "$L"
+check "no test reached pkexec or a privileged helper" bash -c '[ "$(command -v pkexec)" = "$1/bin/pkexec" ] && ! grep -qs "bsr-repair-helper\|^repair " "$1/no-helper.calls"' _ "$WORK"
 
 echo "========================================="
 echo "drive result: $PASS passed, $FAIL failed"
