@@ -332,6 +332,79 @@ bsr_looks_like_os() {
 }
 
 # ---------------------------------------------------------------------------
+# Write protection: where it comes from
+
+BSR_SYS_BLOCK=/sys/block
+
+# The kernel lines that say whether a drive was write-protected when it was
+# detected. A function of its own: the tests replace it
+bsr_wp_kernel_lines() {
+   command -v journalctl >/dev/null || return 1
+   journalctl -k -b -q --no-pager -o cat -n 20000 \
+      --grep "(\\[$1\\] Write Protect is (on|off)|^$1: mmc[0-9]+:)" 2>/dev/null
+}
+
+# bsr_write_protect DISK: why writing is blocked on a whole drive, when it is.
+#   WP_KIND    "" (writing is allowed) |
+#              chosen          blocked in Big Storage Rescue, on purpose
+#              switch          the lock switch of the card or adapter, as the
+#                              reader sees it; or a card that locked itself
+#              card-temporary  a write protection set inside an SD card (CSD TMP_WRITE_PROTECT)
+#              card-permanent  a card locked for good (CSD PERM_WRITE_PROTECT)
+#              software        the drive accepts writing: it was blocked on
+#                              this computer (blockdev --setro, force_ro)
+#              image           a disk image attached read-only
+#              unknown         blocked, and nothing says by what
+#   WP_DETAIL  the facts, one line, untranslated
+# Only reads: sysfs and the journal of this boot. Returns 1 when not blocked.
+bsr_write_protect() {
+   local disk="${1##*/}" sys ro="" csd="" v line="" seq="" f=""
+   sys="$BSR_SYS_BLOCK/$disk"
+   WP_KIND="" WP_DETAIL=""
+   { read -r ro < "$sys/ro"; } 2>/dev/null
+   [ "$ro" = 1 ] || return 1
+   WP_DETAIL="$disk: ro=1"
+   # Blocked here on purpose, for this connection of the drive (bsr_chosen_ro_add)
+   f="${XDG_RUNTIME_DIR:-}/big-storage-rescue-read-only"
+   { read -r seq < "$sys/diskseq"; } 2>/dev/null
+   if [ -n "$seq" ] && [ -r "$f" ] && grep -q "^$seq " -- "$f"; then
+      WP_KIND=chosen
+      return 0
+   fi
+   case "$disk" in
+      loop*) WP_KIND=image; WP_DETAIL+=" (loop attached read-only)"; return 0 ;;
+   esac
+   if [[ $disk == mmcblk* ]]; then
+      # The CSD register of the card: bit 13 locks it for good, bit 12 until
+      # someone clears it. sysfs prints it as 32 hex digits, bit 0 last
+      { read -r csd < "$sys/device/csd"; } 2>/dev/null
+      if [[ $csd =~ ^[0-9A-Fa-f]{32}$ ]]; then
+         v=$((16#${csd: -4}))
+         if ((v & 0x2000)); then WP_KIND=card-permanent; WP_DETAIL+=" csd=$csd (PERM_WRITE_PROTECT)"; return 0; fi
+         if ((v & 0x1000)); then WP_KIND=card-temporary; WP_DETAIL+=" csd=$csd (TMP_WRITE_PROTECT)"; return 0; fi
+      fi
+      { read -r f < "$sys/force_ro"; } 2>/dev/null
+      if [ "$f" = 1 ]; then WP_KIND=software; WP_DETAIL+=" force_ro=1"; return 0; fi
+      # The card reader read the switch when the card was detected: "(ro)"
+      line="$(bsr_wp_kernel_lines "$disk" | tail -n 1)"
+      if [[ $line == *"(ro)"* ]]; then WP_KIND=switch; WP_DETAIL+=" kernel: $line"; return 0; fi
+      WP_KIND=software
+      [ -n "$line" ] && WP_DETAIL+=" kernel: $line"
+      return 0
+   fi
+   # USB and SCSI: the drive answers "Write Protect is on/off" each time it is
+   # detected, and again when a card is changed in a reader; the last one counts
+   line="$(bsr_wp_kernel_lines "$disk" | grep -E "\[$disk\] Write Protect is (on|off)" | tail -n 1)"
+   case "$line" in
+      *"Write Protect is on"*) WP_KIND=switch ;;
+      *"Write Protect is off"*) WP_KIND=software ;;
+      *) WP_KIND=unknown ;;
+   esac
+   [ -n "$line" ] && WP_DETAIL+=" kernel: $line"
+   return 0
+}
+
+# ---------------------------------------------------------------------------
 # Read-only diagnosis
 
 # bsr_diagnose_write DEV: why can't the current user write to DEV?
@@ -340,11 +413,12 @@ bsr_looks_like_os() {
 #            fs-errors | io-errors | mounted-ro | permission | permission-other-user
 #   D_MP     mount point examined
 #   D_DETAIL technical detail for "Details" (one line, untranslated facts)
-#   D_FIX    safe automatic correction available: take-ownership | remount | ""
+#   D_FIX    safe automatic correction available: take-ownership | remount | unprotect | ""
+#   D_WP     with hw-readonly: where the protection comes from (WP_KIND of bsr_write_protect)
 #   D_WARN   warnings that do not prevent writing (filesystem errors noticed)
 bsr_diagnose_write() {
    local dev="$1" path="${2:-}" i ro=0 fstype mounted_type vfs fso st uid wt line
-   D_CAUSE="" D_MP="" D_DETAIL="" D_FIX="" D_WARN=() D_OWNER="" D_PATH=""
+   D_CAUSE="" D_MP="" D_DETAIL="" D_FIX="" D_WARN=() D_OWNER="" D_PATH="" D_WP=""
    fstype="${F[FSTYPE]:-}"
 
    if [ "$fstype" = swap ]; then
@@ -401,6 +475,14 @@ bsr_diagnose_write() {
    if [ "${F[RO]:-0}" = 1 ] || [ "${F[DISK_RO]:-0}" = 1 ]; then
       D_CAUSE=hw-readonly
       D_DETAIL="/sys/block/${F[DISK]##*/}/ro=1"
+      if bsr_write_protect "${F[DISK]}"; then
+         D_WP="$WP_KIND" D_DETAIL="$WP_DETAIL"
+      elif [ "${F[RO]:-0}" = 1 ]; then
+         # Only the partition: blocked on this computer, never by the drive
+         D_WP=software D_DETAIL="${F[KNAME]}: ro=1"
+      fi
+      # Allowing writing again is safe only where the drive itself accepts it
+      case "$D_WP" in software | chosen) D_FIX=unprotect ;; esac
       return 0
    fi
 

@@ -164,6 +164,9 @@ class HealthView(Gtk.Box):
             buttons.append(w.button(_("Rescue my files"), lambda: self.window.open_wizard(dev),
                                     css=("suggested-action", "pill") if h.risky else ("pill",), icon_name="document-save-symbolic"))
         buttons.append(w.button(_("Export diagnosis…"), self._export, css=("pill",), icon_name="document-save-as-symbolic"))
+        if dev.repairable:
+            buttons.append(w.button(_("Repair…"), lambda: self.window.open_repair(dev), css=("pill",), icon_name="media-flash-symbolic",
+                                    tooltip=_("Tests the drive and sets it up again. It erases everything on it.")))
         panel.append(w.button_row(*buttons))
         self.append(panel)
 
@@ -188,6 +191,15 @@ class HealthView(Gtk.Box):
             for item in system:
                 icon = "dialog-error-symbolic" if item.get("level") == "critical" else "dialog-warning-symbolic"
                 group.add_row(w.row(item.get("text", ""), item.get("help", ""), icon_name=icon))
+            self.append(group)
+
+        wp = (self.diag or {}).get("write_protect")
+        if wp:
+            group = w.Group(_("Writing is blocked"), wp.get("reason", ""))
+            for step in wp.get("help") or []:
+                group.add_row(w.row(step, icon_name="go-next-symbolic"))
+            if wp.get("can_allow"):
+                group.set_header_suffix(w.button(wp.get("fix_label") or _("Allow writing again"), self.page.allow_writing, css=("flat",)))
             self.append(group)
 
         if self.diag and self.diag.get("advice"):
@@ -369,10 +381,11 @@ class DevicePage(Adw.NavigationPage):
         group = Gio.SimpleActionGroup()
         for name, handler in (("technical", self.show_technical), ("report", self.export_report), ("remove", self.safe_remove),
                               ("unmount", self.unmount), ("force", self.force_unmount),
-                              ("protect", self.protect), ("refresh", self.window.refresh)):
+                              ("protect", self.protect), ("refresh", self.window.refresh), ("repair", self.repair)):
             action = Gio.SimpleAction.new(name, None)
             action.connect("activate", lambda _a, _p, h=handler: h())
             group.add_action(action)
+        self.action_group = group
         self.insert_action_group("device", group)
         menu = Gio.Menu()
         first = Gio.Menu()
@@ -386,6 +399,9 @@ class DevicePage(Adw.NavigationPage):
         second.append(_("Force unmount (close the programs using it)…"), "device.force")
         second.append(_("Safely remove"), "device.remove")
         menu.append_section(None, second)
+        third = Gio.Menu()
+        third.append(_("Repair the drive (erases it)…"), "device.repair")
+        menu.append_section(None, third)
         self.menu_button.set_menu_model(menu)
 
     # ----- what is shown
@@ -418,6 +434,7 @@ class DevicePage(Adw.NavigationPage):
             self._signature = None
             return
         self.content.set_visible_child_name("drive")
+        self.action_group.lookup_action("repair").set_enabled(dev.repairable)
         self.set_title(dev.name)
         self.narrow_title.set_title(dev.name)
         signature = repr(dev)
@@ -456,7 +473,21 @@ class DevicePage(Adw.NavigationPage):
         if dev.kind != "image":
             buttons.append(w.button(_("Check drive"), lambda: self.stack.set_visible_child_name("health"),
                                     icon_name="system-search-symbolic", css=("pill",)))
+        if dev.repairable:
+            buttons.append(w.button(_("Repair…"), lambda: self.window.open_repair(dev), icon_name="media-flash-symbolic", css=("pill",),
+                                    tooltip=_("Tests the drive and sets it up again. It erases everything on it.")))
         box.append(w.button_row(*buttons))
+        wp = (self.health.diag or {}).get("write_protect")
+        if wp:
+            level = "critical" if wp.get("kind") == "card-permanent" else "attention"
+            text = f"{wp.get('title', '')}: {wp.get('reason', '')}"
+            steps = wp.get("help") or []
+            if steps:
+                text += "\n" + "\n".join(f"• {x}" for x in steps)
+            if wp.get("can_allow"):
+                box.append(w.notice(text, level, action=_("Allow writing again…"), callback=self.allow_writing))
+            else:
+                box.append(w.notice(text, level))
         vols = dev.content_volumes
         if not vols:
             box.append(w.Group(_("Volumes"), _("No filesystem was recognized on it. If it should have partitions, searching for them with TestDisk does not change the disk.")))
@@ -479,7 +510,9 @@ class DevicePage(Adw.NavigationPage):
         if vol.mountpoint:
             state += " — " + vol.mountpoint
         card.append(w.label(state, css=("dim-label",), selectable=True))
-        if vol.device_read_only:
+        wp = (self.health.diag or {}).get("write_protect") or {}
+        if vol.device_read_only and wp.get("kind") in (None, "chosen", "software"):
+            # The lock switch or the card itself is said in the notice above, not here
             card.append(w.label(_("Writing is also blocked on the device itself until it is disconnected."), css=("caption", "dim-label")))
         if vol.used is not None and vol.avail is not None:
             card.append(w.UsageBar(vol.used, vol.avail))
@@ -534,7 +567,8 @@ class DevicePage(Adw.NavigationPage):
         dev = self.dev
         mounts = [v.mountpoint for v in dev.volumes if v.mountpoint]
         names = [v.device for v in dev.volumes]
-        jobs = [j for j in self.window.jobs if j.source in names or any(j.source == m or j.source.startswith(m + "/") for m in mounts)]
+        jobs = [j for j in self.window.jobs if j.source == dev.device or j.source in names
+                or any(j.source == m or j.source.startswith(m + "/") for m in mounts)]
         # What a row shows, without progress: the History tab keeps its focus while a job runs
         signature = repr((dev.stable_id, [(j.id, j.state, j.state_label, j.source, j.destination) for j in jobs]))
         if signature == self._history_signature:
@@ -583,6 +617,30 @@ class DevicePage(Adw.NavigationPage):
     def force_unmount(self):
         if self.dev:
             actions.force_unmount(self.window, actions.drive_target(self.dev))
+
+    def allow_writing(self):
+        """Allow writing again where it was blocked on this computer only: the
+        engine offers it only when the drive itself accepts writing."""
+        if not self.dev:
+            return
+        dev = self.dev
+
+        def answered(rid):
+            if rid != "allow":
+                return
+
+            def done(res):
+                self.window.refresh()
+                self.window.notify_text((res.out or res.err).strip())
+            self.window.engine.protect(dev.device, done, on=False)
+
+        w.alert(self.window, _("Allow writing again?"),
+                _("Writing is allowed again on the device. Nothing on it is changed. The administrator password may be requested."),
+                responses=(("cancel", _("Cancel")), ("allow", _("Allow writing"))), default="cancel", close="cancel", callback=answered)
+
+    def repair(self):
+        if self.dev and self.dev.repairable:
+            self.window.open_repair(self.dev)
 
     def protect(self):
         if not self.dev:

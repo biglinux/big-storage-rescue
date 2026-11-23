@@ -1,0 +1,423 @@
+#!/bin/bash
+# shellcheck disable=SC2015  # "check && check || die" on purpose: die does not return
+#
+# bsr-repair-helper - repairs a memory card or a USB drive: the one program of
+# Big Storage Rescue that writes to a device. It ERASES everything on it.
+#
+# Started through pkexec (polkit action org.biglinux.big-storage-rescue.repair,
+# which asks for the password every time and never keeps it), by the
+# supervisor of a repair job (drive-repair.sh). Nothing else calls it.
+#
+#   bsr-repair-helper DEV DISKSEQ SIZE MODE FS LABEL MARGIN_MIB STOPFILE
+#
+#   DEV         the whole drive (/dev/sdX, /dev/mmcblkN), or a loop device
+#               over a file of the user
+#   DISKSEQ     the disk sequence number the person saw: another drive that
+#               took the name meanwhile is refused
+#   SIZE        its size in bytes, as seen: a different size is refused
+#   MODE        quick (samples of the surface) or full (every block)
+#   FS          fat32, exfat or ext4
+#   LABEL       the name of the new volume
+#   MARGIN_MIB  space left unused at the end, before anything that failed
+#   STOPFILE    when it appears, the work stops (a file of the user)
+#
+# Steps, each announced on standard output (the supervisor reads them):
+#   1 capacity  f3probe, when installed: the real capacity of the drive
+#               (finds counterfeit cards, which claim more than they hold)
+#   2 surface   writes a different pattern on each block and reads it back:
+#               samples (quick) or everything (full), with more samples at
+#               the end of the drive, where cheap cards fail first
+#   3 partition a new partition table with one partition that leaves out
+#               what failed, and a margin before it
+#   4 format    the new filesystem
+#
+# Lines for the supervisor start with @:
+#   @phase NAME                     a step starts
+#   @step NAME ok|failed|skipped    a step ended
+#   @progress DONE TOTAL            bytes of the current step
+#   @fact KEY VALUE                 announced, real, tested, bad, first_bad, usable, last_sector
+#   @verdict real|fake|worn|damaged|inconsistent
+#
+# Exit codes: 0 done, 1 failed, 2 bad arguments, 4 refused: the running
+# system, 5 the device was replaced, 6 refused: not a removable drive,
+# 7 it is in use (mounted, or under LVM, RAID or encryption), 8 the drive
+# cannot be written (damaged: replace it), 10 the test found data that does
+# not match and f3probe is not installed to tell why, 23 stopped, 25 a tool
+# is missing.
+
+BSR_LIB="/usr/lib/big-storage-rescue"
+export PATH=/usr/bin:/bin:/usr/sbin:/sbin
+export LC_ALL=C
+
+die() { printf 'bsr-repair-helper: %s\n' "$1" >&2; exit "${2:-2}"; }
+say() { printf '%s\n' "$*"; }
+
+MIB=$((1024 * 1024))
+# The partition starts at 1 MiB, as every partitioning tool does today
+START_SECTOR=2048
+MIN_BYTES=$((64 * MIB))
+
+# The test of the surface, as python3 -I -c "$BSR_SURFACE" DEV FIRST END MODE SEED STOPFILE.
+# Every block gets a pattern of its own (from SEED and its position), so a
+# counterfeit card that writes two positions on the same flash shows up as a
+# mismatch. Writes are synchronous (O_DSYNC): an error belongs to its block.
+# Before reading, the cache of the device is dropped (BLKFLSBUF), so what is
+# read comes from the drive. The device is opened with O_EXCL: if anything
+# mounted it meanwhile, nothing is written.
+BSR_SURFACE='
+import errno, fcntl, os, random, sys
+dev, first, end, mode, seed, stop = sys.argv[1], int(sys.argv[2]), int(sys.argv[3]), sys.argv[4], int(sys.argv[5]), sys.argv[6]
+MIB = 1 << 20
+chunk = 4 * MIB if mode == "full" else MIB
+first -= first % MIB
+end -= end % MIB
+if end - first < chunk:
+    sys.exit("bsr-repair-helper: the area to test is too small")
+if mode == "full":
+    spots = list(range(first, end, chunk))
+else:
+    spread = 64
+    step = max(chunk, ((end - first - chunk) // (spread - 1)) // MIB * MIB)
+    spots = set(range(first, end - chunk + 1, step))
+    # The end of a cheap card fails first: the last 32 MiB, every MiB
+    tail = min(32 * MIB, (end - first) // 2)
+    spots.update(range(end - tail, end, chunk))
+    spots.add(end - chunk)
+    spots = sorted(s for s in spots if first <= s <= end - chunk)
+sizes = {s: min(chunk, end - s) for s in spots}
+total = 2 * sum(sizes.values())
+done = 0
+def pattern(spot):
+    return random.Random(seed * 1000003 + spot // MIB).randbytes(sizes[spot])
+def progress():
+    print("@progress %d %d" % (done, total), flush=True)
+def stopped():
+    return os.path.exists(stop)
+flags = os.O_RDWR | os.O_DSYNC
+if not os.path.isfile(dev):
+    flags |= os.O_EXCL
+try:
+    fd = os.open(dev, flags)
+except OSError as e:
+    sys.exit("bsr-repair-helper: cannot open %s: %s" % (dev, e.strerror))
+bad = {}
+gone = False
+failures_in_a_row = 0
+last_report = 0
+for spot in spots:
+    if stopped():
+        sys.exit(3)
+    try:
+        os.pwrite(fd, pattern(spot), spot)
+        failures_in_a_row = 0
+    except OSError as e:
+        bad[spot] = "write"
+        failures_in_a_row += 1
+        print("@bad %d %d write %s" % (spot, sizes[spot], e.strerror), flush=True)
+        if e.errno in (errno.ENODEV, errno.ENXIO, errno.ENOENT) or failures_in_a_row >= 8:
+            # The drive went away or refuses everything: what was not tried is not good
+            gone = True
+            for rest in spots[spots.index(spot) + 1:]:
+                bad[rest] = "untried"
+            break
+    done += sizes[spot]
+    if done - last_report >= 16 * MIB or mode != "full":
+        progress(); last_report = done
+try:
+    os.fsync(fd)
+except OSError:
+    pass
+mismatch = 0
+if not gone:
+    try:
+        fcntl.ioctl(fd, 0x1261)  # BLKFLSBUF
+    except OSError:
+        pass
+    try:
+        os.posix_fadvise(fd, 0, 0, os.POSIX_FADV_DONTNEED)
+    except OSError:
+        pass
+    for spot in spots:
+        if stopped():
+            sys.exit(3)
+        if spot not in bad:
+            try:
+                data = os.pread(fd, sizes[spot], spot)
+                if data != pattern(spot):
+                    bad[spot] = "mismatch"; mismatch += 1
+                    print("@bad %d %d mismatch" % (spot, sizes[spot]), flush=True)
+            except OSError as e:
+                bad[spot] = "read"
+                print("@bad %d %d read %s" % (spot, sizes[spot], e.strerror), flush=True)
+        done += sizes[spot]
+        if done - last_report >= 16 * MIB or mode != "full":
+            progress(); last_report = done
+os.close(fd)
+done = total
+progress()
+tested = sum(sizes.values())
+bad_bytes = sum(sizes[s] for s in bad)
+first_bad = min(bad) if bad else -1
+ioerr = sum(1 for k in bad.values() if k in ("write", "read", "untried"))
+print("@surface %d %d %d %d %d %d" % (tested, bad_bytes, first_bad, mismatch, ioerr, 1 if gone else 0), flush=True)
+'
+
+# f3probe_parse FILE: what f3probe concluded (F3_VERDICT real|fake|damaged|"",
+# F3_LAST: the last sector that can be used, F3_USABLE in bytes)
+f3probe_parse() {
+   local file="$1"
+   F3_VERDICT="" F3_LAST="" F3_USABLE=""
+   if grep -q "is the real thing" -- "$file"; then F3_VERDICT=real
+   elif grep -q "is damaged" -- "$file"; then F3_VERDICT=damaged
+   elif grep -q "is a counterfeit" -- "$file"; then F3_VERDICT=fake
+   fi
+   F3_LAST="$(sed -n 's/.*--last-sec=\([0-9][0-9]*\).*/\1/p' -- "$file" | head -n 1)"
+   F3_USABLE="$(sed -n 's/.*\*Usable\* size:.*(\([0-9][0-9]*\) blocks).*/\1/p' -- "$file" | head -n 1)"
+   [ -n "$F3_USABLE" ] && F3_USABLE=$((F3_USABLE * 512))
+   [ -n "$F3_VERDICT" ]
+}
+
+# repair_last BYTES_END FIRST_BAD MARGIN_MIB: the last sector of the partition
+# (REPLY): before the first block that failed (if any), minus the margin,
+# ending on a MiB. 1 when what is left is too small to be worth a filesystem.
+repair_last() {
+   local end="$1" first_bad="$2" margin=$(($3 * MIB))
+   [ "$first_bad" -ge 0 ] && [ "$first_bad" -lt "$end" ] && end="$first_bad"
+   end=$(((end - margin) / MIB * MIB))
+   REPLY=$((end / 512 - 1))
+   [ "$end" -ge $((START_SECTOR * 512 + MIN_BYTES)) ]
+}
+
+# run_until_stop COMMAND...: run it, stop it when the stop file appears.
+# Returns its exit code, or 23 when it was stopped.
+run_until_stop() {
+   local pid
+   "$@" &
+   pid=$!
+   trap 'kill -TERM "$pid" 2>/dev/null' TERM INT HUP
+   while :; do
+      sleep 1 &
+      wait -n "$pid" "$!"
+      kill "$!" 2>/dev/null
+      kill -0 "$pid" 2>/dev/null || break
+      if [ -e "$STOP" ]; then
+         kill -TERM "$pid" 2>/dev/null
+         wait "$pid"
+         trap - TERM INT HUP
+         return 23
+      fi
+   done
+   wait "$pid"
+   local rc=$?
+   trap - TERM INT HUP
+   [ -e "$STOP" ] && return 23
+   return "$rc"
+}
+
+stopped() { [ -e "$STOP" ] && { say "@step $1 failed"; die "stopped" 23; }; }
+
+main() {
+   [ "$#" -eq 8 ] || die "usage: bsr-repair-helper DEV DISKSEQ SIZE MODE FS LABEL MARGIN_MIB STOPFILE"
+   [ "$EUID" -eq 0 ] || die "must run as root" 1
+   # shellcheck source=lib.sh
+   . "$BSR_LIB/lib.sh" || exit 1
+
+   local dev="$1" seq="$2" size="$3" mode="$4" fs="$5" label="$6" margin="$7"
+   STOP="$8"
+   [[ $dev =~ ^/dev/[A-Za-z0-9._/:+-]+$ ]] && [[ $dev != *..* ]] || die "not a device name"
+   [[ $seq =~ ^[0-9]+$ ]] || die "bad disk sequence number"
+   [[ $size =~ ^[0-9]+$ ]] || die "bad size"
+   case "$mode" in quick | full) ;; *) die "bad mode" ;; esac
+   case "$fs" in fat32 | exfat | ext4) ;; *) die "bad filesystem" ;; esac
+   [[ $label =~ ^[A-Za-z0-9_-]{1,16}$ ]] || die "bad label"
+   [[ $margin =~ ^[0-9]+$ ]] && [ "$margin" -le 1024 ] || die "bad margin"
+   dev="$(readlink -f -- "$dev")"
+   [ -b "$dev" ] || die "not a block device"
+   local name="${dev##*/}"
+
+   # The stop file is read only, as root: it must be a path of the user
+   local uid="${PKEXEC_UID:-0}"
+   [[ $uid =~ ^[0-9]+$ ]] || die "bad user"
+   local parent="${STOP%/*}"
+   [[ $STOP == /* && $STOP != *..* && $STOP != *$'\n'* ]] || die "bad path"
+   [ "$(readlink -f -- "$parent")" = "$parent" ] && [ "$(stat -c %u -- "$parent")" = "$uid" ] || die "$parent is not a folder of the user"
+
+   # A whole drive: never a partition, never a volume on top of others
+   local type
+   type="$(lsblk -d -n -o TYPE -- "$dev" 2>/dev/null)"
+   case "$type" in
+      disk) ;;
+      loop)
+         # A disk image of the user: never a file of someone else
+         local backing
+         backing="$(cat "/sys/block/$name/loop/backing_file" 2>/dev/null)"
+         [ -n "$backing" ] && [ "$(stat -c %u -- "$backing" 2>/dev/null)" = "$uid" ] || die "refused: $dev is not over a file of the user" 6
+         ;;
+      *) die "not a whole drive: $dev ($type)" ;;
+   esac
+
+   # Memory cards and USB drives only: the disks inside the computer are never erased here
+   if [ "$type" = disk ]; then
+      local removable=0 tran
+      { read -r removable < "/sys/block/$name/removable"; } 2>/dev/null
+      tran="$(lsblk -d -n -o TRAN -- "$dev" 2>/dev/null)"
+      if [[ $name == mmcblk* ]]; then
+         local mtype=""
+         { read -r mtype < "/sys/block/$name/device/type"; } 2>/dev/null
+         [ "$mtype" = SD ] || die "refused: $dev is built-in flash memory (eMMC), not a card" 6
+      elif [ "$removable" != 1 ] && [ "$tran" != usb ]; then
+         die "refused: $dev is not a removable drive" 6
+      fi
+   fi
+
+   bsr_system_use "$dev" && die "refused: $dev holds the running system ($REPLY)" 4
+
+   # The drive the person saw, with the size they saw
+   local now_seq=""
+   { read -r now_seq < "/sys/block/$name/diskseq"; } 2>/dev/null
+   [ "$now_seq" = "$seq" ] || die "the device was replaced: nothing was done" 5
+   local sectors
+   sectors="$(cat "/sys/block/$name/size" 2>/dev/null)"
+   [ "$((sectors * 512))" = "$size" ] || die "the device changed size: nothing was done" 5
+   [ "$size" -ge $((START_SECTOR * 512 + MIN_BYTES + margin * MIB)) ] || die "the drive is too small"
+
+   # Nothing on it may be in use: a mount, LVM, RAID or an open encrypted volume
+   local d
+   while read -r d; do
+      [ -n "$(findmnt -n -o TARGET --source "$d" 2>/dev/null)" ] && die "$d is mounted. Unmount it first." 7
+      [ -n "$(ls -A "/sys/class/block/${d##*/}/holders" 2>/dev/null)" ] && die "$d is in use by another volume (LVM, RAID or encryption)" 7
+   done < <(lsblk -n -p -r -o NAME -- "$dev" 2>/dev/null)
+
+   # Tools: the formatter of the chosen filesystem, and python for the test
+   local mkfs
+   case "$fs" in
+      fat32) mkfs=mkfs.fat ;;
+      exfat) mkfs=mkfs.exfat ;;
+      ext4) mkfs=mkfs.ext4 ;;
+   esac
+   for d in "$mkfs" sfdisk wipefs python3 blockdev; do
+      command -v "$d" >/dev/null || { say "@missing $d"; die "$d is not installed" 25; }
+   done
+
+   # Stopped while the password was asked: nothing has been written yet
+   [ -e "$STOP" ] && die "stopped before anything was written" 23
+
+   say "@fact announced $size"
+   local tmp
+   tmp="$(mktemp -d /run/bsr-repair.XXXXXXXX)" || die "no working folder" 1
+   trap 'rm -rf -- "$tmp"' EXIT
+
+   # ----- 1: the real capacity
+   say "@phase capacity"
+   local end="$size" verdict=real have_f3=0 rc
+   # A disk image has no flash to be counterfeit: f3probe is for real drives
+   if [ "$type" = disk ] && command -v f3probe >/dev/null; then
+      have_f3=1
+      run_until_stop f3probe --destructive --time-ops "$dev" > "$tmp/f3probe" 2>&1; rc=$?
+      cat -- "$tmp/f3probe"
+      stopped capacity
+      if ! f3probe_parse "$tmp/f3probe"; then
+         say "@step capacity failed"
+         die "f3probe could not test the drive (exit $rc)" 1
+      fi
+      case "$F3_VERDICT" in
+         damaged)
+            say "@fact real 0"
+            say "@verdict damaged"
+            say "@step capacity failed"
+            die "the drive cannot be written: it is damaged" 8
+            ;;
+         fake)
+            [[ $F3_LAST =~ ^[0-9]+$ ]] || die "f3probe gave no capacity" 1
+            end=$(((F3_LAST + 1) * 512))
+            verdict=fake
+            ;;
+      esac
+      say "@fact real $end"
+      say "@step capacity ok"
+   else
+      say "@step capacity skipped"
+   fi
+   # Whatever was on it goes now: old signatures could make it look like
+   # a volume that is still there
+   wipefs -a -q -- "$dev" >/dev/null 2>&1
+
+   # ----- 2: the surface
+   say "@phase surface"
+   local seed
+   seed="$(od -An -N4 -tu4 /dev/urandom | tr -d ' ')"
+   run_until_stop python3 -I -c "$BSR_SURFACE" "$dev" 0 "$end" "$mode" "${seed:-1}" "$STOP" | tee "$tmp/surface"
+   rc="${PIPESTATUS[0]}"
+   stopped surface
+   [ "$rc" -eq 0 ] || { say "@step surface failed"; die "the test of the surface failed (exit $rc)" 1; }
+   local tested bad first_bad mismatch
+   read -r _ tested bad first_bad mismatch _ _ < <(grep '^@surface ' -- "$tmp/surface" | tail -n 1)
+   [[ $tested =~ ^[0-9]+$ && $first_bad =~ ^-?[0-9]+$ ]] || { say "@step surface failed"; die "the test gave no result" 1; }
+   say "@fact tested $tested"
+   say "@fact bad $bad"
+   say "@fact first_bad $first_bad"
+   # Data that comes back different, without a read or write error, is what
+   # a counterfeit card does. Without f3probe, where the real end is cannot be told
+   if [ "$mismatch" -gt 0 ] && [ "$have_f3" = 0 ]; then
+      say "@verdict inconsistent"
+      say "@step surface failed"
+      die "the drive returned other data than was written: install f3 to measure its real capacity" 10
+   fi
+   # Failing from the start, or in the first half: not worth a filesystem
+   if [ "$first_bad" -ge 0 ] && [ "$first_bad" -lt $((end / 2)) ]; then
+      say "@verdict damaged"
+      say "@step surface failed"
+      die "the drive fails to keep data in its first half: it is damaged" 8
+   fi
+   if ! repair_last "$end" "$first_bad" "$margin"; then
+      say "@verdict damaged"
+      say "@step surface failed"
+      die "too little of the drive works" 8
+   fi
+   local last="$REPLY"
+   [ "$first_bad" -ge 0 ] && [ "$verdict" = real ] && verdict=worn
+   say "@step surface ok"
+   stopped surface
+
+   # ----- 3: a new partition table, one partition
+   say "@phase partition"
+   local ptype
+   case "$fs" in fat32) ptype=c ;; exfat) ptype=7 ;; ext4) ptype=83 ;; esac
+   printf 'label: dos\nstart=%s, size=%s, type=%s\n' "$START_SECTOR" "$((last - START_SECTOR + 1))" "$ptype" |
+      sfdisk --quiet --wipe always --wipe-partitions always -- "$dev" || { say "@step partition failed"; die "sfdisk failed" 1; }
+   sync
+   blockdev --rereadpt "$dev" 2>/dev/null
+   command -v udevadm >/dev/null && udevadm settle --timeout=15 2>/dev/null
+   local part="" n
+   for ((n = 0; n < 30; n++)); do
+      part="$(lsblk -n -p -r -o NAME,TYPE -- "$dev" 2>/dev/null | awk '$2 == "part" { print $1; exit }')"
+      [ -n "$part" ] && [ -b "$part" ] && break
+      part=""
+      sleep 0.5
+   done
+   [ -n "$part" ] || { say "@step partition failed"; die "the new partition did not appear" 1; }
+   say "@fact usable $(((last - START_SECTOR + 1) * 512))"
+   say "@fact last_sector $last"
+   say "@step partition ok"
+
+   # ----- 4: the filesystem
+   say "@phase format"
+   local owner gid
+   case "$fs" in
+      fat32) mkfs.fat -F 32 -n "${label^^}" -- "$part" ;;
+      exfat) mkfs.exfat -L "$label" -- "$part" ;;
+      ext4)
+         gid="$(getent passwd "$uid" | cut -d: -f4)"
+         owner="$uid:${gid:-$uid}"
+         mkfs.ext4 -q -F -L "$label" -E "root_owner=$owner" -- "$part"
+         ;;
+   esac || { say "@step format failed"; die "the filesystem could not be created" 1; }
+   sync
+   say "@step format ok"
+   say "@verdict $verdict"
+   say "@phase done"
+   return 0
+}
+
+# Sourced by the tests: only the functions
+[ "${BASH_SOURCE[0]}" = "$0" ] && main "$@"

@@ -190,6 +190,12 @@ class Device:
         return (used, avail) if known else None
 
     @property
+    def repairable(self):
+        """A memory card or a USB drive that is not the running system: where the
+        repair is offered. The engine still decides (repair --dry-run)."""
+        return self.kind in ("usb", "sd") and not self.has_system
+
+    @property
     def has_system(self):
         return any(v.state == "system" for v in self.volumes)
 
@@ -262,6 +268,18 @@ class Job:
     partial_dir: str = ""
     total_estimate: bool = False
     pausable: bool = False
+    # A repair: its steps ("capacity:ok,surface:running"), what it concluded, what it measured
+    phase: str = ""
+    steps: str = ""
+    verdict: str = ""
+    filesystem: str = ""
+    label: str = ""
+    mode: str = ""
+    missing: str = ""
+    announced_bytes: int | None = None
+    real_bytes: int | None = None
+    usable_bytes: int | None = None
+    tested_bytes: int | None = None
 
     @classmethod
     def from_json(cls, d):
@@ -294,7 +312,20 @@ class Job:
         return self.name or (self.source.rstrip("/").rsplit("/", 1)[-1] if self.source else "") or self.kind_label
 
     @property
+    def step_states(self):
+        """{step: ok|failed|skipped|running} of a repair."""
+        out = {}
+        for item in (self.steps or "").split(","):
+            key, _sep, state = item.partition(":")
+            if key:
+                out[key] = state
+        return out
+
+    @property
     def can_resume(self):
+        # A card reader keeps its name when its card is swapped: a repair starts over
+        if self.kind == "repair":
+            return False
         if self.kind in ("scan", "carve"):
             return self.state in ("interrupted", "cancelled")
         return self.state in RESUMABLE_STATES
@@ -335,6 +366,7 @@ class Job:
             "scan": _("List of files"),
             "carve": _("Search by content"),
             "salvage": _("Readable parts of files"),
+            "repair": _("Repair of a drive"),
         }.get(self.kind, self.kind)
 
     @property

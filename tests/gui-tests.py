@@ -508,13 +508,19 @@ class DriveActions(Base):
         dialog.emit("response", "stop")
         self.assertTrue(pump(lambda: "--cli unmount /dev/sda1 --allow-services --json" in calls(), 3), calls())
 
-    def test_no_erase_anywhere_in_the_menus(self):
+    def test_erasing_only_as_the_repair_of_a_card_or_usb_drive(self):
+        """The one way to erasing a drive is the repair, said as such, and only for a
+        memory card or a USB drive: never the system, never a disk inside the computer.
+        No Secure Erase, no maintenance page."""
         for dev in self.win.devices:
             button = self.actions.drive_menu(self.win, Gtk.Box(), dev)
             model = button.get_menu_model()
             labels = [model.get_item_link(i, "section").get_item_attribute_value(j, "label", None).unpack()
                       for i in range(model.get_n_items()) for j in range(model.get_item_link(i, "section").get_n_items())]
-            self.assertFalse([x for x in labels if "rase" in x], labels)
+            erasing = [x for x in labels if "rase" in x]
+            self.assertEqual(erasing, ["Repair the drive (erases it)…"] if dev.repairable else [], (dev.device, labels))
+        self.assertFalse(self.win.device_by_id("serial:ADATA1").repairable, "the system drive")
+        self.assertTrue(self.win.device_by_id("serial:S1DFL8G9").repairable, "a USB drive")
         self.assertFalse(hasattr(self.actions, "erase"))
         self.assertFalse(hasattr(self.win, "open_maintenance"))
 
@@ -1393,6 +1399,184 @@ def write_index(records):
     path = WORK / "index-test"
     path.write_bytes(b"\0".join(records) + (b"\0" if records else b""))
     return path
+
+
+REPAIR_PLAN = {"error": "", "error_text": "", "device": "/dev/sdb", "name": "ST1000DM003-1CH162", "mode": "quick", "filesystem": "exfat", "label": "ARQUIVOS",
+               "level": "critical", "ok": True, "f3": True, "has_data": True, "exit": 0, "size": 1000 * GB, "diskseq": 7, "margin_mib": 8, "estimate": 206,
+               "volumes": [{"device": "/dev/sdb1", "label": "ARQUIVOS", "fstype": "ntfs", "mountpoint": "", "size": 1000 * GB, "used": None}],
+               "mounted": [], "warnings": [{"key": "has-data", "text": "Everything will be erased."},
+                                           {"key": "risky", "text": "This drive reported problems."},
+                                           {"key": "exfat-old", "text": "Some older devices do not read exFAT."}]}
+
+
+class Repair(Base):
+    def open_repair(self, plan=None):
+        fix("repair-dry", plan or REPAIR_PLAN)
+        self.win.show_device("serial:S1DFL8G9")
+        self.win.open_repair(self.win.device_by_id("serial:S1DFL8G9"))
+        page = self.win.repair
+        self.assertTrue(pump(lambda: page.plan is not None, 4))
+        pump(timeout=0.1)
+        return page
+
+    def test_offered_on_a_usb_drive_never_on_the_system(self):
+        self.win.show_device("serial:S1DFL8G9")
+        pump(timeout=0.3)
+        self.assertIsNotNone(find_button(self.win, "Repair…"))
+        self.assertTrue(self.win.device_page.action_group.lookup_action("repair").get_enabled())
+        self.win.show_device("serial:ADATA1")
+        pump(timeout=0.3)
+        self.assertIsNone(find_button(self.win, "Repair…"))
+        self.assertFalse(self.win.device_page.action_group.lookup_action("repair").get_enabled())
+
+    def test_says_what_is_erased_and_offers_to_recover_first(self):
+        page = self.open_repair()
+        self.see("What will be erased", page)
+        self.see("ARQUIVOS", page)
+        self.see("It reported problems", page)
+        self.see("Some older devices do not read exFAT.", page)
+        self.assertIn("--cli repair /dev/sdb --mode quick --filesystem auto --margin-mib 8 --expect-diskseq 7 --dry-run --json", calls())
+        click(page, "Recover files first")
+        self.assertTrue(pump(lambda: type(self.win.nav.get_visible_page()).__name__ == "RescueWizard", 3))
+
+    def test_nothing_starts_without_the_confirmation(self):
+        page = self.open_repair()
+        self.assertFalse(page.start_btn.get_sensitive())
+        page.confirm.set_active(True)
+        self.assertTrue(page.start_btn.get_sensitive())
+        page.confirm.set_active(False)
+        self.assertFalse(page.start_btn.get_sensitive())
+        self.assertFalse([c for c in calls() if " repair " in f" {c} " and "--yes" in c])
+
+    def test_starts_with_the_disk_it_showed_and_opens_its_progress(self):
+        page = self.open_repair()
+        self.assertTrue(pump(lambda: page.label_row.get_text() == "ARQUIVOS", 3), "the name the engine chose is offered")
+        page.full_row.check.set_active(True)
+        page.fs_row.set_selected(1)
+        self.assertTrue(pump(lambda: any("--mode full --filesystem fat32" in c and "--dry-run" in c for c in calls()), 3), calls())
+        pump(timeout=0.5)
+        fix("repair", {"id": "20261119-130000-abcd", "dir": str(WORK)})
+        fix("status", job_json(id="20261119-130000-abcd", kind="repair", result_kind="", state="pending", state_label="Waiting for the password",
+                               source="/dev/sdb", destination="", bytes_total=0, bytes_done=0, pausable=False))
+        page.confirm.set_active(True)
+        forget_calls()
+        click(page, "Repair and erase")
+        self.assertTrue(pump(lambda: any("--yes" in c for c in calls()), 3), calls())
+        started = next(c for c in calls() if "--yes" in c)
+        self.assertEqual(started, "--cli repair /dev/sdb --mode full --filesystem fat32 --margin-mib 8 --label ARQUIVOS --expect-diskseq 7 --yes --no-wait --json")
+        self.assertTrue(pump(lambda: type(self.win.nav.get_visible_page()).__name__ == "JobPage", 3))
+
+    def test_mounted_volumes_are_unmounted_first_never_forced(self):
+        page = self.open_repair(dict(REPAIR_PLAN, mounted=["/dev/sdb1"]))
+        page.confirm.set_active(True)
+        fix("unmount", {"ok": True})
+        fix("repair", {"id": "20261119-130000-abcd"})
+        forget_calls()
+        click(page, "Repair and erase")
+        self.assertTrue(pump(lambda: any("--yes" in c for c in calls()), 3), calls())
+        order = [c.split()[1] for c in calls() if c.split()[1] in ("unmount", "repair")]
+        self.assertEqual(order[:2], ["unmount", "repair"], calls())
+        self.assertFalse([c for c in calls() if "umount -f" in c or "--force" in c])
+
+    def test_a_refusal_is_said_and_nothing_can_start(self):
+        page = self.open_repair({"error": "repair-internal", "error_text": "Only memory cards and USB drives can be repaired here.", "ok": False, "exit": 20, "warnings": []})
+        self.see("Only memory cards and USB drives can be repaired here.", page)
+        page.confirm.set_active(True)
+        self.assertFalse(page.start_btn.get_sensitive())
+
+    def test_a_missing_tool_names_its_package(self):
+        page = self.open_repair({"error": "repair-no-tool", "error_text": "A tool needed for the repair is not installed.", "ok": False, "exit": 25,
+                                 "missing": [{"tool": "mkfs.fat", "package": "dosfstools"}], "warnings": []})
+        self.see("Install: dosfstools", page)
+
+    def test_progress_steps_and_what_it_found(self):
+        base = dict(kind="repair", result_kind="", source="/dev/sdb", destination="", pausable=False, filesystem="fat32", label="PEN", announced_bytes=16 * GB)
+        fix("status", job_json(**base, state="running", state_label="Repairing the drive", phase="surface", steps="capacity:ok,surface:running",
+                               bytes_done=50, bytes_total=200))
+        self.win.open_job("20261031-120000-abcd")
+        page = self.win.nav.get_visible_page()
+        self.assertTrue(pump(lambda: page.job is not None, 3))
+        self.see("Step 2 of 4: Test of the surface", page)
+        self.assertEqual(page.step_rows["capacity"].state_text.get_text(), "done")
+        self.assertEqual(page.step_rows["surface"].state_text.get_text(), "in progress")
+        self.assertFalse(page.pause_btn.get_visible())
+        self.assertTrue(page.cancel_btn.get_visible())
+        self.assertNotIn("Files", [t for t in texts(page) if t == "Files"])
+        fix("status", job_json(**base, state="completed", state_label="Repaired: the drive is ready to use", steps="capacity:ok,surface:ok,partition:ok,format:ok",
+                               verdict="fake", reason="repair-fake", reason_text="This drive is counterfeit.", real_bytes=8 * GB, usable_bytes=7 * GB,
+                               tested_bytes=100 * 1000 * 1000, bad_bytes=0, bytes_done=0, bytes_total=0))
+        self.assertTrue(pump(lambda: page.job.state == "completed", 5))
+        self.see("A counterfeit drive, set up with its real capacity", page)
+        self.see("This drive is counterfeit.", page)
+        self.see(human_size(8 * GB), page)
+        self.assertFalse(page.resume_btn.get_visible(), "a repair is never resumed")
+
+    def test_a_drive_that_cannot_be_repaired_says_replace_it(self):
+        fix("status", job_json(kind="repair", source="/dev/sdb", destination="", state="failed", state_label="The repair did not complete", steps="capacity:failed",
+                               verdict="damaged", reason="repair-damaged", reason_text="This drive can no longer keep data. Replace it.", pausable=False))
+        self.win.open_job("20261031-120000-abcd")
+        page = self.win.nav.get_visible_page()
+        self.assertTrue(pump(lambda: page.job is not None, 3))
+        self.see("This drive cannot be repaired", page)
+        self.see("Replace it.", page)
+        self.assertFalse(page.again_btn.get_visible(), "nothing to try again on a dead drive")
+        self.assertFalse(page.resume_btn.get_visible())
+
+    def test_stopped_offers_a_new_repair_never_a_resume(self):
+        fix("status", job_json(kind="repair", source="/dev/sdb", destination="", state="cancelled", state_label="Cancelled", steps="capacity:ok,surface:failed",
+                               reason="repair-cancelled", reason_text="The repair was stopped.", pausable=False))
+        self.win.open_job("20261031-120000-abcd")
+        page = self.win.nav.get_visible_page()
+        self.assertTrue(pump(lambda: page.job is not None, 3))
+        self.assertTrue(page.again_btn.get_visible())
+        self.assertFalse(page.resume_btn.get_visible())
+        fix("repair-dry", REPAIR_PLAN)
+        click(page, "Repair again…")
+        self.assertTrue(pump(lambda: type(self.win.nav.get_visible_page()).__name__ == "RepairPage", 3))
+        self.assertFalse(self.win.repair.confirm.get_active(), "a new repair asks again")
+
+
+class WriteProtect(Base):
+    def show_with(self, wp):
+        diag = {"device": seagate(), "advice": [], "kernel": [], "volumes": [], "tools": {"smartctl": True}, "write_protect": wp}
+        fix("diagnose", diag)
+        self.win.show_device("serial:S1DFL8G9")
+        page = self.win.device_page
+        self.assertTrue(pump(lambda: page.health.diag is not None, 4))
+        pump(timeout=0.2)
+        return page
+
+    def test_the_lock_switch_is_explained_and_nothing_is_offered_that_cannot_work(self):
+        page = self.show_with({"kind": "switch", "title": "Read-only device", "reason": "The card reader reports the card as locked.",
+                               "help": ["Slide the switch up.", "Try another adapter."], "detail": "", "fix_label": "", "can_allow": False})
+        self.see("The card reader reports the card as locked.", page)
+        self.see("Slide the switch up.", page)
+        self.assertIsNone(find_button(page, "Allow writing again…"))
+        page.stack.set_visible_child_name("health")
+        self.see("Writing is blocked", page)
+
+    def test_blocked_by_software_can_be_allowed_again_after_a_question(self):
+        page = self.show_with({"kind": "software", "title": "Read-only device", "reason": "It is not the lock switch.",
+                               "help": ["Allow writing again."], "detail": "", "fix_label": "Allow writing again", "can_allow": True})
+        fix_text("unprotect", "Writing is allowed on this device again.")
+        forget_calls()
+        click(page, "Allow writing again…")
+        dialog = self.dialog()
+        self.assertIsNotNone(dialog)
+        self.assertEqual(dialog.get_default_response(), "cancel")
+        self.assertFalse([c for c in calls() if "unprotect" in c], "nothing before the answer")
+        dialog.emit("response", "allow")
+        self.assertTrue(pump(lambda: "--cli unprotect /dev/sdb" in calls(), 3), calls())
+
+    def test_a_card_locked_for_good_is_critical(self):
+        page = self.show_with({"kind": "card-permanent", "title": "Read-only device", "reason": "This cannot be undone.",
+                               "help": ["Replace the card."], "detail": "", "fix_label": "", "can_allow": False})
+        self.see("This cannot be undone.", page)
+        self.assertTrue(any(w.has_css_class("notice-critical") for w in widgets(page)))
+
+    def test_a_drive_that_accepts_writing_shows_nothing(self):
+        page = self.show_with(None)
+        self.assertNotIn("Writing is blocked", text(page))
 
 
 class ResultIndex(unittest.TestCase):

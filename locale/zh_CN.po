@@ -103,7 +103,11 @@ msgstr "TARGET 可以是设备（/dev/sdb1），也可以是已挂载设备中�
 msgid "Machine-readable output: big-storage-rescue --cli COMMAND --json"
 msgstr "机器可读的输出：big-storage-rescue --cli COMMAND --json"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:123 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:849 big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:441 big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:237 big-storage-rescue/usr/lib/big-storage-rescue/migrate.sh:190
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:123
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:896
+#: big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:441
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:245
+#: big-storage-rescue/usr/lib/big-storage-rescue/migrate.sh:190
 msgid "big-storage-rescue: unknown option '%s' (see big-storage-rescue --help)"
 msgstr "big-storage-rescue：未知选项“%s”（参见 big-storage-rescue --help）"
 
@@ -111,947 +115,1109 @@ msgstr "big-storage-rescue：未知选项“%s”（参见 big-storage-rescue --
 msgid "The jobs of Big-Mount 2.x are not brought over by a dry run. To see them here, run first: big-storage-rescue --migrate-state"
 msgstr "试运行不会迁移 Big-Mount 2.x 的任务。要在此处查看这些任务，请先运行：big-storage-rescue --migrate-state"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:157 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1194
-msgid "Device ready"
-msgstr "设备已就绪"
-
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:158
-msgid "You can read and write files on this device."
-msgstr "您可以在此设备上读写文件。"
-
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:161
-msgid "Device not mounted"
-msgstr "设备未挂载"
-
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:162
-msgid "The filesystem is not mounted at the moment."
-msgstr "该文件系统目前未挂载。"
-
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:163
-msgid "Open the device in the file manager (Dolphin) to mount it."
-msgstr "在文件管理器（Dolphin）中打开该设备即可挂载。"
-
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:166 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:172 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:179 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:201
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:155
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:219
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:226
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:248
 msgid "Read-only device"
 msgstr "只读设备"
 
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:158
+msgid "Writing blocked here"
+msgstr "已在此处禁止写入"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:159
+msgid "Writing was blocked on this drive in Big Storage Rescue, to protect it. It lasts until the drive is disconnected."
+msgstr "为保护此驱动器，已在 Big Storage Rescue 中禁止对其写入。此状态将持续到驱动器断开连接为止。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:160
+msgid "To write to it again, allow writing again, or disconnect it and connect it again."
+msgstr "要再次写入，请重新允许写入，或断开后重新连接。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:163
+msgid "The drive itself accepts writing: it was blocked on this computer, by a program or a command (blockdev --setro). It is not the lock switch."
+msgstr "驱动器本身可以写入：是这台计算机上的程序或命令（blockdev --setro）禁止了写入。这与锁定开关无关。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:164
+msgid "Allow writing again (it asks for the administrator password), or disconnect the drive and connect it again."
+msgstr "请重新允许写入（需要管理员密码），或断开驱动器后重新连接。"
+
 #: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:167
+msgid "The card reader reports the card as locked: the lock switch on the side of the card, or of its adapter, is in the Lock position."
+msgstr "读卡器报告此卡已锁定：卡或其转接器侧面的锁定开关处于 Lock 位置。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:168
+msgid "Remove the card and slide the switch on its side up, towards the contacts. Then connect it again."
+msgstr "请取出卡，将侧面的开关向上推（朝金属触点方向），然后重新连接。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:169
+msgid "A loose or broken switch slides back by itself: try another adapter, or cover the notch of the switch with a small piece of tape."
+msgstr "开关松动或损坏时会自己滑回去：请换一个转接器试试，或者用一小块胶带贴住开关的凹槽。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:170
+msgid "Card readers sometimes read the switch wrong: try another reader, or another USB port."
+msgstr "读卡器有时会误读开关位置：请换一个读卡器或另一个 USB 接口试试。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:171
+msgid "If it stays locked with the switch unlocked, in two readers, the card locked itself because of wear. It cannot be unlocked: copy your files now and replace it."
+msgstr "如果开关已解锁，但在两个读卡器中仍显示锁定，说明此卡因磨损而自行锁定。它无法解锁：请立即复制您的文件并更换此卡。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:174
+msgid "The card itself is set to refuse writing. This protection is stored inside the card: it is not the lock switch."
+msgstr "此卡本身被设置为拒绝写入。这种保护存储在卡内部，与锁定开关无关。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:175
+msgid "A camera, phone or tool that locked it may unlock it in its own menu (often called protect or lock card)."
+msgstr "锁定此卡的相机、手机或工具也许能在自己的菜单中解除锁定（通常称为“保护”或“锁定存储卡”）。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:176
+msgid "Linux has no safe tool to clear it. Copy your files to another place."
+msgstr "Linux 没有能安全清除此保护的工具。请将您的文件复制到其他位置。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:177
+msgid "If it cannot be unlocked, use another card."
+msgstr "如果无法解锁，请使用另一张卡。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:180
+msgid "The card was locked for good by its own controller, usually at the end of its life. This cannot be undone."
+msgstr "此卡已被其自身的控制器永久锁定，这通常发生在其寿命末期。这无法撤销。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:181
+msgid "Copy your files to another place now, while they can still be read."
+msgstr "请趁文件仍可读取，立即将其复制到其他位置。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:182
+msgid "Replace the card: no program can unlock it."
+msgstr "请更换此卡：没有任何程序能将其解锁。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:185
+msgid "This disk image was attached read-only."
+msgstr "此磁盘映像是以只读方式挂接的。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:186
+msgid "To change it, detach it and attach it again with writing enabled."
+msgstr "要修改它，请将其分离，然后以可写方式重新挂接。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:189
 msgid "The device itself is write-protected, so no system can write to it."
 msgstr "设备本身处于写保护状态，任何系统都无法写入。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:168
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:190
 msgid "SD cards and some USB drives have a small lock switch on the side. Remove the device, move the switch to the unlocked position and connect it again."
 msgstr "SD 卡和部分 U 盘侧面有一个小的锁定开关。请移除设备，将开关拨到解锁位置，然后重新连接。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:169
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:191
 msgid "If there is no switch, the device may have locked itself because of wear. Copy your files to another place as soon as possible."
 msgstr "如果没有开关，设备可能因磨损而自行锁定。请尽快将文件复制到其他位置。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:173
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:196
+msgid "Allow writing again"
+msgstr "重新允许写入"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:197
+msgid "Writing is allowed again on the device. Nothing on it is changed. The administrator password may be requested."
+msgstr "将重新允许对设备写入。设备上的内容不会有任何改动。可能需要输入管理员密码。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:207
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1254
+msgid "Device ready"
+msgstr "设备已就绪"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:208
+msgid "You can read and write files on this device."
+msgstr "您可以在此设备上读写文件。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:211
+msgid "Device not mounted"
+msgstr "设备未挂载"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:212
+msgid "The filesystem is not mounted at the moment."
+msgstr "该文件系统目前未挂载。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:213
+msgid "Open the device in the file manager (Dolphin) to mount it."
+msgstr "在文件管理器（Dolphin）中打开该设备即可挂载。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:220
 msgid "This kind of filesystem cannot be written on Linux with the driver in use."
 msgstr "使用当前驱动程序时，Linux 无法写入此类文件系统。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:174
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:221
 msgid "CDs, DVDs and disk images (ISO, SquashFS) are read-only by nature."
 msgstr "CD、DVD 和磁盘映像（ISO、SquashFS）本身就是只读的。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:175
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:222
 msgid "Drives formatted on a Mac (HFS+ with journaling, APFS) can only be read on Linux."
 msgstr "在 Mac 上格式化的驱动器（带日志的 HFS+、APFS）在 Linux 上只能读取。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:176
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:223
 msgid "To write to it, copy the files elsewhere and format the device with a filesystem such as exFAT. Formatting erases everything on it."
 msgstr "要写入该设备，请将文件复制到别处，然后用 exFAT 等文件系统格式化该设备。格式化会清除其中的全部内容。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:180
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:227
 msgid "Windows did not close this NTFS partition properly (hibernation, Fast Startup or an interrupted shutdown). Writing to it now could damage files."
 msgstr "Windows 没有正常关闭此 NTFS 分区（休眠、快速启动或关机被中断）。现在写入可能会损坏文件。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:181
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:228
 msgid "Start Windows and shut it down completely: hold the Shift key while you click Shut down."
 msgstr "请启动 Windows 并完全关机：单击“关机”时按住 Shift 键。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:182
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:229
 msgid "To avoid this in the future, disable Fast Startup in Windows: Control Panel > Power Options > Choose what the power buttons do."
 msgstr "为避免今后再出现这种情况，请在 Windows 中禁用快速启动：控制面板 > 电源选项 > 选择电源按钮的功能。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:183
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:230
 msgid "If it still happens, check the partition in Windows: open the Command Prompt as administrator and run chkdsk with the /f option for that drive letter."
 msgstr "如果问题仍然存在，请在 Windows 中检查该分区：以管理员身份打开命令提示符，对该驱动器号运行带 /f 选项的 chkdsk。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:184
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:231
 msgid "Big Storage Rescue never repairs NTFS by itself, because the repair tools available on Linux may discard data that Windows still needs."
 msgstr "Big Storage Rescue 从不自行修复 NTFS，因为 Linux 上可用的修复工具可能会丢弃 Windows 仍需要的数据。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:187
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:234
 msgid "The filesystem needs attention"
 msgstr "文件系统需要注意"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:188
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:235
 msgid "The system found errors in the filesystem and stopped writing to it to protect your files."
 msgstr "系统在文件系统中发现错误，已停止写入以保护您的文件。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:189
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:236
 msgid "First copy your important files to another place."
 msgstr "请先将重要文件复制到其他位置。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:190
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:237
 msgid "Then check the filesystem with the device unmounted, for example with KDE Partition Manager (Check)."
 msgstr "然后在设备卸载的状态下检查文件系统，例如使用 KDE 分区管理器（检查）。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:191
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:238
 msgid "Do not write to the device until it has been checked."
 msgstr "在检查完成之前，请不要写入该设备。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:194
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:241
 msgid "The device has read or write errors"
 msgstr "设备存在读写错误"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:195
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:242
 msgid "The device reported read or write errors. This is usually a bad cable, a weak USB port or a failing drive."
 msgstr "设备报告了读写错误。原因通常是数据线不良、USB 端口供电不足或驱动器即将损坏。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:196 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:974
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:243
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1021
 msgid "Copy your important files to another place as soon as possible."
 msgstr "请尽快将重要文件复制到其他位置。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:197
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:244
 msgid "Try another cable and connect the device directly to the computer, without a hub."
 msgstr "请换一根数据线，并将设备直接连接到计算机，不要经过集线器。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:198
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:245
 msgid "Check the health of the drive in KDE Partition Manager (SMART status)."
 msgstr "在 KDE 分区管理器中检查驱动器的健康状况（SMART 状态）。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:202
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:249
 msgid "The filesystem was mounted read-only, but no problem was found with it."
 msgstr "该文件系统以只读方式挂载，但未发现任何问题。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:203
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:250
 msgid "Mount it again with writing enabled."
 msgstr "请以可写方式重新挂载。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:204
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:251
 msgid "Mount again with writing"
 msgstr "以可写方式重新挂载"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:205
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:252
 msgid "The device will be unmounted and mounted again with writing enabled. Nothing on it is changed. Programs using it must be closed first."
 msgstr "设备将被卸载，然后以可写方式重新挂载。其中的内容不会有任何改动。必须先关闭正在使用它的程序。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:208 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:216 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:221 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:235
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:255
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:263
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:268
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:282
 msgid "No permission to write"
 msgstr "没有写入权限"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:209
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:256
 msgid "The device accepts writing, but its main folder belongs to another user and you are not allowed to change it."
 msgstr "该设备允许写入，但其主文件夹属于另一个用户，您无权更改。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:210
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:257
 msgid "You can become the owner of the main folder. Only that folder changes: the files and folders inside it keep their owners."
 msgstr "您可以成为主文件夹的所有者。只有该文件夹会改变：其中的文件和文件夹保留原有的所有者。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:211
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:258
 msgid "This is the usual fix for drives formatted with a Linux filesystem (ext4, Btrfs, XFS)."
 msgstr "对于使用 Linux 文件系统（ext4、Btrfs、XFS）格式化的驱动器，这是常用的解决方法。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:212
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:259
 msgid "Become owner of the main folder"
 msgstr "成为主文件夹的所有者"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:213
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:260
 msgid "The main folder of the device will belong to you (not recursive: the files and folders inside keep their owners). The administrator password may be requested."
 msgstr "设备的主文件夹将归您所有（不递归：其中的文件和文件夹保留原有的所有者）。可能需要输入管理员密码。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:217
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:264
 msgid "This partition contains an operating system. Its folders belong to that system and must keep their owners."
 msgstr "此分区包含一个操作系统。其中的文件夹属于该系统，必须保留原有的所有者。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:218
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:265
 msgid "Save your files in a folder that belongs to you, for example your home folder on that system."
 msgstr "请将文件保存在属于您的文件夹中，例如您在该系统上的主文件夹。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:222
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:269
 msgid "This folder belongs to %s, and only its owner can create or change files in it."
 msgstr "此文件夹属于 %s，只有其所有者才能在其中创建或更改文件。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:223
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:270
 msgid "Save your files in a folder of your own, for example in your home folder."
 msgstr "请将文件保存在您自己的文件夹中，例如您的主文件夹。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:226
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:273
 msgid "System partition"
 msgstr "系统分区"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:227
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:274
 msgid "This partition holds the operating system that is running now. Only the system and administrators write here."
 msgstr "此分区存放着当前正在运行的操作系统。只有系统和管理员才能在此写入。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:228
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:275
 msgid "Save your files in your home folder."
 msgstr "请将文件保存在您的主文件夹中。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:231
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:278
 msgid "Swap space"
 msgstr "交换空间"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:232
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:279
 msgid "This partition is used as swap space (virtual memory), not to store files."
 msgstr "此分区用作交换空间（虚拟内存），不用于存储文件。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:236
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:283
 msgid "The device was mounted for another user, so only that user can write to it."
 msgstr "该设备是为另一个用户挂载的，因此只有该用户可以写入。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:237
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:284
 msgid "Unmount it and open it again from the file manager while you are logged in."
 msgstr "请将其卸载，然后在您登录的状态下从文件管理器中重新打开。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:239
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:286
 msgid "This internal partition is mounted by Big-Mount at boot. An administrator can choose who may write to it with PERMISSIONS in /etc/big-mount.conf."
 msgstr "此内部分区由 Big-Mount 在启动时挂载。管理员可以通过 /etc/big-mount.conf 中的 PERMISSIONS 选择谁可以写入。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:241
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:288
 msgid "Mount again for my user"
 msgstr "为我的用户重新挂载"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:242
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:289
 msgid "The device will be unmounted and mounted again for your user. Nothing on it is changed. Programs using it must be closed first."
 msgstr "设备将被卸载，然后为您的用户重新挂载。其中的内容不会有任何改动。必须先关闭正在使用它的程序。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:245
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:292
 msgid "Unknown state"
 msgstr "未知状态"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:246
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:293
 msgid "The state of this device could not be determined."
 msgstr "无法确定此设备的状态。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:255 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:930 big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:57
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:302
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:977
+#: big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:57
 msgid "unknown"
 msgstr "未知"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:286
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:333
 msgid "system"
 msgstr "系统"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:291
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:338
 msgid "other"
 msgstr "其他"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:304 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:602 big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:314 big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:252
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:351
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:649
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:314
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:260
 msgid "Device"
 msgstr "设备"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:305 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:603 big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:266
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:352
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:650
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:274
 msgid "Filesystem"
 msgstr "文件系统"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:307 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:604 big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:270
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:354
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:651
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:278
 msgid "Mounted at"
 msgstr "挂载位置"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:308
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:355
 msgid "Folder"
 msgstr "文件夹"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:310
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:357
 msgid "Writable, but not by your user"
 msgstr "可写，但您的用户无权写入"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:310 big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:269
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:357
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:277
 msgid "Status"
 msgstr "状态"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:314 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:973
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:361
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1020
 msgid "How to solve:"
 msgstr "解决方法："
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:318
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:365
 msgid "Attention: the filesystem has recorded errors. Copy important files elsewhere and check it soon."
 msgstr "注意：该文件系统记录了错误。请将重要文件复制到别处，并尽快检查。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:321
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:368
 msgid "Attention: the drive that holds this device reported errors since the computer was started. Copy important files elsewhere and check the drive."
 msgstr "注意：存放此设备的驱动器自计算机启动以来报告了错误。请将重要文件复制到别处，并检查该驱动器。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:394
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:441
 msgid "To see the errors of the drive: big-storage-rescue --diagnose %s"
 msgstr "查看驱动器的错误：big-storage-rescue --diagnose %s"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:396 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1030
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:443
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1077
 msgid "Technical details:"
 msgstr "技术细节："
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:412 big-storage-rescue/usr/lib/big-storage-rescue/drive-tui.sh:87
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:459
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-tui.sh:87
 msgid "DEVICE"
 msgstr "设备"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:412
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:459
 msgid "LABEL"
 msgstr "标签"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:412
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:459
 msgid "SIZE"
 msgstr "大小"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:412
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:459
 msgid "FS"
 msgstr "文件系统"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:412
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:459
 msgid "MANAGED BY"
 msgstr "管理者"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:412
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:459
 msgid "MOUNTED AT"
 msgstr "挂载位置"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:412
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:459
 msgid "STATE"
 msgstr "状态"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:422
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:469
 msgid "not mounted"
 msgstr "未挂载"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:424
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:471
 msgid "in use by the system"
 msgstr "正被系统使用"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:426
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:473
 msgid "READ-ONLY"
 msgstr "只读"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:428
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:475
 msgid "read and write"
 msgstr "可读写"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:430
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:477
 msgid "no write permission"
 msgstr "无写入权限"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:444
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:491
 msgid "Storage devices"
 msgstr "存储设备"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:458
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:505
 msgid "To find out why a device cannot be written to, run: big-storage-rescue --diagnose DEVICE"
 msgstr "要了解设备为何无法写入，请运行：big-storage-rescue --diagnose DEVICE"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:465 big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:399
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:512
+#: big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:399
 msgid "Running system"
 msgstr "当前运行的系统"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:472
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:519
 msgid "Environment"
 msgstr "环境"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:475
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:522
 msgid "not installed"
 msgstr "未安装"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:476
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:523
 msgid "present: automount disabled"
 msgstr "存在：已禁用自动挂载"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:477
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:524
 msgid "available"
 msgstr "可用"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:477 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:948
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:524
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:995
 msgid "not available"
 msgstr "不可用"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:480
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:527
 msgid "installed"
 msgstr "已安装"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:480
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:527
 msgid "missing"
 msgstr "缺失"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:482
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:529
 msgid "readable"
 msgstr "可读取"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:482
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:529
 msgid "not readable (fewer details for errors)"
 msgstr "不可读取（错误信息会较少）"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:483
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:530
 msgid "kernel log"
 msgstr "内核日志"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:519
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:566
 msgid "Also mounted at %s"
 msgstr "同时挂载于 %s"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:520
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:567
 msgid "Another device is mounted inside it: %s"
 msgstr "其中挂载了另一个设备：%s"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:521
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:568
 msgid "A swap file on it is in use: %s"
 msgstr "其中的一个交换文件正在使用：%s"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:522
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:569
 msgid "It is in use as swap space"
 msgstr "它正用作交换空间"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:523
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:570
 msgid "A disk image stored on it is attached: %s"
 msgstr "存放在其中的一个磁盘映像已被挂接：%s"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:524
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:571
 msgid "It is used by %s (encryption, LVM or RAID)"
 msgstr "它正被 %s 使用（加密、LVM 或 RAID）"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:525
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:572
 msgid "Also mounted inside an isolated environment (a container or a sandboxed service): %s"
 msgstr "同时挂载于一个隔离环境（容器或沙盒服务）中：%s"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:554
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:601
 msgid "A container or a sandboxed service has its own mount of this device (see below). Unmounting it here does not release the device while that mount exists."
 msgstr "某个容器或沙盒服务对此设备有自己的挂载（见下文）。只要该挂载存在，在此处卸载并不能释放设备。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:555
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:602
 msgid "Stop that container or service first. Big Storage Rescue waits for it before saying the device can be disconnected."
 msgstr "请先停止该容器或服务。Big Storage Rescue 会等它停止后，才提示可以断开设备。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:557
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:604
 msgid "No program is using it, but the system still is (see below)."
 msgstr "没有程序在使用它，但系统仍在使用（见下文）。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:558
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:605
 msgid "Resolve the item listed below, then try again."
 msgstr "请先处理下面列出的项目，然后重试。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:560
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:607
 msgid "None of your programs is using it. A system service or a program of another user may be holding it, or it was released a moment ago."
 msgstr "您的程序都没有在使用它。可能是某个系统服务或其他用户的程序占用了它，或者它刚刚才被释放。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:561
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:608
 msgid "Try again. If it is still busy, show the programs of all users."
 msgstr "请重试。如果仍被占用，请显示所有用户的程序。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:567
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:614
 msgid "%s has a file open for writing on this device."
 msgstr "%s 正在以写入方式打开此设备上的一个文件。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:568
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:615
 msgid "Let it finish, or cancel the operation in that program, then try again."
 msgstr "请等待其完成，或在该程序中取消操作，然后重试。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:569
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:616
 msgid "A terminal is open in a folder of this device."
 msgstr "有一个终端在此设备的某个文件夹中打开。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:570
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:617
 msgid "Type cd in that terminal, or close it, then try again."
 msgstr "在该终端中输入 cd，或将其关闭，然后重试。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:571
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:618
 msgid "%s is showing or reading files of this device."
 msgstr "%s 正在显示或读取此设备上的文件。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:572
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:619
 msgid "Close the window or tab that shows the device, then try again."
 msgstr "关闭显示该设备的窗口或标签页，然后重试。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:573
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:620
 msgid "The file indexer is reading this device."
 msgstr "文件索引程序正在读取此设备。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:574
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:621
 msgid "It usually finishes in a moment: try again shortly."
 msgstr "通常很快就会完成：请稍后重试。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:575
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:622
 msgid "%s is running inside a folder of this device."
 msgstr "%s 正在此设备的某个文件夹中运行。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:576 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:578
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:623
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:625
 msgid "Close that program, then try again."
 msgstr "关闭该程序，然后重试。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:577
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:624
 msgid "%s is using files on this device."
 msgstr "%s 正在使用此设备上的文件。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:581
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:628
 msgid "In total, %d programs are using it."
 msgstr "共有 %d 个程序正在使用它。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:594
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:641
 msgid "In use"
 msgstr "正在使用"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:598
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:645
 msgid "%s is still in use"
 msgstr "%s 仍在使用中"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:608
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:655
 msgid "Programs using it:"
 msgstr "正在使用它的程序："
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:610 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:612
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:657
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:659
 msgid "Application"
 msgstr "应用程序"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:610 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:612
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:657
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:659
 msgid "process"
 msgstr "进程"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:610
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:657
 msgid "User"
 msgstr "用户"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:610 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:612
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:657
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:659
 msgid "Activity"
 msgstr "活动"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:628
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:675
 msgid "Also keeping it busy:"
 msgstr "以下也在占用它："
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:632
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:679
 msgid "An open file does not necessarily mean that something is being copied."
 msgstr "有打开的文件并不一定意味着正在复制内容。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:659
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:706
 msgid "%s is not in use"
 msgstr "%s 未被使用"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:661
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:708
 msgid "No program and nothing in the system is using it. It can be unmounted."
 msgstr "没有任何程序或系统组件在使用它。可以将其卸载。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:663
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:710
 msgid "None of your programs is using %s"
 msgstr "您的程序都没有在使用 %s"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:665
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:712
 msgid "No program of yours, no other mount and no other device is using it. It can probably be unmounted. Programs of other users and of the system are only visible to an administrator."
 msgstr "您的程序、其他挂载和其他设备都没有在使用它，很可能可以卸载。其他用户和系统的程序只有管理员才能看到。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:693
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:740
 msgid "The device was disconnected or replaced during the operation. Nothing else was done."
 msgstr "设备在操作过程中被断开或更换。未执行其他操作。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:752
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:799
 msgid "%s was mounted again at %s"
 msgstr "%s 已重新挂载于 %s"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:768
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:815
 msgid "%s: the encrypted volume could not be locked"
 msgstr "%s：无法锁定该加密卷"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:810
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:857
 msgid "They do not start again by themselves when the device comes back."
 msgstr "设备重新连接后，这些服务不会自动重新启动。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:812
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:859
 msgid "They start again by themselves when the device is mounted again."
 msgstr "设备重新挂载后，这些服务会自动重新启动。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:855 big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:495
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:902
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:514
 msgid "Another removal of this drive is in progress. Nothing was done."
 msgstr "此驱动器的另一项移除操作正在进行中。未执行任何操作。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:871
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:918
 msgid "Device removed safely. It can be disconnected now."
 msgstr "设备已安全移除，现在可以断开连接。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:873 big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:514
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:920
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:533
 msgid "Unmounted. Everything was written to the device."
 msgstr "已卸载。所有数据均已写入设备。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:885
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:932
 msgid "These programs can be asked to close (unsaved changes in them may be lost):"
 msgstr "可以请求以下程序关闭（其中未保存的更改可能会丢失）："
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:889 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1244
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:936
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1304
 msgid "Close them"
 msgstr "关闭这些程序"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:889 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:902 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1168 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1220 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1244 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1317
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:936
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:949
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1215
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1280
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1304
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1377
 msgid "Cancel"
 msgstr "取消"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:892
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:939
 msgid "Still running: %s"
 msgstr "仍在运行：%s"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:895 big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:519
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:942
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:538
 msgid "These services use the device and will be stopped when it is unmounted:"
 msgstr "以下服务正在使用该设备，卸载时将被停止："
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:902
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:949
 msgid "Stop them and continue"
 msgstr "停止服务并继续"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:905
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:952
 msgid "Nothing was done. Run again with --assume-yes to stop them."
 msgstr "未执行任何操作。如需停止这些服务，请加上 --assume-yes 重新运行。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:909
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:956
 msgid "Unmounted, but powering the drive off failed (%s). Wait a moment before disconnecting it."
 msgstr "已卸载，但为驱动器断电失败（%s）。请稍等片刻再断开连接。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:910 big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:516
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:957
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:535
 msgid "Refused: this drive holds the running system (%s)."
 msgstr "已拒绝：此驱动器上有当前运行的系统（%s）。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:911 big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:517
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:958
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:536
 msgid "Permission to unmount was not granted."
 msgstr "未获得卸载权限。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:912
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:959
 msgid "Unmounted, but the drive is still in use (%s), so it was not powered off."
 msgstr "已卸载，但驱动器仍在使用中（%s），因此未断电。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:913
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:960
 msgid "Unmounted. This drive cannot be powered off by the computer; it can be disconnected now."
 msgstr "已卸载。计算机无法为此驱动器断电；现在可以断开连接。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:916 big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:523
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:963
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:542
 msgid "Could not unmount: %s"
 msgstr "无法卸载：%s"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:937
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:984
 msgid "The drive reports errors"
 msgstr "驱动器报告了错误"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:938
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:985
 msgid "The drive had errors before this start of the computer"
 msgstr "本次开机之前，驱动器曾出现错误"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:939
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:986
 msgid "No drive errors found"
 msgstr "未发现驱动器错误"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:943
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:990
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:499
 msgid "Drive"
 msgstr "驱动器"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:944 big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:313 big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:251
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:991
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:313
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:259
 msgid "Connection"
 msgstr "连接"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:946
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:993
 msgid "no problem reported"
 msgstr "未报告问题"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:947
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:994
 msgid "the drive predicts its own failure"
 msgstr "驱动器预测自身即将损坏"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:951
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:998
 msgid "no failure predicted (%s damaged sectors were replaced by spare ones)"
 msgstr "未预测到故障（%s 个损坏扇区已由备用扇区替换）"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:953
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1000
 msgid "SMART status"
 msgstr "SMART 状态"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:956
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1003
 msgid "Since the computer was started, the system recorded no read, write or connection errors for this drive."
 msgstr "自计算机启动以来，系统未记录到此驱动器的任何读取、写入或连接错误。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:958
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1005
 msgid "The kernel log cannot be read by your user, so recent errors of this drive cannot be checked."
 msgstr "您的用户无法读取内核日志，因此无法检查此驱动器最近的错误。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:963
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1010
 msgid "Problems found:"
 msgstr "发现的问题："
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:966 big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:240
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1013
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:240
 msgid "The drive itself reports that it is failing (SMART)."
 msgstr "驱动器本身报告其即将损坏（SMART）。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:967 big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:245
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1014
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:245
 msgid "Since the computer was started, it stopped answering and the connection had to be reset (%s kernel messages)."
 msgstr "自计算机启动以来，驱动器曾停止响应，连接不得不重置（%s 条内核消息）。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:968 big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:244
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1015
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:244
 msgid "Since the computer was started, reading or writing failed (%s kernel messages)."
 msgstr "自计算机启动以来，出现过读取或写入失败（%s 条内核消息）。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:969 big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:247
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1016
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:247
 msgid "Since the computer was started, the connection was slowed down after errors."
 msgstr "自计算机启动以来，连接在出错后被降速。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:970 big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:246
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1017
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:246
 msgid "Since the computer was started, the USB connection was reset or lost %s times."
 msgstr "自计算机启动以来，USB 连接被重置或中断了 %s 次。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:975
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1022
 msgid "Check the data and power cables of the drive, or try another SATA port."
 msgstr "请检查驱动器的数据线和电源线，或换一个 SATA 端口试试。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:976
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1023
 msgid "An SSD that fails like this may lock itself in a protection mode: it seems to accept writing, but keeps nothing. Copy what you can first; no repair is worth more than your files."
 msgstr "以这种方式损坏的 SSD 可能会将自己锁定在保护模式：看似可以写入，实际上什么也不保存。请先尽可能复制数据；任何修复都不如您的文件重要。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:977
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1024
 msgid "If the errors come back, replace the drive."
 msgstr "如果错误再次出现，请更换驱动器。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:986
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1033
 msgid "From before this start of the computer:"
 msgstr "本次开机之前："
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:988 big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:254
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1035
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:254
 msgid "In %s of the last %s starts of the computer, the drive had read or connection errors (%s kernel messages)."
 msgstr "在最近的开机记录中，驱动器有 %s 次（共 %s 次开机）出现读取或连接错误（%s 条内核消息）。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:991 big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:256
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1038
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:256
 msgid "They were errors of the connection: check the data cable and the power connector of the drive, or try another port."
 msgstr "这些是连接错误：请检查驱动器的数据线和电源接口，或换一个端口试试。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:995 big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:260
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1042
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:260
 msgid "Its filesystems recorded %s errors, which are kept across restarts (%s)."
 msgstr "其文件系统记录了 %s 个错误，这些记录在重启后仍会保留（%s）。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:997
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1044
 msgid "After the cause is solved (a cable, a drive replaced, the files copied), an administrator can reset them: btrfs device stats -z on Btrfs; e2fsck clears them on ext4."
 msgstr "在原因解决之后（更换数据线、更换驱动器或复制完文件），管理员可以将其清零：Btrfs 上使用 btrfs device stats -z；ext4 上 e2fsck 会将其清除。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1051 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1054 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1098 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1108 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1116
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1098
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1101
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1145
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1155
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1163
 msgid "Storage diagnostics"
 msgstr "存储诊断"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1051
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1098
 msgid "No storage device to diagnose was found."
 msgstr "未找到可诊断的存储设备。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1054 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1108
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1101
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1155
 msgid "Choose a device:"
 msgstr "选择一个设备："
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1075 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1078
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1122
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1125
 msgid "Unable to access storage device"
 msgstr "无法访问存储设备"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1076
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1123
 msgid "Big Storage Rescue could not identify this storage device. It may have been disconnected or become temporarily unavailable."
 msgstr "Big Storage Rescue 无法识别此存储设备。它可能已被断开，或暂时不可用。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1077
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1124
 msgid "If you disconnected it, connect it again and choose Try again."
 msgstr "如果您断开了它，请重新连接，然后选择“重试”。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1078 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1220
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1125
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1280
 msgid "Try again"
 msgstr "重试"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1078 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1085 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1124 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1126 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1129 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1131 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1140 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1233
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1125
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1132
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1171
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1173
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1176
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1178
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1187
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1293
 msgid "Technical details"
 msgstr "技术细节"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1078 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1124 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1126 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1129 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1131 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1411 big-storage-rescue/usr/lib/big-storage-rescue/ui.sh:234
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1125
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1171
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1173
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1176
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1178
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1471
+#: big-storage-rescue/usr/lib/big-storage-rescue/ui.sh:234
 msgid "Close"
 msgstr "关闭"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1098
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1145
 msgid "This folder is not on a local storage device."
 msgstr "此文件夹不在本地存储设备上。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1126
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1173
 msgid "Check the drive…"
 msgstr "检查驱动器…"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1129
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1176
 msgid "Safely remove…"
 msgstr "安全移除…"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1155 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1451
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1202
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1511
 msgid "How to solve"
 msgstr "解决方法"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1176
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1236
 msgid "Another operation on this drive is in progress. Try again when it finishes."
 msgstr "此驱动器上的另一项操作正在进行中。请在其完成后重试。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1194
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1254
 msgid "You can now write to this device."
 msgstr "现在可以写入此设备了。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1196
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1256
 msgid "Unable to fix the device"
 msgstr "无法修复该设备"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1197
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1257
 msgid "Nothing was changed on the device. See the technical details for more information."
 msgstr "设备上没有任何改动。更多信息请查看技术细节。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1220 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1229
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1280
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1289
 msgid "Device is busy"
 msgstr "设备正忙"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1220
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1280
 msgid "More options…"
 msgstr "更多选项…"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1225
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1285
 msgid "Refresh the list"
 msgstr "刷新列表"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1225
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1285
 msgid "Show technical details"
 msgstr "显示技术细节"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1227
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1287
 msgid "Close the listed programs…"
 msgstr "关闭列出的程序…"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1228
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1288
 msgid "Show programs of all users (administrator)"
 msgstr "显示所有用户的程序（管理员）"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1229
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1289
 msgid "What do you want to do?"
 msgstr "您想要做什么？"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1237
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1297
 msgid "Close these programs?"
 msgstr "要关闭这些程序吗？"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1239
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1299
 msgid "They will be asked to close, as when you close their windows. Unsaved changes in them may be lost: if possible, close them yourself instead."
 msgstr "系统会请求它们关闭，就像您关闭它们的窗口一样。其中未保存的更改可能会丢失：如果可以，请您自己关闭它们。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1241
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1301
 msgid "These will not be closed:"
 msgstr "以下程序不会被关闭："
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1244
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1304
 msgid "Close programs"
 msgstr "关闭程序"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1273
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1333
 msgid "Writing pending data to the device. Do not disconnect it yet."
 msgstr "正在将待写入的数据写入设备。请暂时不要断开连接。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1278 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1284
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1338
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1344
 msgid "Safely remove"
 msgstr "安全移除"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1278
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1338
 msgid "This folder is not on a removable storage device."
 msgstr "此文件夹不在可移动存储设备上。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1284
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1344
 msgid "The removal of this drive is already in progress."
 msgstr "此驱动器的移除操作已在进行中。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1293 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1296 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1305
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1353
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1356
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1365
 msgid "Safe to disconnect"
 msgstr "可以安全断开"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1294
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1354
 msgid "Successfully unmounted and powered off. You can disconnect it now."
 msgstr "已成功卸载并断电。现在可以断开连接。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1297
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1357
 msgid "Successfully unmounted. You can disconnect it now."
 msgstr "已成功卸载。现在可以断开连接。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1299
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1359
 msgid "Device unmounted"
 msgstr "设备已卸载"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1300
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1360
 msgid "All pending data was written and its filesystems were unmounted."
 msgstr "所有待写入的数据均已写入，其文件系统已卸载。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1306
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1366
 msgid "Successfully unmounted. This drive cannot be powered off by the computer, but you can disconnect it now."
 msgstr "已成功卸载。计算机无法为此驱动器断电，但现在可以断开连接。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1313 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1317
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1373
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1377
 msgid "Services use this device"
 msgstr "有服务正在使用此设备"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1314
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1374
 msgid "Removing it will stop these services:"
 msgstr "移除该设备将停止以下服务："
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1317
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1377
 msgid "Stop them and remove"
 msgstr "停止服务并移除"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1324 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1339
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1384
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1399
 msgid "Unable to power off device"
 msgstr "无法为设备断电"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1325
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1385
 msgid "It was unmounted, but powering it off failed. Wait a moment before disconnecting it."
 msgstr "设备已卸载，但断电失败。请稍等片刻再断开连接。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1329
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1389
 msgid "Unable to remove device"
 msgstr "无法移除设备"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1330
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1390
 msgid "It holds the operating system that is running now."
 msgstr "其中有当前正在运行的操作系统。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1334 big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1348
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1394
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1408
 msgid "Unable to unmount device"
 msgstr "无法卸载设备"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1335
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1395
 msgid "Permission was not granted. The device remains mounted."
 msgstr "未获得权限。设备仍处于挂载状态。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1340
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1400
 msgid "Its filesystems were unmounted, but the drive is still in use, so it was not powered off. Do not disconnect it yet."
 msgstr "其文件系统已卸载，但驱动器仍在使用中，因此未断电。请暂时不要断开连接。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1345
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1405
 msgid "Device disconnected"
 msgstr "设备已断开"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1346
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1406
 msgid "The device was disconnected before the removal finished. If files were being written to it, check them when you connect it again."
 msgstr "设备在移除完成前被断开。如果当时正在向其写入文件，请在重新连接后检查这些文件。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1349
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1409
 msgid "It remains mounted. Nothing was forced."
 msgstr "设备仍处于挂载状态。未强制执行任何操作。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1401
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1461
 msgid "%s: %s"
 msgstr "%s：%s"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1404
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1464
 msgid "This drive reported serious problems. Copy your files to another drive before trying any repair."
 msgstr "此驱动器报告了严重问题。在尝试任何修复之前，请先将文件复制到另一个驱动器。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1406
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1466
 msgid "This drive reported problems. Copy what matters to another place."
 msgstr "此驱动器报告了问题。请将重要内容复制到其他位置。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1409
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1469
 msgid "Big Storage Rescue shows what was found and how to rescue the files without writing to the drive."
 msgstr "Big Storage Rescue 会显示发现的问题，以及如何在不写入驱动器的情况下抢救文件。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1411
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1471
 msgid "A drive needs attention"
 msgstr "有驱动器需要注意"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1411
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1471
 msgid "Open Big Storage Rescue"
 msgstr "打开 Big Storage Rescue"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1449
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1509
 msgid "Device: %s\\nFilesystem: %s\\nPossible reason: %s"
 msgstr "设备：%s\\n文件系统：%s\\n可能原因：%s"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1451
+#: big-storage-rescue/usr/lib/big-storage-rescue/cli.sh:1511
 msgid "View details"
 msgstr "查看详情"
 
@@ -1071,7 +1237,8 @@ msgstr "修订版本："
 msgid "source:"
 msgstr "源代码："
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:121 big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:711
+#: big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:121
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:739
 msgid "Big Storage Rescue"
 msgstr "Big Storage Rescue"
 
@@ -1083,7 +1250,8 @@ msgstr "这不是已安装的副本（而是源代码检出或解包的软件包
 msgid "big-storage-rescue is not in PATH"
 msgstr "big-storage-rescue 不在 PATH 中"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:132 big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:158
+#: big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:132
+#: big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:158
 msgid "Install the big-storage-rescue package."
 msgstr "请安装 big-storage-rescue 软件包。"
 
@@ -1091,11 +1259,14 @@ msgstr "请安装 big-storage-rescue 软件包。"
 msgid "Another copy of big-storage-rescue is found in PATH before or besides the package"
 msgstr "PATH 中还有另一份 big-storage-rescue，位于软件包版本之前或与其并存"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:147 big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:154
+#: big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:147
+#: big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:154
 msgid "Missing file of the package: %s"
 msgstr "软件包缺少文件：%s"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:148 big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:155 big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:169
+#: big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:148
+#: big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:155
+#: big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:169
 msgid "Reinstall the big-storage-rescue package."
 msgstr "请重新安装 big-storage-rescue 软件包。"
 
@@ -1191,7 +1362,9 @@ msgstr "启动时由 Big-Mount 处理的分区：%d"
 msgid "Failed at boot"
 msgstr "启动时失败"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:253 big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:254 big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:391
+#: big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:253
+#: big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:254
+#: big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:391
 msgid "To know why: big-storage-rescue --diagnose DEVICE"
 msgstr "了解原因：big-storage-rescue --diagnose DEVICE"
 
@@ -1339,7 +1512,8 @@ msgstr "UDisks2 无法识别此设备：Plasma 和 Big Storage Rescue 无法管�
 msgid "%s: the drive reports problems (%s)"
 msgstr "%s：驱动器报告了问题（%s）"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:356 big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:363
+#: big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:356
+#: big-storage-rescue/usr/lib/big-storage-rescue/doctor.sh:363
 msgid "For details: big-storage-rescue --diagnose %s"
 msgstr "详细信息：big-storage-rescue --diagnose %s"
 
@@ -1475,27 +1649,35 @@ msgstr "此驱动器存在风险，且以可写方式挂载。请先以只读方
 msgid "There is not enough free space at the destination."
 msgstr "目标的可用空间不足。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:125 big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:479
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:125
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:486
 msgid "GNU ddrescue is not installed (package ddrescue). It makes the disk image."
 msgstr "未安装 GNU ddrescue（ddrescue 软件包），磁盘映像由它制作。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:126 big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1024
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:126
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1024
 msgid "PhotoRec is not installed (package testdisk)."
 msgstr "未安装 PhotoRec（testdisk 软件包）。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:127 big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:723
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:127
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:723
 msgid "TestDisk is not installed (package testdisk)."
 msgstr "未安装 TestDisk（testdisk 软件包）。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:128 big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:478 big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:778 big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:627
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:128
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:485
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:778
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:646
 msgid "Permission was not granted."
 msgstr "未获得权限。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:129 big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:771
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:129
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:771
 msgid "Stopped. Nothing was changed on the disk."
 msgstr "已停止。磁盘上没有任何改动。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:130 big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1031
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:130
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1031
 msgid "This device cannot be read by your user. Make a disk image first (big-storage-rescue --cli image), and search in the image: it also spares the disk."
 msgstr "您的用户无法读取此设备。请先制作磁盘映像（big-storage-rescue --cli image），再在映像中搜索：这样也能减轻磁盘的负担。"
 
@@ -1515,23 +1697,30 @@ msgstr "该位置已存在另一块磁盘的映像。继续写入会将两者混
 msgid "A file with this name already exists and is not an image started here. Choose another name."
 msgstr "已存在同名文件，且它不是在此处开始制作的映像。请选择其他名称。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:135 big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:414 big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:626 big-storage-rescue/usr/lib/big-storage-rescue/drive-tui.sh:78
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:135
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:421
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:645
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-tui.sh:78
 msgid "The device was disconnected or replaced. Nothing was done."
 msgstr "设备已被断开或更换。未执行任何操作。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:136 big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:405
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:136
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:412
 msgid "This computer has no driver for this filesystem. Installing the right package may solve it."
 msgstr "本计算机没有此文件系统的驱动程序。安装相应的软件包可能会解决问题。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:137 big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:410
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:137
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:417
 msgid "This volume is encrypted. Unlock it first."
 msgstr "此卷已加密。请先将其解锁。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:138 big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:411
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:138
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:418
 msgid "This is a part of a larger volume (RAID, LVM or similar), not a filesystem of its own. Its volume must be assembled first."
 msgstr "这是一个更大的卷（RAID、LVM 或类似结构）的一部分，本身并不是文件系统。必须先组装其所属的卷。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:139 big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:413
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:139
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:420
 msgid "This is swap space, not a place for files."
 msgstr "这是交换空间，不是存放文件的地方。"
 
@@ -1551,7 +1740,8 @@ msgstr "这已经是一个磁盘映像了。"
 msgid "Only the files a copy left out can be salvaged."
 msgstr "只有复制时遗漏的文件才能保存可读部分。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:144 big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1202
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:144
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1228
 msgid "It is still running. Wait for it to finish, or pause it first."
 msgstr "它仍在运行。请等待其完成，或先将其暂停。"
 
@@ -1607,383 +1797,447 @@ msgstr "完整校验会再次读取源中的每个文件。在有风险的驱动
 msgid "Cannot record a name with a line break: %s"
 msgstr "无法记录含有换行符的名称：%s"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:438
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:440
 msgid "Making the disk image"
 msgstr "正在制作磁盘映像"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:439
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:441
 msgid "Disk image complete"
 msgstr "磁盘映像已完成"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:440
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:442
 msgid "Listing the files"
 msgstr "正在列出文件"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:441
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:443
 msgid "List of files complete"
 msgstr "文件列表已完成"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:442
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:444
 msgid "Searching by content"
 msgstr "正在按内容搜索"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:443
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:445
 msgid "Search complete"
 msgstr "搜索已完成"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:444
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:446
 msgid "Checking whether what was found is whole"
 msgstr "正在检查找到的文件是否完整"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:445
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:447
 msgid "Saving what can be read of each file"
 msgstr "正在保存每个文件的可读部分"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:446
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:448
 msgid "Every file was read completely"
 msgstr "所有文件均已完整读取"
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:449
+msgid "Waiting for the password"
+msgstr "正在等待密码"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:450
+msgid "Repairing the drive"
+msgstr "正在修复驱动器"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:451
+msgid "Repaired: the drive is ready to use"
+msgstr "已修复：驱动器可以使用了"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:452
+msgid "The repair did not complete"
+msgstr "修复未完成"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:453
+msgid "Stopping the repair"
+msgstr "正在停止修复"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:456
 msgid "Waiting to start"
 msgstr "等待开始"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:450
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:457
 msgid "Measuring what will be copied"
 msgstr "正在统计要复制的内容"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:451
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:458
 msgid "Copying"
 msgstr "正在复制"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:452
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:459
 msgid "Checking the result"
 msgstr "正在校验结果"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:453
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:460
 msgid "Stopping: waiting for the disk to answer"
 msgstr "正在停止：等待磁盘响应"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:454
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:461
 msgid "Paused"
 msgstr "已暂停"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:455
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:462
 msgid "Completed and checked"
 msgstr "已完成并已校验"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:456
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:463
 msgid "Cancelled"
 msgstr "已取消"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:457
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:464
 msgid "Failed"
 msgstr "失败"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:458
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:465
 msgid "Finished, needs your attention"
 msgstr "已完成，需要您注意"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:459
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:466
 msgid "Interrupted (it can be resumed)"
 msgstr "已中断（可以继续）"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:470
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:477
 msgid "The source drive was disconnected or unmounted. Connect and mount it again, then resume."
 msgstr "源驱动器已断开或已卸载。请重新连接并挂载，然后继续。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:471
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:478
 msgid "The destination was disconnected or unmounted. Connect and mount it again, then resume."
 msgstr "目标已断开或已卸载。请重新连接并挂载，然后继续。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:472
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:479
 msgid "The destination ran out of space. Free some space or choose another place, then resume."
 msgstr "目标空间已用完。请释放一些空间或选择其他位置，然后继续。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:473
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:480
 msgid "%s files were set aside because they did not advance. The drive may be getting worse, so the copy stopped."
 msgstr "有 %s 个文件因没有进展而被搁置。驱动器的状况可能正在恶化，因此复制已停止。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:474
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:481
 msgid "Some files were not copied. See the list below."
 msgstr "部分文件未能复制。请查看下面的列表。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:475
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:482
 msgid "The check found differences between source and destination."
 msgstr "校验发现源和目标之间存在差异。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:476
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:483
 msgid "Everything was copied, but the check did not finish: it was cancelled or failed."
 msgstr "所有内容均已复制，但校验没有完成：已被取消或失败。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:477
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:484
 msgid "rsync stopped with an error. See the log."
 msgstr "rsync 因错误而停止。请查看日志。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:480
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:487
 msgid "GNU ddrescue stopped with an error. See the log."
 msgstr "GNU ddrescue 因错误而停止。请查看日志。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:481
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:488
 msgid "A drive of the running system cannot be imaged while it runs. Start the computer from another system (a live USB) to image it."
 msgstr "正在运行的系统所在的驱动器无法在运行时制作映像。请从另一个系统（Live USB）启动计算机，再制作映像。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:482
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:489
 msgid "Some areas of the disk could not be read. The image holds everything that could be."
 msgstr "磁盘的某些区域无法读取。映像中包含了所有能读取的内容。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:483
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:490
 msgid "Some folders could not be read, so the list may be incomplete. See the log."
 msgstr "部分文件夹无法读取，因此列表可能不完整。请查看日志。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:484
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:491
 msgid "PhotoRec stopped with an error. See the log."
 msgstr "PhotoRec 因错误而停止。请查看日志。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:485
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:492
 msgid "Some files have areas that could not be read. They were saved with everything else, in a folder of their own, with a list of what is missing."
 msgstr "部分文件含有无法读取的区域。它们与其他内容一起保存在单独的文件夹中，并附有缺失部分的列表。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:486
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:493
 msgid "Some files could not be saved. See the list below."
 msgstr "部分文件未能保存。请查看下面的列表。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:487
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:494
 msgid "No file was recognized by its content. That does not prove there is nothing to recover: another method, or a professional, may find more."
 msgstr "未能按内容识别出任何文件。但这并不能证明没有可恢复的内容：其他方法或专业人员也许能找到更多。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:577
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:588
 msgid "its content could not be read"
 msgstr "无法读取其内容"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1058 big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1106
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1080
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1106
 msgid "Source:"
 msgstr "源："
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1058 big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1111
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1080
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1111
 msgid "Destination:"
 msgstr "目标："
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1060 big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1062
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1082
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1084
 msgid "Files:"
 msgstr "文件："
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1072 big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1073
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1094
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1095
 msgid "Copied:"
 msgstr "已复制："
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1077
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1099
 msgid "Speed:"
 msgstr "速度："
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1077
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1099
 msgid "average"
 msgstr "平均"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1078 big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1119
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1100
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1119
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:491
 msgid "Elapsed:"
 msgstr "已用时间："
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1079
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1101
 msgid "Remaining:"
 msgstr "剩余时间："
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1080
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1102
 msgid "Waiting for the disk to answer, for %s seconds"
 msgstr "正在等待磁盘响应，已等待 %s 秒"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1081
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1103
 msgid "Current file:"
 msgstr "当前文件："
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1082
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1104
 msgid "Set aside:"
 msgstr "已搁置："
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1083
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1105
 msgid "Failed:"
 msgstr "失败："
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1123
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1145
 msgid "Cancelled. Files already copied stay at the destination, and the copy can be resumed."
 msgstr "已取消。已复制的文件保留在目标中，复制可以继续进行。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1139
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1161
 msgid "Source"
 msgstr "源"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1148 big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1133 big-storage-rescue/usr/lib/big-storage-rescue/drive-salvage.sh:373
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1174
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1133
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-salvage.sh:373
 msgid "Destination"
 msgstr "目标"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1149
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1175
 msgid "Files copied"
 msgstr "已复制的文件"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1150
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1176
 msgid "Data copied"
 msgstr "已复制的数据"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1151 big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1138 big-storage-rescue/usr/lib/big-storage-rescue/drive-salvage.sh:378
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1177
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1138
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:508
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-salvage.sh:378
 msgid "Elapsed"
 msgstr "已用时间"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1153 big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1154 big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1155 big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1156
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1179
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1180
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1181
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1182
 msgid "Check"
 msgstr "校验"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1153
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1179
 msgid "source and destination match"
 msgstr "源和目标一致"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1154
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1180
 msgid "%s files differ"
 msgstr "%s 个文件不一致"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1155
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1181
 msgid "did not finish"
 msgstr "未完成"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1156
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1182
 msgid "rsync confirmed each file as it was copied; no second comparison was made"
 msgstr "rsync 在复制每个文件时都已确认；未再做第二次比较"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1158
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1184
 msgid "Already at the destination, with different content"
 msgstr "目标中已存在，但内容不同"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1162
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1188
 msgid "Set aside because they did not advance (damaged area of the disk):"
 msgstr "因没有进展而被搁置（磁盘的损坏区域）："
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1165
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1191
 msgid "To try them again, which puts more strain on the disk: big-storage-rescue --cli resume %s --retry-deferred"
 msgstr "如需重试这些文件（会给磁盘带来更大负担）：big-storage-rescue --cli resume %s --retry-deferred"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1168
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1194
 msgid "To save what can be read of each file left out, resuming where it stops: big-storage-rescue --cli salvage %s"
 msgstr "如需保存每个遗漏文件的可读部分（中断后可从停止处继续）：big-storage-rescue --cli salvage %s"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1172
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1198
 msgid "Not copied:"
 msgstr "未复制："
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1177
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1203
 msgid "Different at the destination:"
 msgstr "目标中不一致："
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1180 big-storage-rescue/usr/lib/big-storage-rescue/drive-salvage.sh:386
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1206
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:517
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-salvage.sh:386
 msgid "Log:"
 msgstr "日志："
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1197 big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1442 big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1595 big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1607 big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1652 big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:94 big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:882 big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1158 big-storage-rescue/usr/lib/big-storage-rescue/drive-salvage.sh:59
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1223
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1468
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1621
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1633
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1682
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:94
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:882
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1158
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-salvage.sh:59
 msgid "There is no job '%s'."
 msgstr "不存在任务“%s”。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1213
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1239
 msgid "Only a copy, a salvage or an image has files to list in a manifest."
 msgstr "只有复制、可读部分保存或映像任务才有可列入清单的文件。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1218
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1244
 msgid "There is nothing to list."
 msgstr "没有可列出的内容。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1231
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1257
 msgid "Manifest of %s files: %s"
 msgstr "%s 个文件的清单：%s"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1233
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1259
 msgid "Some files could not be read at the destination and are not in the manifest."
 msgstr "部分文件在目标中无法读取，未列入清单。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1257 big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:249
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1283
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:257
 msgid "Serial number"
 msgstr "序列号"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1257 big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:265
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1283
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:273
 msgid "Label"
 msgstr "标签"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1289
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1315
 msgid "'%s' already exists. Nothing was written."
 msgstr "“%s”已存在。未写入任何内容。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1305
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1331
 msgid "Kernel messages:"
 msgstr "内核消息："
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1313
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1339
 msgid "'%s' is a folder. Nothing was written."
 msgstr "“%s”是一个文件夹。未写入任何内容。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1321
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1347
 msgid "Report written to %s"
 msgstr "报告已写入 %s"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1374 big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1381
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1400
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1407
 msgid "free"
 msgstr "可用"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1377
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1403
 msgid "drive with critical alerts"
 msgstr "驱动器有严重警报"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1378
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1404
 msgid "same physical disk as the source"
 msgstr "与源位于同一块物理磁盘"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1379
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1405
 msgid "not enough space"
 msgstr "空间不足"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1395
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1421
 msgid "Home folder"
 msgstr "主文件夹"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1445
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1471
 msgid "Only the results of a search by content can be copied this way."
 msgstr "只有按内容搜索的结果才能以这种方式复制。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1452 big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:623 big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1018
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1478
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:623
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1018
 msgid "Both --source and --destination are needed."
 msgstr "--source 和 --destination 两者都必须指定。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1520
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1546
 msgid "%s files, %s to copy; %s already exist with different content."
 msgstr "%s 个文件，需复制 %s；%s 个已存在但内容不同。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1543
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1569
 msgid "The copy could not be started."
 msgstr "无法开始复制。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1548 big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1690 big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:394 big-storage-rescue/usr/lib/big-storage-rescue/drive-salvage.sh:129
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1574
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1726
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:394
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-salvage.sh:129
 msgid "Copy started: %s"
 msgstr "复制已开始：%s"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1550 big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:396 big-storage-rescue/usr/lib/big-storage-rescue/drive-salvage.sh:131
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1576
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:396
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:350
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-salvage.sh:131
 msgid "To follow it: big-storage-rescue --cli status %s --watch"
 msgstr "如需跟踪进度：big-storage-rescue --cli status %s --watch"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1581
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1607
 msgid "No copies or images yet."
 msgstr "还没有复制或映像任务。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1615
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1641
 msgid "A search cannot be paused, only cancelled. What was found stays."
 msgstr "搜索无法暂停，只能取消。已找到的内容会保留。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1635
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1645
+msgid "A repair cannot be paused, only stopped."
+msgstr "修复无法暂停，只能停止。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1665
 msgid "It is not running."
 msgstr "它没有在运行。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1658 big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:887
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1689
+msgid "A repair is not resumed. Start a new one: it asks for a confirmation again."
+msgstr "修复无法继续。请重新开始一次修复：届时会再次要求确认。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1694
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:887
 msgid "It is already running."
 msgstr "它已在运行。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1662
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1698
 msgid "It is already complete."
 msgstr "它已经完成。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1668
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-copy.sh:1704
 msgid "Big-Mount is running this job at the moment. Let it finish there, or stop it there first."
 msgstr "Big-Mount 目前正在运行此任务。请让它在那里完成，或先在那里将其停止。"
 
@@ -2071,7 +2325,9 @@ msgstr "未挂载"
 msgid "Unknown"
 msgstr "未知"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-detect.sh:342 big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:317 big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:255
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-detect.sh:342
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:317
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:263
 msgid "Health"
 msgstr "健康状况"
 
@@ -2191,11 +2447,13 @@ msgstr "其 SMART 值中有 %s 项当前低于安全阈值。"
 msgid "The last self-test of the drive found an error: some of its sectors cannot be read."
 msgstr "驱动器上次自检发现了错误：其部分扇区无法读取。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:311 big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:246
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:311
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:254
 msgid "Type"
 msgstr "类型"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:312 big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:250
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:312
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:258
 msgid "Capacity"
 msgstr "容量"
 
@@ -2211,87 +2469,91 @@ msgstr "发现的情况："
 msgid "Why it is not called healthy:"
 msgstr "未判定为健康的原因："
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:331
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:334
+msgid "To allow writing again: big-storage-rescue --cli unprotect DEVICE"
+msgstr "要重新允许写入：big-storage-rescue --cli unprotect DEVICE"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:338
 msgid "Volumes:"
 msgstr "卷："
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:340
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:347
 msgid "no driver for this filesystem on this computer"
 msgstr "本计算机没有此文件系统的驱动程序"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:342
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:349
 msgid "writing blocked on the device"
 msgstr "设备已禁止写入"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:348
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:355
 msgid "For the SMART details of the drive, which need the administrator password: big-storage-rescue --cli diagnose DEVICE --smart"
 msgstr "查看驱动器的 SMART 详细信息（需要管理员密码）：big-storage-rescue --cli diagnose DEVICE --smart"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:358
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:365
 msgid "Copy what matters now, starting with the most important files. Every extra read wears a failing disk."
 msgstr "请立即复制重要内容，从最重要的文件开始。对于即将损坏的磁盘，每多读取一次都会加剧损耗。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:359
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:366
 msgid "Do not run repair tools on this disk: they write, and they can destroy what is still readable."
 msgstr "不要在此磁盘上运行修复工具：它们会写入磁盘，可能会破坏仍可读取的内容。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:360
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:367
 msgid "If the data is very important and cannot be replaced, consider a data recovery professional before insisting."
 msgstr "如果数据非常重要且无法替代，请先考虑寻求专业的数据恢复服务，不要反复尝试。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:363
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:370
 msgid "Copy your important files to another place."
 msgstr "请将重要文件复制到其他位置。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:364
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:371
 msgid "Try another cable and connect the drive directly to the computer, without a hub."
 msgstr "请换一根数据线，并将驱动器直接连接到计算机，不要经过集线器。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:404
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:411
 msgid "Permission to mount was not granted."
 msgstr "未获得挂载权限。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:406
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:413
 msgid "Windows left this partition hibernated (Fast Startup). It can be read only after Windows shuts down completely."
 msgstr "Windows 使此分区处于休眠状态（快速启动）。只有在 Windows 完全关机后才能读取。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:407
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:414
 msgid "The drive could not read the start of this filesystem. This is usually damage on the disk, a bad cable or a weak USB port. Making a disk image with GNU ddrescue is the safest next step."
 msgstr "驱动器无法读取此文件系统的起始部分。原因通常是磁盘损坏、数据线不良或 USB 端口供电不足。下一步最安全的做法是用 GNU ddrescue 制作磁盘映像。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:408
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:415
 msgid "The structure of this filesystem seems damaged, or this is not the filesystem it claims to be. Nothing was repaired. A disk image or a search for files (PhotoRec) may still recover data."
 msgstr "此文件系统的结构似乎已损坏，或者它并不是所声称的文件系统。未进行任何修复。磁盘映像或文件搜索（PhotoRec）仍有可能恢复数据。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:409
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:416
 msgid "This filesystem was not closed properly and needs to replay its journal, which writes to the disk. To protect the data that was not done. A disk image, worked on as a copy, is the safe way to read it."
 msgstr "此文件系统未正常关闭，需要重放日志，而这会写入磁盘。为保护数据，未执行此操作。安全的读取方式是制作磁盘映像，并以副本的形式进行处理。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:412
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:419
 msgid "No filesystem was recognized on it. If it should have partitions, searching for them with TestDisk does not change the disk."
 msgstr "未在其上识别到文件系统。如果它本应有分区，可以用 TestDisk 搜索，这不会更改磁盘。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:415
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:422
 msgid "This drive reported problems, so it is only mounted read-only. Writing to it can destroy what is still readable."
 msgstr "此驱动器报告了问题，因此仅以只读方式挂载。写入可能会破坏仍可读取的内容。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:416
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:423
 msgid "It is already mounted with writing enabled. Unmount it first to mount it read-only (big-storage-rescue --cli mount DEVICE --remount)."
 msgstr "它已以可写方式挂载。请先将其卸载，再以只读方式挂载（big-storage-rescue --cli mount DEVICE --remount）。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:417
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:424
 msgid "It is in use, so it could not be unmounted to be mounted again."
 msgstr "它正在使用中，因此无法卸载后重新挂载。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:418
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:425
 msgid "Writing could not be blocked on the drive: another volume of it is mounted with writing enabled. Unmount it first."
 msgstr "无法在该驱动器上禁止写入：其上的另一个卷正以可写方式挂载。请先将其卸载。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:419
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:426
 msgid "Writing cannot be blocked on the drive of the running system, so the volume was not mounted."
 msgstr "无法在当前运行的系统所在的驱动器上禁止写入，因此未挂载该卷。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:420
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-diag.sh:427
 msgid "The reason could not be determined. Nothing was changed on the device. See the technical details."
 msgstr "无法确定原因。设备上没有任何改动。请查看技术细节。"
 
@@ -2403,7 +2665,8 @@ msgstr "Word、Excel 和 LibreOffice 文件与 ZIP 文件的签名相同，因�
 msgid "Word, Excel and LibreOffice files can appear among the results: they are ZIP files inside."
 msgstr "结果中可能会出现 Word、Excel 和 LibreOffice 文件：它们内部是 ZIP 文件。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:653 big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1074
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:653
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1074
 msgid "Search started: %s"
 msgstr "搜索已开始：%s"
 
@@ -2431,7 +2694,8 @@ msgstr "未检查（格式）"
 msgid "Whole means the structure of the file is complete. It does not prove every byte is right: open the files that matter."
 msgstr "“完整”表示文件的结构是完整的，但不能证明每个字节都正确：请打开重要的文件进行确认。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1060 big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1099
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1060
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-recovery.sh:1099
 msgid "%s files found by content in %s. Their original names and folders could not be kept."
 msgstr "按内容找到了 %s 个文件，保存在 %s 中。无法保留其原来的文件名和文件夹。"
 
@@ -2515,6 +2779,219 @@ msgstr "文件可以正常读取：列出文件，然后选择要复制的内容
 msgid "The files cannot be opened normally: search for them by content."
 msgstr "文件无法正常打开：请按内容搜索。"
 
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:70
+msgid "This drive holds the running system. It is never erased here."
+msgstr "此驱动器包含当前运行的系统。此处绝不会擦除它。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:71
+msgid "Only memory cards and USB drives can be repaired here. A disk inside the computer is never erased by Big Storage Rescue."
+msgstr "此处只能修复存储卡和 USB 驱动器。Big Storage Rescue 绝不会擦除计算机内部的磁盘。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:72
+msgid "This is flash memory built into the computer (eMMC), not a card. It is never erased here."
+msgstr "这是计算机内置的闪存（eMMC），不是存储卡。此处绝不会擦除它。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:73
+msgid "This disk image is not a file of yours."
+msgstr "此磁盘映像不是您的文件。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:74
+msgid "An optical disc cannot be repaired here."
+msgstr "此处无法修复光盘。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:75
+msgid "This drive is too small to be repaired (at least 80 MB)."
+msgstr "此驱动器太小，无法修复（至少需要 80 MB）。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:77
+msgid "This drive does not accept writing: its lock switch is on, or writing was blocked on it. Unlock it, or disconnect and connect it again."
+msgstr "此驱动器不接受写入：其锁定开关已打开，或设备已禁止写入。请解除锁定，或断开后重新连接。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:81
+msgid "This drive does not accept writing."
+msgstr "此驱动器不接受写入。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:84
+msgid "Volumes of this drive are mounted. Unmount them first."
+msgstr "此驱动器的卷已挂载。请先卸载它们。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:85
+msgid "A repair of this drive is already running."
+msgstr "此驱动器的修复已在进行中。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:86
+msgid "A repair erases the whole drive: confirm it with --yes, or run it in a terminal to type the name of the device."
+msgstr "修复会擦除整个驱动器：请用 --yes 确认，或在终端中运行以输入设备名称。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:87
+msgid "A tool needed for the repair is not installed."
+msgstr "未安装修复所需的工具。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:104
+msgid "Everything on this drive will be erased: its volumes, files and partitions. Copy what matters first."
+msgstr "此驱动器上的所有内容都将被擦除：包括其中的卷、文件和分区。请先复制重要内容。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:105
+msgid "This drive reported problems. If it holds files you need, recover them first: a repair erases them for good."
+msgstr "此驱动器报告了问题。如果其中有您需要的文件，请先恢复它们：修复会将其永久擦除。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:106
+msgid "f3 is not installed (package f3), so the real capacity is not measured: a counterfeit card is detected, but its size cannot be told. Installing it is recommended."
+msgstr "未安装 f3（f3 软件包），因此不会测量真实容量：可以检测出假冒存储卡，但无法得知其真实大小。建议安装。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:107
+msgid "The complete test writes and reads every block. On a slow card it can take hours."
+msgstr "完整测试会写入并读取每一个数据块。对于速度较慢的存储卡，可能需要数小时。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:108
+msgid "Some older devices (cameras, car radios, TVs) do not read exFAT. FAT32 works everywhere, with files up to 4 GB."
+msgstr "一些较旧的设备（相机、车载音响、电视）无法读取 exFAT。FAT32 到处都能用，但单个文件最大 4 GB。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:109
+msgid "ext4 is read by Linux only. Windows, macOS, phones and cameras will not open it."
+msgstr "只有 Linux 能读取 ext4。Windows、macOS、手机和相机都无法打开它。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:110
+msgid "FAT32 cannot store files of 4 GB or more."
+msgstr "FAT32 无法存储 4 GB 或更大的文件。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:118
+msgid "This drive is counterfeit: it announces more space than it really has. It was set up to use only the real part, and works now."
+msgstr "此驱动器是假冒的：它标称的空间比实际拥有的多。现已将其设置为只使用真实存在的部分，现在可以正常使用。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:119
+msgid "Part of this drive failed the test. It was left out, and the rest works now. Keep a copy of what you put on it: it may get worse."
+msgstr "此驱动器的一部分未通过测试。该部分已被排除，其余部分现在可以正常使用。请为存放在上面的内容保留副本：情况可能会恶化。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:120
+msgid "This drive can no longer keep data: writing to it fails. It cannot be repaired. Replace it."
+msgstr "此驱动器已无法保存数据：写入失败。它无法修复，请更换。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:121
+msgid "The drive gave back other data than was written: it may be counterfeit. Install f3 (package f3) to measure its real capacity, then repair it again."
+msgstr "驱动器读回的数据与写入的不同：它可能是假冒的。请安装 f3（f3 软件包）以测量其真实容量，然后再次修复。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:122
+msgid "The repair was stopped. The drive was partly erased and has no usable filesystem: repair it again before using it."
+msgstr "修复已停止。驱动器已被部分擦除，没有可用的文件系统：使用前请再次修复。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:123
+msgid "The repair stopped with an error. See the log. The drive may have no usable filesystem until it is repaired again."
+msgstr "修复因错误而停止。请查看日志。在再次修复之前，驱动器可能没有可用的文件系统。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:124
+msgid "The drive was disconnected or replaced before the repair started. Nothing was done."
+msgstr "修复开始前驱动器已被断开或更换。未执行任何操作。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:125
+msgid "Something mounted the drive before the repair started. Nothing was done."
+msgstr "修复开始前有程序挂载了驱动器。未执行任何操作。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:126
+msgid "A tool needed for the repair is not installed. See the log."
+msgstr "未安装修复所需的工具。请查看日志。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:220
+msgid "Name the drive to repair, such as /dev/sdb."
+msgstr "请指定要修复的驱动器，例如 /dev/sdb。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:310
+msgid "Repair (this erases the whole drive):"
+msgstr "修复（这会擦除整个驱动器）："
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:311
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:479
+msgid "Drive:"
+msgstr "驱动器："
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:312
+msgid "Test:"
+msgstr "测试："
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:312
+msgid "complete: every block"
+msgstr "完整：每一个数据块"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:312
+msgid "quick: samples of the surface"
+msgstr "快速：抽样检测表面"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:313
+msgid "New filesystem:"
+msgstr "新文件系统："
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:325
+msgid "Everything on %s (%s, %s) will be erased."
+msgstr "%s（%s，%s）上的所有内容都将被擦除。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:326
+msgid "To continue, type %s: "
+msgstr "如要继续，请输入 %s： "
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:329
+msgid "Nothing was done."
+msgstr "未执行任何操作。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:348
+msgid "Repair started: %s"
+msgstr "修复已开始：%s"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:458
+msgid "Measure the real capacity"
+msgstr "测量真实容量"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:459
+msgid "Test the surface"
+msgstr "测试表面"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:460
+msgid "Create a new partition table"
+msgstr "创建新的分区表"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:461
+msgid "Create the filesystem"
+msgstr "创建文件系统"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:468
+msgid "done"
+msgstr "完成"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:469
+msgid "failed"
+msgstr "失败"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:470
+msgid "skipped"
+msgstr "已跳过"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:471
+msgid "in progress"
+msgstr "进行中"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:500
+msgid "Announced capacity"
+msgstr "标称容量"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:501
+msgid "Real capacity"
+msgstr "真实容量"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:503
+msgid "Tested"
+msgstr "已测试"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:504
+msgid "Failed the test"
+msgstr "未通过测试"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:506
+msgid "Usable now"
+msgstr "现在可用"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-repair.sh:507
+msgid "New filesystem"
+msgstr "新文件系统"
+
 #: big-storage-rescue/usr/lib/big-storage-rescue/drive-salvage.sh:110
 msgid "%s files (%s) would be read again with GNU ddrescue, from %s to %s."
 msgstr "将使用 GNU ddrescue 重新读取 %s 个文件（%s），从 %s 读取并保存到 %s。"
@@ -2583,307 +3060,334 @@ msgstr "含有无法读取区域的文件位于"
 msgid "Not saved:"
 msgstr "未保存："
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:119
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:121
 msgid "Usage: big-storage-rescue --cli [COMMAND] [OPTIONS]"
 msgstr "用法：big-storage-rescue --cli [命令] [选项]"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:120
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:122
 msgid "Without a command: the interactive manager (needs a terminal)."
 msgstr "不带命令时：启动交互式管理器（需要终端）。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:122
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:124
 msgid "storage devices and what is known about their health"
 msgstr "存储设备及其健康状况的已知信息"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:123
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:125
 msgid "everything known about one drive"
 msgstr "单个驱动器的全部已知信息"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:124
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:126
 msgid "which drive a device, folder or UUID is"
 msgstr "设备、文件夹或 UUID 对应的是哪个驱动器"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:125
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:127
 msgid "explain its state; --smart also reads SMART (asks for a password)"
 msgstr "解释其状态；--smart 还会读取 SMART（需要输入密码）"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:126
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:128
 msgid "mount a volume without changing it (the default)"
 msgstr "挂载卷而不对其做任何更改（默认）"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:127
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:129
 msgid "also block writing on the device itself (asks for a password)"
 msgstr "同时在设备本身上禁止写入（需要输入密码）"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:128
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:130
 msgid "unmount first if it is mounted with writing enabled"
 msgstr "如果已以可写方式挂载，先将其卸载"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:129
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:131
 msgid "mount with writing enabled (refused on a drive at risk)"
 msgstr "以可写方式挂载（在有风险的驱动器上会被拒绝）"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:130
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:132
 msgid "unmount one volume safely; a whole drive: all of its volumes"
 msgstr "安全卸载一个卷；若为整个驱动器，则卸载其所有卷"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:131
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:133
 msgid "unmount everything on the drive and power it off"
 msgstr "卸载驱动器上的所有内容并为其断电"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:132
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:134
 msgid "also stop the services that use it (asked first in the window)"
 msgstr "同时停止使用它的服务（在窗口中会先询问）"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:133
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:135
 msgid "which programs keep a volume busy, and which of them may be closed"
 msgstr "哪些程序占用了卷，其中哪些可以关闭"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:134
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:136
 msgid "ask your programs that keep it busy to close (never the system, never one that is writing)"
 msgstr "请求占用它的、属于您的程序关闭（从不包括系统程序或正在写入的程序）"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:135
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:137
 msgid "block or allow writing on the device (asks for a password)"
 msgstr "禁止或允许在设备上写入（需要输入密码）"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:136
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:138
 msgid "unlock an encrypted volume"
 msgstr "解锁加密卷"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:137
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:139
 msgid "where files can be copied to"
 msgstr "文件可以复制到哪里"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:138
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:140
 msgid "copy files in the background and follow the progress"
 msgstr "在后台复制文件并跟踪进度"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:139
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:141
 msgid "copy only this file or folder of the source (repeatable)"
 msgstr "只复制源中的此文件或文件夹（可重复使用）"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:140
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:142
 msgid "copy the items listed in FILE, separated by NUL"
 msgstr "复制 FILE 中列出的项目，以 NUL 分隔"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:141
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:143
 msgid "copy found files out of the folder of that search"
 msgstr "将找到的文件复制出该搜索的文件夹"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:142
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:144
 msgid "files that already exist: keep them (default), keep them aside, replace them"
 msgstr "已存在的文件：保留（默认）、保留为备份、替换"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:143
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:145
 msgid "how to check the result (full reads the source again)"
 msgstr "如何校验结果（full 会再次读取源）"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:144
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:146
 msgid "set aside a file that does not advance for N seconds (default 90, 0: never)"
 msgstr "将 N 秒内没有进展的文件搁置（默认 90，0：从不）"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:145
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:147
 msgid "limit the reading speed"
 msgstr "限制读取速度"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:146
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:148
 msgid "measure the total first (auto: not on a drive at risk)"
 msgstr "先统计总量（auto：在有风险的驱动器上不统计）"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:147
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:149
 msgid "accept a destination on the same physical disk"
 msgstr "接受位于同一块物理磁盘上的目标"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:148
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:150
 msgid "accept a drive at risk that is mounted with writing enabled"
 msgstr "接受以可写方式挂载的有风险驱动器"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:149
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:151
 msgid "accept a destination on a drive with critical alerts"
 msgstr "接受位于有严重警报的驱动器上的目标"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:150
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:152
 msgid "start and return, the copy continues in the background"
 msgstr "启动后立即返回，复制在后台继续进行"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:151
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:153
 msgid "copies and images, running and past"
 msgstr "复制和映像任务，包括正在运行的和已结束的"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:152
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:154
 msgid "progress of one of them"
 msgstr "其中一项任务的进度"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:153
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:155
 msgid "stop it safely (it can be resumed later; a search can only be cancelled)"
 msgstr "安全地停止任务（之后可以继续；搜索只能取消）"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:154
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:156
 msgid "continue it, also after a shutdown (a search starts over); optionally try what was set aside"
 msgstr "继续任务，关机后也可以（搜索会重新开始）；可选择重试已搁置的文件"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:155
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:157
 msgid "read again, with GNU ddrescue, the files a copy left out, and save what can be read of each"
 msgstr "使用 GNU ddrescue 重新读取复制时遗漏的文件，并保存每个文件的可读部分"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:156
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:158
 msgid "what a disk image has read so far, as a map of the disk"
 msgstr "磁盘映像目前已读取的内容，以磁盘映射的形式显示"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:157
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:159
 msgid "SHA-256 of what a copy, a salvage or an image wrote, to check later with sha256sum -c (reads the destination only)"
 msgstr "复制、可读部分保存或映像任务所写入内容的 SHA-256，供以后用 sha256sum -c 校验（只读取目标）"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:158
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:160
 msgid "report of a drive or of a copy (--output FILE [--replace])"
 msgstr "驱动器或复制任务的报告（--output FILE [--replace]）"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:159
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:161
 msgid "which ways of recovering files can be used on it, and which is advised"
 msgstr "可以对其使用哪些文件恢复方法，以及推荐哪一种"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:160
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:162
 msgid "make a disk image with GNU ddrescue"
 msgstr "使用 GNU ddrescue 制作磁盘映像"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:161
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:163
 msgid "read the partition table with TestDisk; --search also looks for lost ones. Nothing is changed"
 msgstr "使用 TestDisk 读取分区表；--search 还会查找丢失的分区。不会做任何更改"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:162
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:164
 msgid "list the files that exist in a folder, by type (not deleted ones)"
 msgstr "按类型列出文件夹中现有的文件（不含已删除的文件）"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:163
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:165
 msgid "search for files by content with PhotoRec"
 msgstr "使用 PhotoRec 按内容搜索文件"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:164
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:166
 msgid "only these types: photos,videos,documents,audio,archives (default: all)"
 msgstr "仅限以下类型：photos,videos,documents,audio,archives（默认：全部）"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:165
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:167
 msgid "what a search found"
 msgstr "搜索找到的内容"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:166
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:168
 msgid "check again whether the files a search found are whole (their structure, not their content)"
 msgstr "再次检查搜索找到的文件是否完整（检查其结构，而非内容）"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:167
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:169
+msgid "repair a memory card or USB drive: test it, then partition and format it. ERASES EVERYTHING on it"
+msgstr "修复存储卡或 USB 驱动器：先测试，然后分区并格式化。会擦除其上的全部内容"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:170
+msgid "test samples of the surface (default) or every block"
+msgstr "抽样测试表面（默认）或测试每一个数据块"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:171
+msgid "the new filesystem (auto: FAT32 up to 32 GiB, exFAT above)"
+msgstr "新的文件系统（auto：32 GiB 及以下用 FAT32，更大则用 exFAT）"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:172
+msgid "the name of the new volume"
+msgstr "新卷的名称"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:173
+msgid "space left unused at the end, before what failed (default 8)"
+msgstr "在末尾故障部分之前保留不用的空间（默认 8）"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:174
+msgid "do not ask for the name of the device (scripts)"
+msgstr "不询问设备名称（用于脚本）"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:175
 msgid "machine-readable output"
 msgstr "机器可读的输出"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:168
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:176
 msgid "say what would be done, change nothing"
 msgstr "说明将要执行的操作，但不做任何更改"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:169
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:177
 msgid "TARGET is a device (/dev/sdb1) or a folder inside a mounted device."
 msgstr "TARGET 可以是设备（/dev/sdb1），也可以是已挂载设备中的文件夹。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:210
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:218
 msgid "big-storage-rescue: more than one device has this UUID: %s. Name the device."
 msgstr "big-storage-rescue：有多个设备使用此 UUID：%s。请指定设备。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:232
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:240
 msgid "The list of devices could not be read."
 msgstr "无法读取设备列表。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:247
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:255
 msgid "Manufacturer"
 msgstr "制造商"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:248
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:256
 msgid "Model"
 msgstr "型号"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:253
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:261
 msgid "Partition table"
 msgstr "分区表"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:267
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:275
 msgid "Size"
 msgstr "大小"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:274
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:282
 msgid "Space"
 msgstr "空间"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:276
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:284
 msgid "Writing"
 msgstr "写入"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:276
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:284
 msgid "blocked on the device"
 msgstr "已在设备上禁止"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:394
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:413
 msgid "smartctl is not installed (package smartmontools), so SMART details cannot be read."
 msgstr "未安装 smartctl（smartmontools 软件包），因此无法读取 SMART 详细信息。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:399
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:418
 msgid "Permission to read SMART was not granted."
 msgstr "未获得读取 SMART 的权限。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:400 big-storage-rescue/usr/lib/big-storage-rescue/drive-tui.sh:120
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:419
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-tui.sh:120
 msgid "The drive did not report SMART data. Many USB adapters do not pass it through."
 msgstr "驱动器未报告 SMART 数据。许多 USB 转接器不会传递这些数据。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:423
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:442
 msgid "Mounted read-only at %s"
 msgstr "以只读方式挂载于 %s"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:424
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:443
 msgid "Mounted at %s"
 msgstr "挂载于 %s"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:426
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:445
 msgid "Writing is also blocked on the device itself until it is disconnected."
 msgstr "在断开连接之前，设备本身也会禁止写入。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:449 big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:613 big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:635
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:468
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:632
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:654
 msgid "Name a device, such as /dev/sdb1."
 msgstr "请指定一个设备，例如 /dev/sdb1。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:521
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:540
 msgid "Nothing was done. Use big-storage-rescue --unmount to confirm stopping them."
 msgstr "未执行任何操作。如确认要停止这些服务，请使用 big-storage-rescue --unmount。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:620
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:639
 msgid "Writing is now blocked on this device until it is disconnected."
 msgstr "此设备现已禁止写入，直到断开连接为止。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:621
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:640
 msgid "Writing is allowed on this device again."
 msgstr "此设备已重新允许写入。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:624
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:643
 msgid "Another volume of this drive is mounted with writing enabled. Unmount it first."
 msgstr "此驱动器的另一个卷正以可写方式挂载。请先将其卸载。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:625
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:644
 msgid "Refused: this drive holds the running system."
 msgstr "已拒绝：此驱动器上有当前运行的系统。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:628
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:647
 msgid "The helper failed (exit %s)."
 msgstr "辅助程序失败（退出码 %s）。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:637
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:656
 msgid "Unlocking in the terminal needs an interactive terminal."
 msgstr "在终端中解锁需要交互式终端。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:698
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:726
 msgid "big-storage-rescue: the graphical application does not run as administrator. Open it as your user; it asks for the password when it needs it."
 msgstr "big-storage-rescue：图形应用程序不能以管理员身份运行。请以您的用户身份打开；需要时它会询问密码。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:702
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:730
 msgid "big-storage-rescue: there is no graphical session here. Use the manager in the terminal: big-storage-rescue --cli"
 msgstr "big-storage-rescue：此处没有图形会话。请使用终端中的管理器：big-storage-rescue --cli"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:712
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive.sh:740
 msgid "The application needs GTK 4, libadwaita 1.5 or later and PyGObject (packages gtk4, libadwaita and python-gobject). The same tools work in the terminal: big-storage-rescue --cli"
 msgstr "此应用程序需要 GTK 4、libadwaita 1.5 或更高版本以及 PyGObject（gtk4、libadwaita 和 python-gobject 软件包）。终端中也提供相同的工具：big-storage-rescue --cli"
 
@@ -2951,11 +3455,15 @@ msgstr "安全卸载"
 msgid "Export report"
 msgstr "导出报告"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-tui.sh:97 big-storage-rescue/usr/lib/big-storage-rescue/drive-tui.sh:317
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-tui.sh:97
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-tui.sh:317
 msgid "Back"
 msgstr "返回"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-tui.sh:98 big-storage-rescue/usr/lib/big-storage-rescue/drive-tui.sh:263 big-storage-rescue/usr/lib/big-storage-rescue/drive-tui.sh:280 big-storage-rescue/usr/lib/big-storage-rescue/drive-tui.sh:318
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-tui.sh:98
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-tui.sh:263
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-tui.sh:280
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-tui.sh:318
 msgid "Choose:"
 msgstr "选择："
 
@@ -3003,7 +3511,8 @@ msgstr "未标记任何内容。"
 msgid "Where to? Places marked with * are on another physical disk, with room:"
 msgstr "复制到哪里？标有 * 的位置位于另一块物理磁盘上，且空间充足："
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/drive-tui.sh:275 big-storage-rescue/usr/lib/big-storage-rescue/drive-tui.sh:329
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-tui.sh:275
+#: big-storage-rescue/usr/lib/big-storage-rescue/drive-tui.sh:329
 msgid "Destination folder:"
 msgstr "目标文件夹："
 
@@ -3123,143 +3632,143 @@ msgstr "“%s”不在本地存储设备上（可能是网络共享或内存文�
 msgid "'%s' is not a local storage device or a folder on one"
 msgstr "“%s”不是本地存储设备，也不是其中的文件夹"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:497
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:579
 msgid "Dolphin (file manager)"
 msgstr "Dolphin（文件管理器）"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:500
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:582
 msgid "KDE thumbnail generator"
 msgstr "KDE 缩略图生成器"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:501
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:583
 msgid "KDE trash"
 msgstr "KDE 回收站"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:502
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:584
 msgid "KDE file service (kioworker)"
 msgstr "KDE 文件服务（kioworker）"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:503
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:585
 msgid "KDE file service (%s)"
 msgstr "KDE 文件服务（%s）"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:506
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:588
 msgid "Baloo file indexer"
 msgstr "Baloo 文件索引程序"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:507
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:589
 msgid "File indexer (Tracker)"
 msgstr "文件索引程序（Tracker）"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:509
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:591
 msgid "Terminal"
 msgstr "终端"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:511
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:593
 msgid "Command shell (terminal)"
 msgstr "命令行 Shell（终端）"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:513
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:595
 msgid "Media player"
 msgstr "媒体播放器"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:514
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:596
 msgid "Thumbnail generator"
 msgstr "缩略图生成器"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:515
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:597
 msgid "Document viewer"
 msgstr "文档查看器"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:516
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:598
 msgid "Image viewer"
 msgstr "图像查看器"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:517
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:599
 msgid "Text editor"
 msgstr "文本编辑器"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:519
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:601
 msgid "Web browser"
 msgstr "网页浏览器"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:520
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:602
 msgid "File manager"
 msgstr "文件管理器"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:522
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:604
 msgid "Copy or archive operation"
 msgstr "复制或归档操作"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:523
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:605
 msgid "Synchronization service"
 msgstr "同步服务"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:524
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:606
 msgid "Backup"
 msgstr "备份"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:534
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:616
 msgid "Current folder is on the device"
 msgstr "当前文件夹位于该设备上"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:535
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:617
 msgid "Root folder (chroot) is on the device"
 msgstr "根文件夹（chroot）位于该设备上"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:536
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:618
 msgid "Program running from the device"
 msgstr "从该设备运行的程序"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:537
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:619
 msgid "File mapped in memory"
 msgstr "映射到内存中的文件"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:540
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:622
 msgid "Open for writing"
 msgstr "以写入方式打开"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:541
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:623
 msgid "Open for reading and writing"
 msgstr "以读写方式打开"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:542
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:624
 msgid "Folder open"
 msgstr "文件夹已打开"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:542
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:624
 msgid "Open for reading"
 msgstr "以读取方式打开"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:651
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:733
 msgid "belongs to another user or to the system"
 msgstr "属于其他用户或系统"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:654
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:736
 msgid "part of the desktop session"
 msgstr "属于桌面会话"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:657
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:739
 msgid "a terminal: type 'cd' in it or close the tab"
 msgstr "终端：在其中输入“cd”或关闭该标签页"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:660
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:742
 msgid "this tool"
 msgstr "本工具"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:665
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:747
 msgid "has a file open for writing: finish or cancel the operation in the application"
 msgstr "有一个以写入方式打开的文件：请在该应用程序中完成或取消操作"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:1040
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:1122
 msgid "%s is unmounted here, but %s (PID %s) still has it mounted at %s"
 msgstr "%s 在此处已卸载，但 %s（PID %s）仍将其挂载于 %s"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:1044
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:1126
 msgid "%s is unmounted, but its filesystem driver is still writing to it"
 msgstr "%s 已卸载，但其文件系统驱动程序仍在向其写入"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:1070
+#: big-storage-rescue/usr/lib/big-storage-rescue/lib.sh:1152
 msgid "%s is still mounted at %s after being unmounted"
 msgstr "%s 在卸载后仍挂载于 %s"
 
@@ -3484,19 +3993,30 @@ msgstr "检查健康状况"
 msgid "Recover files…"
 msgstr "恢复文件…"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/actions.py:153 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:385 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:499
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/actions.py:153
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:398
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:532
 msgid "Unmount"
 msgstr "卸载"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/actions.py:154 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:386
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/actions.py:154
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:399
 msgid "Force unmount (close the programs using it)…"
 msgstr "强制卸载（关闭正在使用它的程序）…"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/actions.py:171 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:347 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:348 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:1013
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/actions.py:159
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:403
+msgid "Repair the drive (erases it)…"
+msgstr "修复驱动器（会将其擦除）…"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/actions.py:173
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:359
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:360
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:1013
 msgid "More options"
 msgstr "更多选项"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/actions.py:172
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/actions.py:174
 #, python-format
 msgid "More options for %s"
 msgstr "%s 的更多选项"
@@ -3520,15 +4040,18 @@ msgstr "%d 分钟"
 msgid "%(h)d h %(m)d min"
 msgstr "%(h)d 小时 %(m)d 分钟"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/damage_map.py:47 big-storage-rescue/usr/lib/big-storage-rescue/gui/damage_map.py:73
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/damage_map.py:47
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/damage_map.py:73
 msgid "Read"
 msgstr "已读取"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/damage_map.py:47 big-storage-rescue/usr/lib/big-storage-rescue/gui/damage_map.py:73
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/damage_map.py:47
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/damage_map.py:73
 msgid "Hard to read, to be retried"
 msgstr "难以读取，待重试"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/damage_map.py:47 big-storage-rescue/usr/lib/big-storage-rescue/gui/damage_map.py:73
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/damage_map.py:47
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/damage_map.py:73
 msgid "Not read yet"
 msgstr "尚未读取"
 
@@ -3537,7 +4060,8 @@ msgstr "尚未读取"
 msgid "Read: %(read)s of %(size)s. Could not be read: %(bad)s. Still to read or retry: %(left)s."
 msgstr "已读取：%(read)s / %(size)s。无法读取：%(bad)s。仍待读取或重试：%(left)s。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/damage_map.py:80 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:77
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/damage_map.py:80
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:106
 msgid "Map of the disk"
 msgstr "磁盘映射"
 
@@ -3551,27 +4075,33 @@ msgid "No answer from the system in %d second."
 msgid_plural "No answer from the system in %d seconds."
 msgstr[0] "系统在 %d 秒内没有响应。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/models.py:333
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/models.py:364
 msgid "Copy of files"
 msgstr "文件复制"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/models.py:335
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/models.py:366
 msgid "List of files"
 msgstr "文件列表"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/models.py:336 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:527
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/models.py:367
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:560
 msgid "Search by content"
 msgstr "按内容搜索"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/models.py:337
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/models.py:368
 msgid "Readable parts of files"
 msgstr "文件的可读部分"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/models.py:347
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/models.py:369
+msgid "Repair of a drive"
+msgstr "驱动器修复"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/models.py:379
 msgid "Files saved"
 msgstr "已保存的文件"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/models.py:348 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:65
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/models.py:380
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:75
 msgid "Files"
 msgstr "文件"
 
@@ -3647,7 +4177,8 @@ msgstr "也可在终端中使用"
 msgid "The same tools without a window: big-storage-rescue --cli"
 msgstr "无需窗口即可使用相同的工具：big-storage-rescue --cli"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/welcome.py:53 big-storage-rescue/usr/lib/big-storage-rescue/gui/welcome.py:62
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/welcome.py:53
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/welcome.py:62
 msgid "Welcome to Big Storage Rescue"
 msgstr "欢迎使用 Big Storage Rescue"
 
@@ -3680,73 +4211,78 @@ msgstr "选择保存位置"
 msgid "Copy"
 msgstr "复制"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:77 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/overview.py:156 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/overview.py:183
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:79
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/overview.py:156
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/overview.py:183
 msgid "Your drives and devices"
 msgstr "您的驱动器和设备"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:82 big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:83
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:84
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:85
 msgid "Main menu"
 msgstr "主菜单"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:95
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:97
 msgid "Warn when a device cannot be written to"
 msgstr "设备无法写入时发出提醒"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:97
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:99
 msgid "Welcome screen"
 msgstr "欢迎屏幕"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:98
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:100
 msgid "About Big Storage Rescue"
 msgstr "关于 Big Storage Rescue"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:104
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:106
 msgid "Drives"
 msgstr "驱动器"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:122
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:124
 #, python-format
 msgid "%d running"
 msgid_plural "%d running"
 msgstr[0] "%d 个正在运行"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:199
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:201
 msgid "Home"
 msgstr "主页"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:202 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:376 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:379
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:204
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:503
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:506
 msgid "Copies and searches"
 msgstr "复制和搜索任务"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:312
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:316
 msgid "Choose a drive to see how it is doing."
 msgstr "选择一个驱动器以查看其状况。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:329
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:333
 msgid "This device was not found."
 msgstr "未找到此设备。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:398
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:414
 msgid "Wait a moment"
 msgstr "请稍候"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:399
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:415
 msgid "An operation on a drive is still running. This window can be closed when it ends."
 msgstr "驱动器上仍有操作正在运行。操作结束后即可关闭此窗口。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:407
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:423
 msgid "It keeps working"
 msgstr "工作会继续进行"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:408
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:424
 msgid "The work continues in the background, also with this window closed. Open Big Storage Rescue again to follow it."
 msgstr "即使关闭此窗口，工作也会在后台继续进行。重新打开 Big Storage Rescue 即可查看进度。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:409
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:425
 msgid "Stay here"
 msgstr "留在此处"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:409
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/window.py:425
 msgid "Close the window"
 msgstr "关闭窗口"
 
@@ -3800,7 +4336,9 @@ msgstr "在有问题的驱动器上，设备始终禁止写入。"
 msgid "Mount “%s” read-only"
 msgstr "以只读方式挂载“%s”"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:65 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:85 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:494
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:65
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:85
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:527
 msgid "Mount read-only"
 msgstr "以只读方式挂载"
 
@@ -3808,11 +4346,15 @@ msgstr "以只读方式挂载"
 msgid "Mounting…"
 msgstr "正在挂载…"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:86 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:931
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:86
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:931
 msgid "Unmount and mount read-only"
 msgstr "卸载并以只读方式挂载"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:89 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:1054 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:659
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:89
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:228
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:1054
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:659
 msgid "The reason could not be determined."
 msgstr "无法确定原因。"
 
@@ -3856,449 +4398,544 @@ msgstr "这是一个磁盘映像：它本身没有健康状况。"
 msgid "Not examined yet: there is not enough information."
 msgstr "尚未检查：信息不足。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:164 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/overview.py:273
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:164
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/overview.py:273
 msgid "Rescue my files"
 msgstr "抢救我的文件"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:166 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:381
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:166
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:394
 msgid "Export diagnosis…"
 msgstr "导出诊断…"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:170 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:280 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:318
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:168
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:477
+msgid "Repair…"
+msgstr "修复…"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:169
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:478
+msgid "Tests the drive and sets it up again. It erases everything on it."
+msgstr "测试驱动器并重新设置。这会擦除其上的全部内容。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:173
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:280
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:318
 msgid "What was found"
 msgstr "发现的情况"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:177
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:180
 msgid "Why it is not called healthy"
 msgstr "未判定为健康的原因"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:186
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:189
 msgid "Checked only on the drive the computer started from."
 msgstr "仅检查计算机启动所用的驱动器。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:187
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:190
 msgid "The running system"
 msgstr "当前运行的系统"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:194
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:198
+msgid "Writing is blocked"
+msgstr "写入已被禁止"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:206
 msgid "What to do"
 msgstr "应该怎么做"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:204
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:216
 msgid "What the drive itself reports (SMART)"
 msgstr "驱动器自身的报告（SMART）"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:210
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:222
 #, python-format
 msgid "Read at %s, through the administrator password."
 msgstr "于 %s 读取，使用了管理员密码。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:212
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:224
 msgid "As the system keeps it up to date, without a password."
 msgstr "由系统保持更新，无需密码。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:214
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:226
 msgid "Overall verdict"
 msgstr "总体结论"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:214
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:226
 msgid "Passed"
 msgstr "通过"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:214
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:226
 msgid "Failing"
 msgstr "即将损坏"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:215
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:227
 msgid "Sectors waiting to be replaced"
 msgstr "等待替换的扇区"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:216
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:228
 msgid "Sectors already replaced"
 msgstr "已替换的扇区"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:217
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:229
 msgid "Sectors it could not read offline"
 msgstr "离线时无法读取的扇区"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:218
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:230
 msgid "Errors it could not correct"
 msgstr "无法纠正的错误"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:219
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:231
 msgid "Cable or adapter errors"
 msgstr "数据线或转接器错误"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:220
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:232
 msgid "NVMe media errors"
 msgstr "NVMe 介质错误"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:221
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:233
 msgid "NVMe life used"
 msgstr "NVMe 已用寿命"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:222
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:234
 msgid "Hours powered on"
 msgstr "通电时间（小时）"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:223
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:235
 msgid "Temperature now"
 msgstr "当前温度"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:234
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:246
 msgid "Not read yet. It needs the administrator password, and through USB it can take a minute. Many USB adapters do not pass it through."
 msgstr "尚未读取。需要管理员密码，通过 USB 连接时可能需要一分钟。许多 USB 转接器不会传递这些数据。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:235
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:247
 msgid "Not read"
 msgstr "未读取"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:239
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:251
 msgid "Read SMART…"
 msgstr "读取 SMART…"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:239
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:251
 msgid "Read SMART again…"
 msgstr "重新读取 SMART…"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:241
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:253
 msgid "Asks for the administrator password. It only reads: no test is started."
 msgstr "需要输入管理员密码。只读取数据：不会启动任何测试。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:253
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:265
 #, python-format
 msgid "%s (about a year of use)"
 msgstr "%s（约使用了一年）"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:254
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:266
 #, python-format
 msgid "%(h)s (about %(y)d years of use)"
 msgstr "%(h)s（约使用了 %(y)d 年）"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:260
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:272
 msgid "Reading SMART. Through USB it can take a minute."
 msgstr "正在读取 SMART。通过 USB 连接时可能需要一分钟。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:275
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:287
 msgid "Details"
 msgstr "详细信息"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:285
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:297
 msgid "Hidden. It identifies this drive: it is also left out of shared reports."
 msgstr "已隐藏。序列号能识别出此驱动器，因此共享的报告中也会将其省略。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:294 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:295
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:306
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:307
 msgid "Show the serial number"
 msgstr "显示序列号"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:301 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:304
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:313
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:316
 msgid "Messages from the system log"
 msgstr "系统日志中的消息"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:302
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:314
 #, python-format
 msgid "%d recent message about this drive"
 msgid_plural "%d recent messages about this drive"
 msgstr[0] "关于此驱动器的最近 %d 条消息"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:308 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:313
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:320
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:325
 msgid "Messages from earlier starts"
 msgstr "之前开机时的消息"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:309
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:321
 #, python-format
 msgid "%d error message about this drive before this start of the computer"
 msgid_plural "%d error messages about this drive before this start of the computer"
 msgstr[0] "本次开机之前关于此驱动器的 %d 条错误消息"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:340
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:352
 msgid "Overview"
 msgstr "概览"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:341
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:353
 msgid "Recover"
 msgstr "恢复"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:343
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:355
 msgid "History"
 msgstr "历史记录"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:354 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:416
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:366
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:432
 msgid "The drive was disconnected"
 msgstr "驱动器已断开"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:355
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:367
 msgid "Nothing else was done. Connect it again and it comes back here."
 msgstr "未执行其他操作。重新连接后，它会重新显示在这里。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:356
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:368
 msgid "Back to my drives"
 msgstr "返回我的驱动器"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:384
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:397
 msgid "Block writing on the device…"
 msgstr "在设备上禁止写入…"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:454 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/overview.py:69 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:277
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:471
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/overview.py:69
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:277
 msgid "Recover files"
 msgstr "恢复文件"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:457
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:474
 msgid "Check drive"
 msgstr "检查驱动器"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:462 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:464
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:488
+msgid "Allow writing again…"
+msgstr "重新允许写入…"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:493
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:495
 msgid "Volumes"
 msgstr "卷"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:487
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:520
 msgid "This volume spans more than one device. All of them must be connected."
 msgstr "此卷跨越多个设备。这些设备必须全部连接。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:498 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:501 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/overview.py:66
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:531
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:534
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/overview.py:66
 msgid "Open files"
 msgstr "打开文件"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:503
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:536
 msgid "Unlock…"
 msgstr "解锁…"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:520
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:553
 msgid "Copy your files to another place, step by step. This never writes to this drive."
 msgstr "逐步将您的文件复制到其他位置。此操作绝不会写入此驱动器。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:521
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:554
 msgid "Start recovering files"
 msgstr "开始恢复文件"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:524
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:557
 msgid "What can be done"
 msgstr "可以做什么"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:525
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:558
 msgid "Copy files that can still be read"
 msgstr "复制仍可读取的文件"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:525
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:558
 msgid "The quickest and safest: names and folders are kept."
 msgstr "最快、最安全：保留文件名和文件夹。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:526
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:559
 msgid "List what exists, by type"
 msgstr "按类型列出现有内容"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:526
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:559
 msgid "Goes through the folders. Then you choose what to copy."
 msgstr "遍历所有文件夹，然后由您选择要复制的内容。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:527
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:560
 msgid "For when files cannot be opened. Names and folders are lost, and nothing is guaranteed."
 msgstr "适用于文件无法打开的情况。文件名和文件夹会丢失，且不保证能恢复。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:544
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:578
 msgid "Copies and searches of this drive"
 msgstr "此驱动器的复制和搜索任务"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:548
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:582
 msgid "Nothing yet"
 msgstr "暂无内容"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:549
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:583
 msgid "What you copy from this drive is listed here."
 msgstr "您从此驱动器复制的内容会列在这里。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:569 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:571
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:603
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:605
 msgid "Export diagnosis"
 msgstr "导出诊断"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:572
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:606
 msgid "Keep them"
 msgstr "保留"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:572
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:606
 msgid "Hide them"
 msgstr "隐藏"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:604
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:637
+msgid "Allow writing again?"
+msgstr "重新允许写入？"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:639
+msgid "Allow writing"
+msgstr "允许写入"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:662
 msgid "Whatever a driver or another program tries, the disk does not change. It lasts until the drive is disconnected. It asks for the administrator password."
 msgstr "无论驱动程序或其他程序如何尝试，磁盘都不会被更改。此设置会一直持续到驱动器断开连接为止。需要输入管理员密码。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:605
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/device.py:663
 msgid "Block writing"
 msgstr "禁止写入"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:27
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:17
+msgid "The drive works"
+msgstr "驱动器可以正常使用"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:18
+msgid "A counterfeit drive, set up with its real capacity"
+msgstr "假冒驱动器，已按其真实容量重新设置"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:19
+msgid "Part of the drive failed and was left out"
+msgstr "驱动器的一部分出现故障，已被排除"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:20
+msgid "This drive cannot be repaired"
+msgstr "此驱动器无法修复"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:21
+msgid "The drive gave back other data than was written"
+msgstr "驱动器读回的数据与写入的不同"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:37
 msgid "Working"
 msgstr "正在处理"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:43
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:53
 msgid "Looking…"
 msgstr "正在查找…"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:58
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:68
 msgid "Progress"
 msgstr "进度"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:65
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:75
 msgid "Data"
 msgstr "数据"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:65
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:75
 msgid "Speed"
 msgstr "速度"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:66
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:76
 msgid "Remaining"
 msgstr "剩余时间"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:66
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:76
 msgid "Set aside"
 msgstr "已搁置"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:66
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:76
 msgid "With unreadable areas"
 msgstr "含有无法读取的区域"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:77
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:91
+msgid "Steps"
+msgstr "步骤"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:106
 msgid "What has been read so far, from the start of the disk (top left) to its end."
 msgstr "目前已读取的内容，从磁盘的起始处（左上角）到末尾。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:90
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:119
 msgid "Report"
 msgstr "报告"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:98
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:127
 msgid "Pause"
 msgstr "暂停"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:99 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:236
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:128
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:279
 msgid "Resume"
 msgstr "继续"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:100
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:129
 msgid "Try set-aside files again"
 msgstr "重试已搁置的文件"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:101
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:130
 msgid "Reads the damaged areas again, which puts more strain on the disk."
 msgstr "再次读取损坏的区域，这会给磁盘带来更大负担。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:102
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:131
 msgid "See what was found"
 msgstr "查看找到的内容"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:103
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:132
 msgid "Search this image for files"
 msgstr "在此映像中搜索文件"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:104 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:348
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:133
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:348
 msgid "Open destination"
 msgstr "打开目标"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:105
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:134
 msgid "Save what can be read…"
 msgstr "保存可读部分…"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:106
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:135
 msgid "Reads each file left out again with GNU ddrescue, and saves what can be read of it."
 msgstr "使用 GNU ddrescue 重新读取每个遗漏的文件，并保存其可读部分。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:107
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:136
 msgid "Open partly recovered files"
 msgstr "打开部分恢复的文件"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:108
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:137
+msgid "Repair again…"
+msgstr "再次修复…"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:138
 msgid "Show log"
 msgstr "显示日志"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:144
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:175
 msgid "This job no longer exists."
 msgstr "此任务已不存在。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:186
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:220
+#, python-format
+msgid "Step %(n)d of %(total)d: %(step)s"
+msgstr "第 %(n)d 步，共 %(total)d 步：%(step)s"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:222
+msgid "The administrator password is asked before anything is written."
+msgstr "在写入任何内容之前会要求输入管理员密码。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:224
 #, python-format
 msgid "Pass %d of the search. The percentage restarts at each pass."
 msgstr "搜索的第 %d 轮。每一轮百分比都会重新开始计算。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:188
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:226
 msgid "It goes through the folders, so the total is only known at the end."
 msgstr "需要遍历所有文件夹，因此只有在结束时才能知道总量。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:190
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:228
 msgid "The total is not measured on a drive at risk, to avoid extra reads. It shows what was copied so far."
 msgstr "为避免额外读取，在有风险的驱动器上不测量总量。此处显示的是目前已复制的内容。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:217
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:259
 #, python-format
 msgid "%s could not be read."
 msgstr "%s 无法读取。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:236
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:279
 msgid "Search again"
 msgstr "重新搜索"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:280
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:329
+msgid "f3 is not installed (package f3): the real capacity was not measured."
+msgstr "未安装 f3（f3 软件包）：未测量真实容量。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:347
+msgid "Its whole capacity passed the test, and it has a new filesystem. It can be used again."
+msgstr "其全部容量都通过了测试，并已拥有新的文件系统。可以再次使用。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:401
 msgid "Nothing can be salvaged"
 msgstr "没有可保存的内容"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:282
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:403
 #, python-format
 msgid "%(files)s files (%(size)s) left out by this copy will be read again with GNU ddrescue, good areas first, without retries. A pause or a power cut resumes where it stopped."
 msgstr "此次复制遗漏的 %(files)s 个文件（%(size)s）将使用 GNU ddrescue 重新读取，先读取完好的区域，不进行重试。暂停或断电后会从停止处继续。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:291
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:412
 msgid "Save what can be read?"
 msgstr "要保存可读部分吗？"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:291 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:413
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:412
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:413
 msgid "Start"
 msgstr "开始"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:300 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:1054 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:659
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:421
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:1054
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:659
 msgid "It did not start"
 msgstr "未能开始"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:320
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:441
+msgid "Stop the repair? The drive is left partly erased, with no usable filesystem, until it is repaired again."
+msgstr "要停止修复吗？在再次修复之前，驱动器将处于部分擦除状态，没有可用的文件系统。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:443
 msgid "Stop the search? What was found so far stays."
 msgstr "要停止搜索吗？目前已找到的内容会保留。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:322
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:445
 msgid "Stop? What was read so far is kept, and it can be resumed later from where it stopped."
 msgstr "要停止吗？目前已读取的内容会保留，之后可以从停止处继续。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:324
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:447
 msgid "Stop the copy? Files already copied stay at the destination, and the copy can be resumed later."
 msgstr "要停止复制吗？已复制的文件会保留在目标中，之后可以继续复制。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:329
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:452
 msgid "Stop this work?"
 msgstr "要停止此项工作吗？"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:329
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:452
 msgid "Keep working"
 msgstr "继续工作"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:329 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:1142
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:452
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:1142
 msgid "Stop"
 msgstr "停止"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:349
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:472
 msgid "The search did not start"
 msgstr "搜索未能开始"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:369
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:496
 msgid "Log"
 msgstr "日志"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:369
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:496
 msgid "Nothing was recorded."
 msgstr "没有记录任何内容。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:380
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:507
 msgid "They keep working with this window closed, and what stopped can be resumed."
 msgstr "即使关闭此窗口，这些任务也会继续进行，已停止的任务可以继续。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:384
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/job.py:511
 msgid "When you recover files, the work is listed here."
 msgstr "恢复文件时，相关任务会列在这里。"
 
@@ -4371,6 +5008,186 @@ msgstr "没有与“%s”匹配的驱动器"
 msgid "Search by name, model, volume label, folder or health."
 msgstr "按名称、型号、卷标、文件夹或健康状况搜索。"
 
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:16
+msgid "Finds counterfeit cards, which announce more space than they have."
+msgstr "找出标称空间比实际更大的假冒存储卡。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:17
+msgid "Test of the surface"
+msgstr "表面测试"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:18
+msgid "Writes and reads back blocks across the drive, more at its end, where cheap cards fail first."
+msgstr "在整个驱动器上写入并读回数据块，末尾测得更多，因为廉价存储卡最先在那里出现故障。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:19
+msgid "New partition table"
+msgstr "新分区表"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:20
+msgid "One partition that leaves out what failed, with a margin before it."
+msgstr "一个分区，排除故障部分，并在其前面留出余量。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:22
+msgid "Ready to use on this computer and on other devices."
+msgstr "可在此计算机和其他设备上直接使用。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:26
+msgid "Automatic"
+msgstr "自动"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:26
+msgid "FAT32 up to 32 GB, as cards are sold; exFAT for larger drives."
+msgstr "32 GB 及以下用 FAT32（与存储卡出厂时相同）；更大的驱动器用 exFAT。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:27
+msgid "FAT32"
+msgstr "FAT32"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:27
+msgid "Works everywhere: cameras, car radios, TVs, phones. Files up to 4 GB."
+msgstr "到处都能用：相机、车载音响、电视、手机。单个文件最大 4 GB。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:28
+msgid "exFAT"
+msgstr "exFAT"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:28
+msgid "Large files, on modern computers and phones. Some older devices do not read it."
+msgstr "支持大文件，适用于现代计算机和手机。一些较旧的设备无法读取。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:29
+msgid "ext4"
+msgstr "ext4"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:29
+msgid "For Linux only."
+msgstr "仅适用于 Linux。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:60
+msgid "Repair the drive"
+msgstr "修复驱动器"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:72
+msgid "Repair and erase"
+msgstr "修复并擦除"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:97
+#, python-format
+msgid "Repair “%s”"
+msgstr "修复“%s”"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:103
+msgid "For a memory card or USB drive that gives write errors, shows the wrong size or cannot be formatted. It is tested, and set up again using only the part that works."
+msgstr "适用于出现写入错误、显示的大小不对或无法格式化的存储卡或 USB 驱动器。它会先经过测试，然后只使用能正常工作的部分重新设置。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:116
+msgid "How"
+msgstr "方式"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:117
+msgid "Quick test"
+msgstr "快速测试"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:117
+msgid "Samples of the surface, more at the end of the drive. A few minutes."
+msgstr "抽样检测表面，驱动器末尾检测得更多。只需几分钟。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:118
+msgid "Complete test"
+msgstr "完整测试"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:118
+msgid "Every block is written and read back. Finds every bad area, and takes much longer."
+msgstr "每一个数据块都会被写入并读回。能找出所有损坏区域，但耗时长得多。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:130
+msgid "Name of the new volume"
+msgstr "新卷的名称"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:134
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:627
+msgid "Advanced"
+msgstr "高级"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:134
+msgid "Space left unused at the end of the drive"
+msgstr "在驱动器末尾保留不用的空间"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:136
+msgid "Margin before the end, in MiB"
+msgstr "末尾前的余量（MiB）"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:137
+msgid "Cheap cards often fail in their last megabytes. 8 MiB costs almost nothing."
+msgstr "廉价存储卡常常在最后几兆字节出现故障。留出 8 MiB 几乎没有损失。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:149
+msgid "This cannot be undone"
+msgstr "此操作无法撤销"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:150
+msgid "The administrator password is asked before anything is written. The work goes on with this window closed, and its report stays in Copies and searches."
+msgstr "在写入任何内容之前会要求输入管理员密码。关闭此窗口后工作仍会继续，其报告会保留在“复制和搜索任务”中。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:151
+#, python-format
+msgid "I understand that everything on “%s” will be erased for good"
+msgstr "我明白“%s”上的所有内容都将被永久擦除"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:198
+msgid "The drive was disconnected or replaced. Nothing was done."
+msgstr "驱动器已被断开或更换。未执行任何操作。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:232
+#, python-format
+msgid "Install: %s"
+msgstr "请安装：%s"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:240
+msgid "Everything on this drive will be erased. If it holds files you need, recover them first."
+msgstr "此驱动器上的所有内容都将被擦除。如果其中有您需要的文件，请先恢复它们。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:242
+msgid "It reported problems: a repair erases its files for good."
+msgstr "它报告了问题：修复会永久擦除其中的文件。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:244
+msgid "Recover files first"
+msgstr "先恢复文件"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:245
+msgid "What will be erased"
+msgstr "将被擦除的内容"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:250
+#, python-format
+msgid "%s used"
+msgstr "已用 %s"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:253
+#, python-format
+msgid "Mounted at %s: it is unmounted first."
+msgstr "已挂载于 %s：会先将其卸载。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:265
+#, python-format
+msgid "Every block is written and read back. Finds every bad area. On a slow drive of this size, about %s."
+msgstr "每一个数据块都会被写入并读回。能找出所有损坏区域。对于这种容量的慢速驱动器，大约需要 %s。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:268
+#, python-format
+msgid "The new volume will be called “%(name)s”, with %(fs)s."
+msgstr "新卷将命名为“%(name)s”，文件系统为 %(fs)s。"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:301
+msgid "Asking for the administrator password…"
+msgstr "正在请求管理员密码…"
+
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/repair.py:311
+msgid "The repair did not start"
+msgstr "修复未能开始"
+
 #: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:19
 msgid "Where should files be recovered from?"
 msgstr "要从哪里恢复文件？"
@@ -4423,11 +5240,13 @@ msgstr "仅制作磁盘映像"
 msgid "Copies the whole device to a file on another disk with GNU ddrescue, keeping a map so it can resume and never reads a good area twice."
 msgstr "使用 GNU ddrescue 将整个设备复制到另一块磁盘上的文件中，并保留映射文件，以便继续进行，且绝不重复读取完好的区域。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:40 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:1076
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:40
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:1076
 msgid "Look for lost partitions"
 msgstr "查找丢失的分区"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:41 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:1083
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:41
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:1083
 msgid "TestDisk reads the partition table and analyzes the disk. It only shows what it finds: nothing is written."
 msgstr "TestDisk 会读取分区表并分析磁盘。它只显示找到的内容：不会写入任何数据。"
 
@@ -4453,7 +5272,8 @@ msgstr[0] "已标记 %d 个项目。总量将在后续步骤中统计。"
 msgid "Mark what to copy. A marked folder takes everything inside. Only the folders you open are read."
 msgstr "标记要复制的内容。标记文件夹会包含其中的所有内容。只会读取您打开的文件夹。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:327 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:397
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:327
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:397
 msgid "Next"
 msgstr "下一步"
 
@@ -4478,7 +5298,8 @@ msgstr "选择驱动器或卷。此时尚不会读取或更改任何内容。"
 msgid "A disk image"
 msgstr "磁盘映像"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:452 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:455
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:452
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:455
 msgid "A disk image saved before"
 msgstr "之前保存的磁盘映像"
 
@@ -4514,7 +5335,8 @@ msgstr "无法使用此源"
 msgid "You can choose more than one. If you are not sure, leave All."
 msgstr "可以选择多项。如果不确定，请保留“所有类型”。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:552 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:1006
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:552
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:1006
 msgid "All types"
 msgstr "所有类型"
 
@@ -4532,10 +5354,6 @@ msgid "Use the volume %s"
 msgstr "使用卷 %s"
 
 #: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:627
-msgid "Advanced"
-msgstr "高级"
-
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:627
 msgid "Tools that work with the whole disk"
 msgstr "处理整块磁盘的工具"
 
@@ -4543,7 +5361,8 @@ msgstr "处理整块磁盘的工具"
 msgid "What to copy"
 msgstr "要复制的内容"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:636 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:1004
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:636
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:1004
 msgid "Everything"
 msgstr "全部内容"
 
@@ -4559,7 +5378,8 @@ msgstr "仅复制您标记的内容。推荐用于有问题的驱动器：先复
 msgid "It asks for the administrator password."
 msgstr "需要输入管理员密码。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:704 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:829
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:704
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:829
 #, python-format
 msgid "Not available: %s"
 msgstr "不可用：%s"
@@ -4607,7 +5427,8 @@ msgstr "另一块磁盘上的位置"
 msgid "Looking for places…"
 msgstr "正在查找位置…"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:795 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:668
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:795
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:668
 msgid "Choose another folder…"
 msgstr "选择其他文件夹…"
 
@@ -4656,7 +5477,8 @@ msgstr "内容"
 msgid "Space it will use"
 msgstr "将占用的空间"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:975 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:977
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:975
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/rescue.py:977
 msgid "To copy"
 msgstr "待复制"
 
@@ -4816,7 +5638,8 @@ msgstr "无法显示此图片"
 msgid "It may be incomplete. That is common with files found by content."
 msgstr "它可能不完整。对于按内容找到的文件，这种情况很常见。"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:302 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:303
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:302
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:303
 msgid "Search by name"
 msgstr "按名称搜索"
 
@@ -4868,7 +5691,8 @@ msgstr "全选显示的项目"
 msgid "Clear selection"
 msgstr "清除选择"
 
-#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:349 big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:680
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:349
+#: big-storage-rescue/usr/lib/big-storage-rescue/gui/pages/results.py:680
 msgid "Save report"
 msgstr "保存报告"
 
@@ -4989,10 +5813,18 @@ msgstr "制作存储设备的磁盘映像"
 msgid "Authentication is required to make a disk image of this storage device. The image holds everything on it."
 msgstr "制作此存储设备的磁盘映像需要身份验证。映像会包含其中的全部内容。"
 
-#: locale/templates/org.biglinux.big-storage-rescue.policy.in:40
+#: locale/templates/org.biglinux.big-storage-rescue.policy.in:43
+msgid "Repair a memory card or USB drive, erasing everything on it"
+msgstr "修复存储卡或 USB 驱动器，并擦除其上的全部内容"
+
+#: locale/templates/org.biglinux.big-storage-rescue.policy.in:44
+msgid "Authentication is required to repair this drive. Everything on it will be erased."
+msgstr "修复此驱动器需要身份验证。其上的所有内容都将被擦除。"
+
+#: locale/templates/org.biglinux.big-storage-rescue.policy.in:56
 msgid "Protect a storage device, read its health or its partitions"
 msgstr "保护存储设备，读取其健康状况或分区"
 
-#: locale/templates/org.biglinux.big-storage-rescue.policy.in:41
+#: locale/templates/org.biglinux.big-storage-rescue.policy.in:57
 msgid "Authentication is required to protect this storage device, read its health or its partitions"
 msgstr "保护此存储设备、读取其健康状况或分区需要身份验证"

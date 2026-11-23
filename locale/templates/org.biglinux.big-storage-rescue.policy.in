@@ -35,6 +35,22 @@
     <annotate key="org.freedesktop.policykit.exec.path">/usr/lib/big-storage-rescue/bsr-image-helper</annotate>
   </action>
 
+  <!-- A repair ERASES a memory card or a USB drive: the one action of Big
+       Storage Rescue that writes to a device. The password is asked every
+       time, never kept, and the program is its own (bsr-repair-helper), so
+       that no other action can ever reach it -->
+  <action id="org.biglinux.big-storage-rescue.repair">
+    <description>Repair a memory card or USB drive, erasing everything on it</description>
+    <message>Authentication is required to repair this drive. Everything on it will be erased.</message>
+    <icon_name>big-storage-rescue</icon_name>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/lib/big-storage-rescue/bsr-repair-helper</annotate>
+  </action>
+
   <!-- Blocks or allows writing on a device, reads SMART, lists partitions: never changes data on it -->
   <action id="org.biglinux.big-storage-rescue.drive-helper">
     <description>Protect a storage device, read its health or its partitions</description>

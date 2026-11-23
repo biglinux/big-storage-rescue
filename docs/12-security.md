@@ -11,6 +11,7 @@ run as root. What needs more goes through:
 | `pkexec /usr/lib/big-storage-rescue/bsr-holders MOUNTPOINT` | `org.biglinux.big-storage-rescue.inspect-processes` (`auth_admin_keep`) | `lsof` of every user, one mount point of a local block device, never the running system |
 | `pkexec /usr/lib/big-storage-rescue/bsr-image-helper DEV …` | `org.biglinux.big-storage-rescue.image` (`auth_admin`, asked every time) | a disk image (ddrescue): a raw copy of a whole drive holds the files of every user. It runs `bsr-drive-helper image` |
 | `pkexec /usr/lib/big-storage-rescue/bsr-drive-helper VERB DEV …` | `org.biglinux.big-storage-rescue.drive-helper` (`auth_admin_keep`) | `protect`/`unprotect` (blockdev), `smart` (`smartctl -H -A -i -l selftest`: reads, never starts a test), `partitions` (TestDisk, read-only commands) |
+| `pkexec /usr/lib/big-storage-rescue/bsr-repair-helper DEV DISKSEQ SIZE …` | `org.biglinux.big-storage-rescue.repair` (`auth_admin`, asked every time) | the repair of a memory card or a USB drive, which **erases it** (22-repair.md): f3probe, a test of the surface, sfdisk, mkfs |
 
 pkexec picks the action by the path of the program alone, and takes the first
 action that matches in an order that is not fixed. So no two actions share a
@@ -68,10 +69,34 @@ partition table change, filesystem repair (`fsck`, `ntfsfix`, `btrfs check
 with writing of a drive at risk. Devices are mounted read-only by default and
 can be blocked at the block layer (`protect`).
 
+## The one exception: repairing a card or a USB drive
+
+The repair (22-repair.md) erases a memory card or a USB drive and sets it up
+again. It is not a rescue, and it is kept apart from everything above:
+
+- it is a separate step that the person starts on a page of its own, after
+  ticking that everything on the drive will be erased; in the terminal they
+  type the name of the device, a script says `--yes`;
+- its program, `bsr-repair-helper`, is the only one of the package that runs
+  `wipefs`, `sfdisk` or a `mkfs` (`tests/drive-tests.sh` checks it), and it
+  has a polkit action of its own that asks for the password every time;
+- the helper refuses, whatever polkit decided: a disk that is not removable
+  (SATA, NVMe, eMMC), the running system, a partition instead of a whole
+  drive, anything mounted or under LVM, RAID or open encryption, a disk image
+  of another user, and a drive whose disk sequence number **or size** is not
+  the one the person saw. It opens the device with `O_EXCL` before writing;
+- it is never resumed: a card reader keeps its name and serial number when
+  its card is swapped.
+
+Local polkit rules can let an administrator run any action without a
+password. On such a system the checks of the helper are what stands between
+a mistake and a disk, so none of them depends on polkit.
+
 ## Secure Erase
 
-Secure Erase, Sanitize, formatting and the initialization of disks destroy
-data; they are not recovery. They were part of Big-Mount 2.5–2.6
+Secure Erase, Sanitize, and the formatting and initialization of internal
+disks destroy data; they are not recovery (the repair of a removable card or
+USB drive above is the one exception, with its own rules). They were part of Big-Mount 2.5–2.6
 (`drive-erase.sh`, `bm_erase_*`, the *Advanced maintenance* page, the
 `--secure-erase` option) and are **not** part of Big Storage Rescue: not
 installed, not offered, not reachable by any option (`tests/lib-tests.sh`

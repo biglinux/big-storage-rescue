@@ -1,0 +1,21 @@
+F3 probe 8.0
+Copyright (C) 2010 Digirati Internet LTDA.
+This is free software; see the source for copying conditions.
+
+WARNING: Probing normally takes from a few seconds to 15 minutes, but
+         it can take longer. Please be patient.
+
+Bad news: The device `/dev/sdx' is damaged
+
+Device geometry:
+	         *Usable* size: 0.00 Byte (0 blocks)
+	        Announced size: 1.91 GB (4005888 blocks)
+	                Module: 2.00 GB (2^31 Bytes)
+	Approximate cache size: 0.00 Byte (0 blocks), need-reset=no
+	   Physical block size: 512.00 Byte (2^9 Bytes)
+
+Probe time: 12.18s
+ Operation: total time / count = avg time
+      Read: 0us / 0 = 0us
+     Write: 12.18s / 4096 = 2.9ms
+     Reset: 0us / 0 = 0us

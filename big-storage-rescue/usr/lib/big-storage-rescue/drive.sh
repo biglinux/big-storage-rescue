@@ -104,6 +104,8 @@ bsr_helper() {
    # A disk image has a polkit action of its own, which always asks. pkexec
    # picks the action by the path alone: it needs a program of its own
    if [ "${1:-}" = image ]; then exe="$BSR_LIB_DIR/bsr-image-helper"; shift; fi
+   # A repair erases a drive: a program and an action of its own, which always asks
+   if [ "${1:-}" = repair ]; then exe="$BSR_LIB_DIR/bsr-repair-helper"; shift; fi
    if [ "$EUID" -eq 0 ]; then
       "$exe" "$@"
    else
@@ -164,6 +166,12 @@ bsr_drive_usage() {
       "  --categories LIST" $"only these types: photos,videos,documents,audio,archives (default: all)" \
       "results ID" $"what a search found" \
       "check-files ID" $"check again whether the files a search found are whole (their structure, not their content)" \
+      "repair DEV" $"repair a memory card or USB drive: test it, then partition and format it. ERASES EVERYTHING on it" \
+      "  --mode quick|full" $"test samples of the surface (default) or every block" \
+      "  --filesystem auto|fat32|exfat|ext4" $"the new filesystem (auto: FAT32 up to 32 GiB, exFAT above)" \
+      "  --label NAME" $"the name of the new volume" \
+      "  --margin-mib N" $"space left unused at the end, before what failed (default 8)" \
+      "  --yes" $"do not ask for the name of the device (scripts)" \
       "--json" $"machine-readable output" \
       "--dry-run" $"say what would be done, change nothing"
    printf '\n%s\n' $"TARGET is a device (/dev/sdb1) or a folder inside a mounted device."
@@ -339,6 +347,17 @@ bsr_dg_volume_json() {
    bsr_jo volume "$p" cause "$cause" title "$title" reason "$reason"
 }
 
+# Whether writing is blocked on the whole drive, and by what: null when it
+# is not. Said even when nothing is mounted, which is when a person asks
+bsr_dg_wp_json() {
+   local help="" sep="" h
+   if ! bsr_write_protect "$1"; then printf 'null'; return 0; fi
+   bsr_wp_text "$WP_KIND"
+   for h in "${C_HELP[@]}"; do bsr_js "$h"; help+="$sep$REPLY"; sep=","; done
+   printf '{%s,"help":[%s],%s}' "$(bsr_jo_inner kind "$WP_KIND" title "$C_TITLE" reason "$C_REASON" detail "$WP_DETAIL" fix_label "$C_FIX_LABEL")" \
+      "$help" "$(bsr_jb can_allow "$([ -n "$C_FIX_LABEL" ] && echo 1)")"
+}
+
 # What may be offered for each volume, read by the GUI
 bsr_dg_json() {
    local d="$1" p first=1 vols="" l first2=1 lines="" earlier="" adv="" w
@@ -369,8 +388,8 @@ bsr_dg_json() {
       earlier+="$REPLY"
    done
    bsr_sc_run "$d"
-   printf '{"device":%s,"advice":[%s],"kernel":[%s],"kernel_earlier":[%s],%s,"volumes":[%s],"tools":{%s}}\n' \
-      "$(bsr_dv_disk_json "$d")" "$adv" "$lines" "$earlier" "$(bsr_sc_json)" "$vols" \
+   printf '{"device":%s,"advice":[%s],"kernel":[%s],"kernel_earlier":[%s],%s,"write_protect":%s,"volumes":[%s],"tools":{%s}}\n' \
+      "$(bsr_dv_disk_json "$d")" "$adv" "$lines" "$earlier" "$(bsr_sc_json)" "$(bsr_dg_wp_json "$d")" "$vols" \
       "$(bsr_jb ddrescue "$(command -v ddrescue >/dev/null && echo 1)" testdisk "$(command -v testdisk >/dev/null && echo 1)" \
          photorec "$(command -v photorec >/dev/null && echo 1)" smartctl "$(command -v smartctl >/dev/null && echo 1)" \
          rsync "$(command -v rsync >/dev/null && echo 1)")"
@@ -649,6 +668,7 @@ bsr_drive_main() {
          bsr_load drive-copy.sh
          bsr_load drive-recovery.sh
          bsr_load drive-salvage.sh
+         bsr_load drive-repair.sh
          bsr_load drive-tui.sh
          bsr_tui_main
          ;;
@@ -668,12 +688,20 @@ bsr_drive_main() {
          bsr_load drive-copy.sh
          bsr_load drive-recovery.sh
          bsr_load drive-salvage.sh
+         bsr_load drive-repair.sh
          bsr_job_cmd "$cmd" "$@"
+         ;;
+      repair)
+         bsr_load drive-copy.sh
+         bsr_load drive-recovery.sh
+         bsr_load drive-repair.sh
+         bsr_rp_cmd "$@"
          ;;
       image | partitions | carve | scan | results | check-files | methods)
          bsr_load drive-copy.sh
          bsr_load drive-recovery.sh
          bsr_load drive-salvage.sh
+         bsr_load drive-repair.sh
          bsr_rec_cmd "$cmd" "$@"
          ;;
       *) bsr_drive_badarg "$cmd"; return 2 ;;

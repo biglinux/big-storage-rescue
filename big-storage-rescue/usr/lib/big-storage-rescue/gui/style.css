@@ -139,3 +139,15 @@ togglebutton.chip { padding: 2px 12px; min-height: 26px; border-radius: 99px; fo
 
 /* A file found by content that is cut short or damaged (integrity.py) */
 .check-pill { padding: 1px 8px; border-radius: 99px; background: alpha(@warning_color, 0.18); color: @warning_fg_color; }
+
+/* Repairing a memory card or a USB drive */
+.repair-step { padding: 14px; border-radius: 14px; }
+.repair-step .step-pill { background: alpha(@error_color, 0.14); color: @error_color; }
+.repair-verdict { padding: 18px; border-radius: 14px; }
+.repair-verdict.level-normal { background: alpha(@success_color, 0.12); }
+.repair-verdict.level-attention { background: alpha(@warning_color, 0.14); }
+.repair-verdict.level-critical { background: alpha(@error_color, 0.12); }
+image.level-icon.level-normal { color: @success_color; }
+image.success { color: @success_color; }
+image.error { color: @error_color; }
+.danger-panel checkbutton label { font-weight: 600; }
